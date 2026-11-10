@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test('isolated admin demo opens with explicit safeguards and verified-only agency status', async ({ page }) => {
   await page.goto('/');
   await expect(page).toHaveTitle(/Operations workspace/);
-  await expect(page.getByText('Demonstration workspace.')).toBeVisible();
+  await expect(page.getByText('Demo only.')).toBeVisible();
   await expect(page.getByText('No confirmed external receipt')).toBeVisible();
   await expect(page.getByText('No authenticated view event')).toBeVisible();
   await expect(page.getByText('DEMO-1001').first()).toBeVisible();
@@ -31,7 +31,7 @@ test('queues, searching and sample analytics work without a backend', async ({ p
   await expect(page.locator('.case-list-item')).toHaveCount(1);
   await expect(page.locator('.case-list-item')).toContainText('DEMO-1005');
   await page.getByRole('button', { name: 'Clear search' }).click();
-  await page.getByRole('button', { name: 'Analytics' }).click();
+  await page.getByRole('button', { name: /Overview/ }).click();
   await expect(page.getByRole('heading', { name: 'Workspace overview' })).toBeVisible();
   await expect(page.getByText('Simulated records')).toBeVisible();
 });
@@ -65,7 +65,7 @@ test('moderation handles multiple content queues and never verifies a claim by b
 
 test('routing assistance never fabricates a government office or receipt', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: /Office routing/ }).click();
+  await page.getByRole('button', { name: /Routing/ }).click();
   await expect(page.getByRole('heading', { name: 'Office routing' })).toBeVisible();
   await expect(page.getByText('Not assigned')).toBeVisible();
   await expect(page.getByText('Not attempted')).toBeVisible();
