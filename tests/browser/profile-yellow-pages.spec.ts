@@ -77,7 +77,7 @@ test('Profile uses guest identity, About modal, local counts and a path to Score
   await expect(page.getByRole('button', { name: /About & Contact/ })).toBeVisible();
   await page.getByRole('button', { name: /About & Contact/ }).click();
   await expect(page.getByRole('dialog', { name: 'About Ekiti Civic' })).toBeVisible();
-  await expect(page.getByText('Independent civic project · Not a government service', { exact: false })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'About Ekiti Civic' }).getByText(/Independent civic project · Not a government service/)).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.getByRole('link', { name: /Public Response Scores/ }).click();
