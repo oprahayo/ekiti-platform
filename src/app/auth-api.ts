@@ -124,6 +124,7 @@ export async function authorizedRpc<T>(config: PublicAuthConfig,session: Citizen
   procedure: 'civic_submit_review' | 'civic_request_claim' | 'civic_my_reviews' | 'civic_my_claims',
   body: Record<string,unknown>, fetcher: typeof fetch = fetch): Promise<T> {
   const value = await authenticateSession(config,session,fetcher);
+  saveTabSession(value);
   const result = await authFetch(config,'/rest/v1/rpc/' + procedure,
     body,value.access_token,'POST',fetcher);
   return result as T;
