@@ -3,8 +3,8 @@ import { test, expect } from '@playwright/test';
 test('English/Yoruba toggle updates centered welcome and persists across reload', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Welcome to Ekiti Civic' })).toBeVisible();
-  await expect(page.getByText('Your mobile gateway to Ekiti State')).toBeVisible();
-  await expect(page.locator('.home-actions > *')).toHaveCount(3);
+  await expect(page.getByText('Community help · Text chat')).toBeVisible();
+  await expect(page.locator('.chat-quick-replies > *')).toHaveCount(3);
   await page.getByRole('button', { name: 'YOR' }).click();
   await expect(page.getByRole('heading', { name: 'Káàbọ̀ sí Ekiti Civic' })).toBeVisible();
   await expect(page.getByText('Ẹnu ọ̀nà rẹ sí Ìpínlẹ̀ Èkìtì')).toBeVisible();
@@ -25,22 +25,22 @@ test('theme icon switches instantly without opening a settings panel', async ({ 
   await expect(page.locator('.settings-panel')).toHaveCount(0);
 });
 
-test('rotating prompts are static under reduced motion and do not affect accessible search', async ({ page }) => {
+test('home chat uses a static editable message prompt', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
   await expect(page.getByRole('searchbox', { name: 'Ask about Ekiti' }))
-    .toHaveAttribute('placeholder', 'Ask me anything about Ekiti…');
-  await page.getByRole('searchbox', { name: 'Ask about Ekiti' }).click();
-  await expect(page).toHaveURL(/\/ask/);
+    .toHaveAttribute('placeholder', 'Type a message…');
+  await page.getByRole('searchbox', { name: 'Ask about Ekiti' }).fill('Hello');
+  await expect(page).toHaveURL(/\/$/);
 });
 
-test('English chat returns citations, an answer and an opt-in audio control', async ({ page }) => {
+test('English chat returns citations and text without audio', async ({ page }) => {
   await page.goto('/ask');
   await page.locator('#ask-input').fill('Who is the governor of Ekiti?');
   await page.getByRole('button', { name: 'Send' }).click();
   await expect(page.getByText(/Biodun Oyebanji was inaugurated/)).toBeVisible();
   await expect(page.getByRole('link', { name: /Gov. Oyebanji’s second-term inauguration/ })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Play answer audio' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Play answer audio' })).toHaveCount(0);
   await expect(page.getByText(/not a full generative AI conversation/)).toBeVisible();
 });
 
@@ -52,8 +52,7 @@ test('Yoruba chat returns readable Yoruba answer and a source link', async ({ pa
   await page.locator('#ask-input').press('Enter');
   await expect(page.getByText(/Ìpínlẹ̀ Èkìtì ní ìjọba ìbílẹ̀/)).toBeVisible();
   await expect(page.getByRole('link', { name: /government overview and local governments/ })).toBeVisible();
-  await page.getByRole('button', { name: 'Ka ìdáhùn náà sókè' }).click();
-  await expect(page.locator('.chat-answer [role="status"]')).toContainText(/Yoruba voice|À ń ka|Audio/);
+  await expect(page.getByRole('button', { name: 'Ka ìdáhùn náà sókè' })).toHaveCount(0);
 });
 
 test('unknown question fails honestly without invented source citations', async ({ page }) => {

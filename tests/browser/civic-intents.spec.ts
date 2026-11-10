@@ -44,31 +44,14 @@ test('factual questions continue to use cited, sourced answers', async ({ page }
   await expect(page.locator('.answer-sources a').first()).toBeVisible();
 });
 
-test('a report microphone returns its transcript to the report composer, not Ask', async ({ page }) => {
+test('reporting is typed chat even if speech recognition exists', async ({ page }) => {
   await page.addInitScript(() => {
-    class Speech {
-      lang = 'en-NG';
-      interimResults = false;
-      continuous = false;
-      onresult: ((event: unknown) => void) | null = null;
-      onerror = null;
-      onend: (() => void) | null = null;
-      start() {
-        setTimeout(() => this.onresult?.({
-          results: { 0: { 0: { transcript: 'The damaged footbridge needs urgent attention in my area.' } } },
-        }), 50);
-      }
-      abort() {}
-    }
-    const host = window as unknown as { SpeechRecognition: unknown; webkitSpeechRecognition: unknown };
-    host.SpeechRecognition = Speech;
-    host.webkitSpeechRecognition = Speech;
+    (window as unknown as { webkitSpeechRecognition:unknown }).webkitSpeechRecognition=class {};
   });
   await page.goto('/report');
-  await page.getByRole('button', { name: 'Reply using microphone' }).click();
-  await expect(page.getByRole('dialog')).toBeVisible();
-  await page.getByRole('button', { name: 'Start voice input' }).click();
-  await expect(page.getByText('Transcript ready')).toBeVisible();
-  await expect(page.locator('#report-message')).toHaveValue('The damaged footbridge needs urgent attention in my area.', { timeout: 5000 });
-  await expect(page).toHaveURL(/\/report/);
+  await expect(page.getByRole('button',{name:/voice|microphone|listen|audio|speak/i})).toHaveCount(0);
+  await page.locator('#report-message').fill('The damaged footbridge needs urgent attention in my area.');
+  await page.locator('.conversation-send').click();
+  await expect(page.getByText(/Which local government area did this happen in/)).toBeVisible();
 });
+

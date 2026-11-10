@@ -1,15 +1,15 @@
 import { test, expect } from '@playwright/test';
 
-test('Home has exactly three primary interactive blocks and independent identity', async ({ page }) => {
+test('Home is a three-action text chat with independent identity', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Welcome to Ekiti Civic' })).toBeVisible();
-  await expect(page.locator('.home-actions > *')).toHaveCount(3);
+  await expect(page.locator('.chat-quick-replies > *')).toHaveCount(3);
   await expect(page.getByRole('searchbox', { name: 'Ask about Ekiti' })).toBeVisible();
   await expect(page.getByRole('link', { name: /Report a problem/ })).toBeVisible();
-  await expect(page.getByRole('link', { name: /Explore Ekiti/ })).toBeVisible();
-  await expect(page.getByText('Independent civic project · Not a government service')).toBeVisible();
+  await expect(page.getByRole('link', { name: /Find a service/ })).toBeVisible();
+  await expect(page.getByText(/not a government service/)).toBeVisible();
   await expect(page.locator('.feature-grid, .hero-art, .floating-card')).toHaveCount(0);
-  await expect(page.locator('.bottom-nav .nav-item')).toHaveCount(5);
+  await expect(page.locator('.bottom-nav .nav-item')).toHaveCount(4);
 });
 
 for (const width of [280, 320, 360, 375, 390, 428, 768, 1024, 1440]) {
@@ -55,11 +55,11 @@ test('five-tab navigation supports direct deep links', async ({ page }) => {
   }
 });
 
-test('Ask is editable and clear about demo sources and uncertainty', async ({ page }) => {
+test('Home chat is editable and answers without leaving the conversation', async ({ page }) => {
   await page.goto('/');
   await page.locator('#home-ask-input').focus();
-  await expect(page).toHaveURL(/\/ask/);
-  const input = page.locator('#ask-input');
+  await expect(page).toHaveURL(/\/$/);
+  const input = page.locator('#home-ask-input');
   await expect(input).toBeFocused();
   await input.fill('How many local government areas?');
   await input.press('Enter');
@@ -125,19 +125,11 @@ test('theme toggle works, independent of system settings', async ({ page }) => {
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
 });
 
-test('voice overlay opens and closes to editable text when browser supports it', async ({ page }) => {
-  await page.goto('/');
-  const mic = page.getByRole('button', { name: 'Open voice mode' });
-  if (await mic.count() === 0) {
-    await expect(mic).toHaveCount(0); // Unsupported browsers must hide the trigger.
-    return;
+test('there are no voice or audio controls on citizen chat routes', async ({ page }) => {
+  for(const path of ['/', '/ask', '/report', '/track']) {
+    await page.goto(path);
+    await expect(page.getByRole('button',{name:/voice|microphone|listen|audio|speak/i})).toHaveCount(0);
   }
-  await mic.click();
-  await expect(page.getByRole('dialog', { name: 'Speak now' })).toBeVisible();
-  await expect(page.locator('.voice-ripple')).toHaveCount(3);
-  await page.getByRole('button', { name: 'Text always works — tap to type' }).click();
-  await expect(page).toHaveURL(/\/ask/);
-  await expect(page.locator('#ask-input')).toBeFocused();
 });
 
 test('initial Home requests are first-party only and skip map/speech bundles', async ({ page }) => {
@@ -151,30 +143,13 @@ test('initial Home requests are first-party only and skip map/speech bundles', a
   expect(resources.some(url => /\/assets\/(map-|lga-|VoiceOverlay)/.test(url))).toBe(false);
 });
 
-test('voice closes to originating Home screen and falls back to typing after no speech', async ({ page }) => {
+test('browser speech support never opens voice UI', async ({ page }) => {
   await page.addInitScript(() => {
-    class FakeRecognition {
-      lang = 'en-NG';
-      interimResults = false;
-      continuous = false;
-      onresult: unknown = null;
-      onerror: ((event: { error: string }) => void) | null = null;
-      onend: (() => void) | null = null;
-      start() { window.setTimeout(() => this.onerror?.({ error: 'no-speech' }), 50); }
-      abort() {}
-    }
-    (window as unknown as { webkitSpeechRecognition: unknown }).webkitSpeechRecognition = FakeRecognition;
+    (window as unknown as { SpeechRecognition:unknown }).SpeechRecognition=class {};
   });
   await page.goto('/');
-  await page.getByRole('button', { name: 'Open voice mode' }).click();
-  await expect(page.getByRole('dialog', { name: 'Speak now' })).toBeVisible();
-  await page.getByRole('button', { name: 'Close voice mode' }).click();
-  await expect(page).toHaveURL(/\/$/);
-  await expect(page.getByRole('heading', { name: 'Welcome to Ekiti Civic' })).toBeVisible();
-  await page.getByRole('button', { name: 'Open voice mode' }).click();
-  await page.getByRole('button', { name: 'Start voice input' }).click();
-  await expect(page.getByText("Didn't catch that")).toBeVisible();
-  await page.getByRole('button', { name: 'Text always works — tap to type' }).click();
-  await expect(page).toHaveURL(/\/ask/);
-  await expect(page.locator('#ask-input')).toBeFocused();
+  await expect(page.getByRole('button',{name:'Open voice mode'})).toHaveCount(0);
+  await page.locator('#home-ask-input').fill('Hello from the text chat');
+  await expect(page.locator('#home-ask-input')).toHaveValue('Hello from the text chat');
 });
+
