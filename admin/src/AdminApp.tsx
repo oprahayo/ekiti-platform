@@ -5,8 +5,9 @@ import {
   type Action, type AdminCase, type Queue,
 } from './case-model.ts';
 import { makeDemoCases } from './demo-cases.ts';
+import { ModerationWorkspace, RoutingWorkspace } from './OperationsModules.tsx';
 
-type View = Queue | 'all' | 'analytics';
+type View = Queue | 'all' | 'analytics' | 'moderation' | 'routing';
 
 const ACTION_LABELS: Record<Action, string> = {
   assign: 'Assign to me',
@@ -59,6 +60,14 @@ function Sidebar({
         <span className="nav-count">{item.count}</span>
       </button>)}
       <div className="sidebar-divider" />
+      <button type="button" className={'nav-link ' + (view === 'moderation' ? 'active' : '')}
+        onClick={() => onViewChange('moderation')} aria-current={view === 'moderation' ? 'page' : undefined}>
+        <span className="nav-glyph" aria-hidden="true">◇</span><span>Moderation</span>
+      </button>
+      <button type="button" className={'nav-link ' + (view === 'routing' ? 'active' : '')}
+        onClick={() => onViewChange('routing')} aria-current={view === 'routing' ? 'page' : undefined}>
+        <span className="nav-glyph" aria-hidden="true">↪</span><span>Office routing</span>
+      </button>
       <button type="button" className={'nav-link ' + (view === 'analytics' ? 'active' : '')}
         onClick={() => onViewChange('analytics')} aria-current={view === 'analytics' ? 'page' : undefined}>
         <span className="nav-glyph" aria-hidden="true">▥</span><span>Analytics</span>
@@ -260,7 +269,7 @@ export function AdminApp() {
   const [mobileDetail, setMobileDetail] = React.useState(false);
   const counts = React.useMemo(() => queueCounts(cases), [cases]);
   const shown = React.useMemo(() =>
-    view === 'analytics' ? [] : filterCases(cases, view, query), [cases, view, query]);
+    view === 'analytics' || view === 'moderation' || view === 'routing' ? [] : filterCases(cases, view, query), [cases, view, query]);
   const selected = shown.find(item => item.id === selectedId) ?? shown[0] ?? null;
   const changeView = (next: View) => { setView(next); setSelectedId(null); setMobileDetail(false); };
   const apply = (id: string, action: Action, note: string) => {
@@ -269,7 +278,7 @@ export function AdminApp() {
     const updated = applyDemoAction(current, action, note, new Date().toISOString());
     setCases(previous => previous.map(item => item.id === id ? updated : item));
     // Stay on the case even when it moves to another queue.
-    if (view !== 'all' && view !== 'analytics' && caseQueue(updated) !== view) setView('all');
+    if (QUEUES.includes(view as Queue) && caseQueue(updated) !== view) setView('all');
     setSelectedId(id);
   };
   const reset = () => {
@@ -280,13 +289,15 @@ export function AdminApp() {
     <Sidebar view={view} onViewChange={changeView} counts={counts} />
     <div className="workspace-shell" id="workspace">
       <header className="workspace-header">
-        <div className="header-title"><span className="header-mobile-brand">ekiti civic / </span><span>Operations</span><span className="header-slash">/</span><strong>{view === 'analytics' ? 'Analytics' : view === 'all' ? 'All cases' : QUEUE_LABELS[view]}</strong></div>
+        <div className="header-title"><span className="header-mobile-brand">ekiti civic / </span><span>Operations</span><span className="header-slash">/</span><strong>{view === 'analytics' ? 'Analytics' : view === 'moderation' ? 'Moderation' : view === 'routing' ? 'Office routing' : view === 'all' ? 'All cases' : QUEUE_LABELS[view]}</strong></div>
         <div className="header-actions"><span className="environment-pill"><span aria-hidden="true" /> DEMO MODE</span>
           <button type="button" onClick={reset} title="Restore sample cases" className="reset-button">Reset demo</button>
           <div className="avatar" aria-label="Demo moderator">DM</div></div>
       </header>
       <div className="workspace-notice" role="note"><strong>Demonstration workspace.</strong> All cases and updates are fictional and stay in memory. Real case intake, authorized staff login, notifications and agency integrations are not connected.</div>
       {view === 'analytics' ? <Analytics cases={cases} /> :
+        view === 'moderation' ? <ModerationWorkspace /> :
+        view === 'routing' ? <RoutingWorkspace cases={cases} /> :
         <div className={'case-workspace ' + (mobileDetail ? 'mobile-detail-open' : '')}>
           <CaseList view={view} cases={shown} query={query} onQuery={setQuery}
             selectedId={selected?.id || null}
