@@ -40,7 +40,9 @@ test('admin verifier accepts only a correctly signed, scoped short-lived MFA tok
   const config = await fixture();
   assert.deepEqual(await verifyAdminJwt(await signedJwt(), config),
     { subject, expiresAt: now + 1800, assurance: 'aal2' });
-  await assert.rejects(() => verifyAdminJwt((await signedJwt()).replace(/.$/, '0'), config), AdminAuthError);
+  const legitimateToken = await signedJwt();
+  const tamperedToken = legitimateToken.slice(0, -1) + (legitimateToken.endsWith('0') ? '1' : '0');
+  await assert.rejects(() => verifyAdminJwt(tamperedToken, config), AdminAuthError);
   await assert.rejects(() => verifyAdminJwt(await signedJwt({ iss: 'https://evil.test' }), config), AdminAuthError);
   await assert.rejects(() => verifyAdminJwt(await signedJwt({ aud: 'anon' }), config), AdminAuthError);
   await assert.rejects(() => verifyAdminJwt(await signedJwt({ role: 'service_role' }), config), AdminAuthError);
