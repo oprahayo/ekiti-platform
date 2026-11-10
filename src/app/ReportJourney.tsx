@@ -55,7 +55,7 @@ function initialLines(feedback: boolean): Line[] {
 
 export default function ReportJourney() {
   const [search] = useSearchParams();
-  const { language, pendingReportText, setPendingReportText } = useApp();
+  const { pendingReportText, setPendingReportText } = useApp();
   const feedback = search.get('kind') === 'feedback';
   const [step, setStep] = React.useState<Step>('method');
   const [lines, setLines] = React.useState<Line[]>(() => initialLines(feedback));
