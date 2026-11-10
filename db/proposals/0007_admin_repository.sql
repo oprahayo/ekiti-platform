@@ -185,7 +185,7 @@ CREATE FUNCTION civic_private.admin_rpc_note(
 ) RETURNS jsonb
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = pg_catalog, pg_temp AS $$
 DECLARE
-  found civic_private.reports%ROWTYPE;
+  report_row civic_private.reports%ROWTYPE;
   staff_role text;
   staff_lgas text[];
   prior civic_private.admin_note_requests%ROWTYPE;
@@ -194,7 +194,7 @@ DECLARE
   event_uuid uuid;
   next_revision bigint;
 BEGIN
-  IF _actor IS NULL OR _case IS NULL OR _request IS NULL OR
+  IF _actor IS NULL OR _case IS NULL OR _request IS NULL OR _text IS NULL OR
      _expected_revision IS NULL OR _expected_revision < 1 OR
      length(_text) NOT BETWEEN 8 AND 500 OR btrim(_text) <> _text OR
      _text ~ '[[:cntrl:]]' THEN
@@ -211,10 +211,10 @@ BEGIN
   -- Transaction-level advisory lock with a fixed hash for the UUID. Collisions
   -- only serialize unrelated requests, never relax authorization or uniqueness.
   PERFORM pg_advisory_xact_lock(hashtextextended(_request::text, 14153));
-  SELECT * INTO found FROM civic_private.reports r
+  SELECT * INTO report_row FROM civic_private.reports r
   WHERE r.id = _case AND r.delete_at > now() FOR UPDATE;
   IF NOT FOUND OR
-     (staff_role <> 'platform_admin' AND NOT found.lga_id = ANY(staff_lgas))
+     (staff_role <> 'platform_admin' AND NOT report_row.lga_id = ANY(staff_lgas))
   THEN RETURN jsonb_build_object('result','not_found'); END IF;
 
   current_digest := sha256(convert_to(
@@ -235,20 +235,20 @@ BEGIN
     RETURN jsonb_build_object('result','replayed','eventId',event_uuid,
                               'revision',prior.committed_revision);
   END IF;
-  IF found.revision <> _expected_revision THEN
+  IF report_row.revision <> _expected_revision THEN
     RETURN jsonb_build_object('result','conflict');
   END IF;
   INSERT INTO civic_private.case_events(report_id,kind,actor_kind,explanation)
   VALUES (_case,'internal_note','moderator',_text)
   RETURNING id, civic_private.case_events.event_uuid INTO event_id,event_uuid;
-  next_revision := found.revision + 1;
+  next_revision := report_row.revision + 1;
   UPDATE civic_private.reports SET revision = next_revision WHERE id = _case;
   INSERT INTO civic_private.admin_note_requests(
     request_id,report_id,actor_id,request_digest,event_id,
     expected_revision,committed_revision
   ) VALUES (_request,_case,_actor,current_digest,event_id,_expected_revision,next_revision);
   INSERT INTO civic_private.admin_access_audit(actor_id,operation,report_id,lga_id)
-  VALUES (_actor,'internal_note',_case,found.lga_id);
+  VALUES (_actor,'internal_note',_case,report_row.lga_id);
   RETURN jsonb_build_object('result','created','eventId',event_uuid,'revision',next_revision);
 END;
 $$;
