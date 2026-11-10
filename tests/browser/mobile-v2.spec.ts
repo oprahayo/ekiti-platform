@@ -46,6 +46,7 @@ test('five-tab navigation supports direct deep links', async ({ page }) => {
     ['/report', 'Tell me what happened'],
     ['/track', 'Check a report'],
     ['/scores', 'Public response'],
+    ['/profile', 'Citizen Profile'],
     ['/track/DEMO-EKP-2026-00001', 'Check a report'],
     ['/places/demo-health-1', 'Sample community health center'],
   ]) {
@@ -75,7 +76,7 @@ test('Explore filters survive tab changes; all data is identified as demo', asyn
   await page.getByRole('button', { name: 'Schools' }).click();
   await expect(page.locator('.place-row')).toHaveCount(1);
   await expect(page.getByText('Example neighborhood school')).toBeVisible();
-  await page.getByRole('link', { name: 'Scores', exact: true }).click();
+  await page.getByRole('link', { name: 'Profile', exact: true }).click();
   await page.getByRole('link', { name: 'Explore', exact: true }).click();
   await expect(page.locator('#place-search')).toHaveValue('');
   await expect(page.getByRole('heading', { name: 'Sample layout preview' })).toBeVisible();
