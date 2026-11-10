@@ -106,7 +106,7 @@ async function readTrustedKey(
   const keys = (value as {keys?:unknown}).keys;
   if (!Array.isArray(keys) || keys.length > 12) return null;
   const matching = keys.filter(x => x && typeof x === 'object' &&
-    (x as JsonWebKey).kid === kid);
+    (x as {kid?: unknown}).kid === kid);
   if (matching.length !== 1) return null;
   const key = matching[0] as JsonWebKey;
   return key.kty === 'RSA' || key.kty === 'EC' ? key : null;
