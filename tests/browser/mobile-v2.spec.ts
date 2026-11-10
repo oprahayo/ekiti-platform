@@ -9,7 +9,7 @@ test('Home is a three-action text chat with independent identity', async ({ page
   await expect(page.getByRole('link', { name: /Find a service/ })).toBeVisible();
   await expect(page.getByText(/Not a government service/i)).toBeVisible();
   await expect(page.locator('.feature-grid, .hero-art, .floating-card')).toHaveCount(0);
-  await expect(page.locator('.bottom-nav .nav-item')).toHaveCount(4);
+  await expect(page.locator('.bottom-nav .nav-item')).toHaveCount(5);
 });
 
 for (const width of [280, 320, 360, 375, 390, 428, 768, 1024, 1440]) {
