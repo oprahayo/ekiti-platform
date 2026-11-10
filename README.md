@@ -37,6 +37,12 @@ Explore now uses a reference-inspired **three-column grid of 24 illustrated serv
 
 [Explore design, accessibility and directory activation notes](docs/explore-category-grid.md).
 
+## Citizen accounts, ratings and business claims (launch-gated)
+
+The Yellow Pages profile now supports real **moderated review feeds and rating summaries** from an opt-in database proposal, plus optional **Supabase email OTP sign-in** for sending reviews and business ownership requests. Citizen activity stays private; reviews and claims remain pending until independently moderated. The default deployment remains **guest-only** until Auth, privacy and the proposed schema are separately approved and configured. No personal identity documents or passwords are collected.
+
+[See the implementation, privacy safeguards, configuration and explicit activation checklist](docs/citizen-reviews-claims.md).
+
 ## Development status
 
 The PostGIS resolver accepts citizen-confirmed incident coordinates. The audited GRID3 snapshot covers all 16 LGAs. The INEC reference import contains 177 electoral ward names. Electoral ward polygons await a verified crosswalk, so the current snapshot returns an unmapped ward for an in-state point. [Read the audit and measured coverage](docs/data-sources/2026-11-10-postgis-results.md).
