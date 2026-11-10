@@ -49,5 +49,9 @@ export function openMap(onPoint: (lat: number, lon: number) => void, onError: ()
     resize() {
       map.resize();
     },
+    destroy() {
+      marker.remove();
+      map.remove();
+    },
   };
 }

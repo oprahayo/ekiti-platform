@@ -2,11 +2,33 @@
   "name": "ekiti-location",
   "main": "src/server/worker.ts",
   "compatibility_date": "2026-10-01",
-  "compatibility_flags": ["nodejs_compat"],
-  "assets": { "directory": "./dist", "run_worker_first": ["/api/*"] },
-  "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "00000000000000000000000000000000" }],
-  "ratelimits": [
-    { "name": "LOCATION_LIMIT", "namespace_id": "1003", "simple": { "limit": 60, "period": 60 } }
+  "compatibility_flags": [
+    "nodejs_compat"
   ],
-  "observability": { "enabled": false }
+  "assets": {
+    "directory": "./dist",
+    "run_worker_first": [
+      "/api/*"
+    ],
+    "not_found_handling": "single-page-application"
+  },
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "00000000000000000000000000000000"
+    }
+  ],
+  "ratelimits": [
+    {
+      "name": "LOCATION_LIMIT",
+      "namespace_id": "1003",
+      "simple": {
+        "limit": 60,
+        "period": 60
+      }
+    }
+  ],
+  "observability": {
+    "enabled": false
+  }
 }
