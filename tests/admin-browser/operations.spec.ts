@@ -46,3 +46,28 @@ test('mobile navigation keeps the case list and details usable', async ({ page }
   await page.getByRole('button', { name: '← Cases' }).click();
   await expect(page.locator('.case-panel')).toBeVisible();
 });
+
+
+test('moderation handles multiple content queues and never verifies a claim by button', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: /Moderation/ }).click();
+  await expect(page.getByRole('heading', { name: 'Moderation' })).toBeVisible();
+  await expect(page.getByText('DEMO-MOD-101').first()).toBeVisible();
+  await page.getByRole('button', { name: /Ownership claims/ }).click();
+  await expect(page.getByText('An email-code login does not prove business ownership.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Mark reviewed (demo)' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Request more evidence (demo)' }).click();
+  await page.getByLabel('Internal decision reason').fill('Business ownership has not been independently verified');
+  await page.getByRole('button', { name: 'Record demo decision' }).click();
+  await expect(page.getByText('Needs evidence').first()).toBeVisible();
+  await expect(page.getByText('Business ownership has not been independently verified')).toBeVisible();
+});
+
+test('routing assistance never fabricates a government office or receipt', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: /Office routing/ }).click();
+  await expect(page.getByRole('heading', { name: 'Office routing' })).toBeVisible();
+  await expect(page.getByText('Not assigned')).toBeVisible();
+  await expect(page.getByText('Not attempted')).toBeVisible();
+  await expect(page.getByText('Not mapped from verified polygons')).toBeVisible();
+});
