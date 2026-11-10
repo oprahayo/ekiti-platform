@@ -8,9 +8,9 @@ export const APPROVED_FEEDS = [NEWS_CATEGORY_FEED, NEWS_FEED];
 /** One small, allowlisted feed at a time; no arbitrary URLs or article-body crawling. */
 export async function collectCandidates(fetcher = fetch, now = new Date()) {
   let feed = '';
-  let records: ReturnType<typeof parseOfficialFeed> = [];
+  let records = [];
   for (const url of APPROVED_FEEDS) {
-    let response: Response;
+    let response;
     try {
       response = await fetcher(url, {
         headers: { Accept: 'application/rss+xml' },
@@ -20,7 +20,7 @@ export async function collectCandidates(fetcher = fetch, now = new Date()) {
       const reported = Number(response.headers.get('content-length') || 0);
       if (reported > MAX_BYTES) continue;
       const reader = response.body.getReader();
-      const chunks: Uint8Array[] = [];
+      const chunks = [];
       let bytes = 0;
       try {
         while (true) {
