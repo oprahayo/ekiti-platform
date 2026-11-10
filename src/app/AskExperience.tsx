@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router';
 import { useApp, speechSupported } from './state.tsx';
 import { playAnswer, stopSpeech } from './speech.ts';
 import { detectIntent } from './intents.ts';
+import { categoryForGroup } from './DirectoryCategories.tsx';
 import type { AskResult, Language } from '../server/ask-knowledge.ts';
 
 type ChatMessage = {
@@ -135,7 +136,7 @@ export function Ask() {
   const navigate = useNavigate();
   const location = useLocation();
   const { language, askDraft, setAskDraft, setPendingReportText,
-    setExploreCategory, setExploreLga, setExploreQuery } = useApp();
+    setExploreCategory, setExploreService, setExploreLga, setExploreQuery } = useApp();
   const [messages, setMessages] = React.useState<ChatMessage[]>(() => inMemoryMessages);
   const [sending, setSending] = React.useState(false);
   const [audioStatus, setAudioStatus] = React.useState<Record<number, string>>({});
@@ -165,6 +166,7 @@ export function Ask() {
     }
     if (intent.kind === 'directory') {
       setExploreCategory(intent.category);
+      setExploreService(categoryForGroup(intent.category)?.id ?? null);
       setExploreLga(intent.lgaId);
       setExploreQuery('');
       setAskDraft('');
