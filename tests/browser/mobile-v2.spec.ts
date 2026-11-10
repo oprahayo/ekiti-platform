@@ -7,7 +7,7 @@ test('Home offers six clear civic actions instead of launching directly into cha
   await expect(page.getByRole('link', { name: /Ask a question/ })).toBeVisible();
   await expect(page.getByRole('link', { name: /Report an issue/ })).toBeVisible();
   await expect(page.getByRole('link', { name: /Post a listing/ })).toBeVisible();
-  await expect(page.getByText(/Real reports.*not enabled yet/)).toBeVisible();
+  await expect(page.getByText(/Real submissions, official receipts and public case publication are not enabled yet/)).toBeVisible();
   await expect(page.locator('.feature-grid, .hero-art, .floating-card')).toHaveCount(0);
   await expect(page.locator('.bottom-nav .nav-item')).toHaveCount(5);
 });

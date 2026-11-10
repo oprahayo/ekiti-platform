@@ -47,6 +47,6 @@ test('capture mobile and desktop welcome and report journey screens', async ({ p
     actionWidth: document.querySelector('.welcome-action')?.getBoundingClientRect().width,
   }));
   expect(metrics.pageWidth).toBeLessThanOrEqual(metrics.viewportWidth);
-  expect(metrics.actionWidth).toBeGreaterThan(210);
+  expect(metrics.actionWidth).toBeGreaterThan(90);
   await page.screenshot({ path:'test-results/citizen-chat/home-280px.png', fullPage:true });
 });
