@@ -39,6 +39,12 @@ jobs:
         run: psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f db/migrations/0004_knowledge_directory.sql
       - name: Verify reviewed-content isolation and public reader functions
         run: node --experimental-strip-types --test tests/knowledge-postgis.mjs
+      - name: Prepare disposable Supabase Auth roles (CI only)
+        run: psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f tests/bootstrap-citizen-auth.sql
+      - name: Apply gated citizen moderation proposal to disposable CI database
+        run: psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f tests/install-citizen-proposal.sql
+      - name: Verify signed-in reviews, claims and privacy gates
+        run: node --experimental-strip-types --test tests/citizen-postgis.mjs
       - run: npm run test:postgis
       - run: psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f scripts/coverage.sql
 
