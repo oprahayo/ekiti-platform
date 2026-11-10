@@ -1,5 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap');
-:root{font-family:'DM Sans',system-ui,-apple-system,sans-serif;color:#18332e;background:#f8f8f4;font-size:16px;line-height:1.55;--forest:#123d35;--deep:#102c29;--ink:#18332e;--muted:#5c6c66;--line:#dce4df;--lime:#d7ef83;--paper:#fff;--cream:#f8f8f4}
+:root{font-family:system-ui,-apple-system,sans-serif;color:#18332e;background:#f8f8f4;font-size:16px;line-height:1.55;--forest:#123d35;--deep:#102c29;--ink:#18332e;--muted:#5c6c66;--line:#dce4df;--lime:#d7ef83;--paper:#fff;--cream:#f8f8f4}
 *,*::before,*::after{box-sizing:border-box}
 html{scroll-behavior:smooth;scroll-padding-top:110px}
 body{margin:0;min-width:280px}
@@ -12,10 +11,10 @@ button{cursor:pointer}
 .site-header{position:relative;z-index:10;background:#fff;border-bottom:1px solid #e7eae5}
 .header-inner{min-height:86px;display:flex;align-items:center;gap:28px}
 .identity{display:flex;gap:11px;align-items:center;text-decoration:none;flex-shrink:0}
-.identity-mark{background:var(--forest);color:var(--lime);width:43px;height:43px;display:grid;place-items:center;border-radius:14px 14px 14px 4px;font:800 27px 'Manrope',sans-serif;letter-spacing:-.09em}
-.identity-name{font:800 23px/1 'Manrope',system-ui,sans-serif;letter-spacing:-.06em;color:var(--forest);white-space:nowrap}
+.identity-mark{background:var(--forest);color:var(--lime);width:43px;height:43px;display:grid;place-items:center;border-radius:14px 14px 14px 4px;font:800 27px system-ui,sans-serif;letter-spacing:-.09em}
+.identity-name{font:800 23px/1 system-ui,-apple-system,sans-serif;letter-spacing:-.06em;color:var(--forest);white-space:nowrap}
 .identity-name>span{font-weight:500;letter-spacing:-.05em}
-.identity-name small{display:block;font:500 10px/1.8 'DM Sans',sans-serif;letter-spacing:.03em;color:#6a7a70;margin-top:4px}
+.identity-name small{display:block;font:500 10px/1.8 system-ui,sans-serif;letter-spacing:.03em;color:#6a7a70;margin-top:4px}
 .site-nav{display:flex;align-items:center;justify-content:center;gap:clamp(13px,2.6vw,36px);margin-left:auto}
 .site-nav a{color:#42554e;font-size:.88rem;font-weight:700;text-decoration:none;white-space:nowrap}
 .site-nav a:hover,.feature a:hover{text-decoration:underline;text-underline-offset:4px}
@@ -28,7 +27,7 @@ button{cursor:pointer}
 .eyebrow-light{color:#d2e6ca;display:flex;align-items:center;gap:9px}
 .eyebrow-dot{width:8px;height:8px;background:var(--lime);border-radius:50%}
 h1,h2,h3,p{margin-top:0}
-h1,h2,h3{font-family:'Manrope',system-ui,sans-serif}
+h1,h2,h3{font-family:system-ui,-apple-system,sans-serif}
 h1{font-size:clamp(2.85rem,5.15vw,5rem);line-height:1.11;font-weight:800;letter-spacing:-.07em;margin:0 0 23px}
 h1 em{font-style:normal;color:var(--lime)}
 .hero-lede{color:#d3e3dd;max-width:550px;font-size:1.05rem;line-height:1.7;margin:0 0 29px}
@@ -50,7 +49,7 @@ h1 em{font-style:normal;color:var(--lime)}
 .art-card-top{top:24px;right:1%}
 .art-card-bottom{bottom:23px;left:2%;background:#e5f3d0}
 .art-card-label{display:block;font-size:.62rem;font-weight:800;letter-spacing:.15em;color:#638073}
-.art-card strong{display:block;font:800 2.4rem/1.15 'Manrope',sans-serif;letter-spacing:-.08em;margin-top:8px}
+.art-card strong{display:block;font:800 2.4rem/1.15 system-ui,sans-serif;letter-spacing:-.08em;margin-top:8px}
 .art-card strong span{font-size:.9rem;letter-spacing:0}
 .art-card small{display:block;margin-top:7px;font-size:.65rem;color:#587160}
 .art-line{display:block;height:3px;width:80px;margin-top:14px;background:linear-gradient(90deg,#3d8664 65%,#dce8d3 65%);border-radius:10px}
@@ -135,7 +134,7 @@ button:disabled{opacity:.6;cursor:wait}
 #draft-status:not(:empty){font-weight:700;color:#2b7153}
 .footer{background:#10362f;color:#e0eae3;padding-block:35px}
 .footer-inner{display:flex;justify-content:space-between;gap:32px}
-.footer strong{font:800 1.2rem 'Manrope',sans-serif;letter-spacing:-.04em}
+.footer strong{font:800 1.2rem system-ui,sans-serif;letter-spacing:-.04em}
 .footer p{font-size:.76rem;color:#b3d0be;margin:5px 0 0;max-width:350px}
 :focus-visible{outline:3px solid #d49b3c;outline-offset:3px}
 [hidden]{display:none!important}
