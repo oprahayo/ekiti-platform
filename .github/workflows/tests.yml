@@ -48,6 +48,9 @@ jobs:
       - run: npm run test:postgis
       - run: psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f scripts/coverage.sql
 
+      - name: Build isolated administrative demo
+        run: npm run build:admin
+
       - name: Test the browser against the Worker and PostGIS reader
         env:
           CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE: postgres://location_browser:ci@127.0.0.1:5432/ekiti_test
@@ -56,3 +59,12 @@ jobs:
           npm run staging:check
           npx playwright install --with-deps chromium
           npm run test:browser
+          npm run test:admin:browser
+      - name: Save actual admin desktop/mobile screenshots for review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: admin-visual-review
+          path: test-results/admin-review/
+          if-no-files-found: ignore
+          retention-days: 3
