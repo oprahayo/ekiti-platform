@@ -714,3 +714,127 @@ button { min-height: 44px; border-radius: var(--radius-input); font-size: 14px; 
   .published-rating-summary { gap: var(--s-2); }
   .rating-stars { font-size: 17px; letter-spacing: 1px; }
 }
+
+/* Text-only mobile chat refresh. Familiar messaging layout, not a clone of an app. */
+:root {
+  --chat-bg: #f5f7f4;
+  --chat-own: #ddf4e5;
+  --chat-own-text: #153c2b;
+  --chat-bot-border: #e6ebea;
+}
+:root[data-theme="dark"] {
+  --chat-bg: #101b1e;
+  --chat-own: #254d40;
+  --chat-own-text: #effbf4;
+  --chat-bot-border: #304145;
+}
+.chat-app-header{height:60px;min-height:60px}
+.chat-app-header .wordmark{font-size:23px}
+.chat-page,.civic-conversation-page{
+  min-height:calc(100dvh - 70px - var(--nav-height) - env(safe-area-inset-bottom));
+  background:var(--chat-bg);
+  padding:0 14px calc(var(--nav-height) + env(safe-area-inset-bottom) + 122px);
+}
+.chat-conversation-top{
+  display:flex;gap:12px;align-items:center;min-height:72px;padding:11px 2px;
+  margin:0 0 12px;border-bottom:1px solid var(--border);
+}
+.chat-avatar{width:42px;height:42px;flex:0 0 42px;display:grid;place-items:center;
+  border-radius:50%;background:#247358;color:#fff;font-size:25px;font-weight:700}
+.chat-contact{min-width:0;flex:1}
+.chat-contact h1{font-size:17px;font-weight:650;line-height:1.2;letter-spacing:-.02em}
+.chat-contact p{font-size:12px;color:var(--text-secondary);margin-top:4px;line-height:1.4}
+.chat-clear{border:0;background:transparent;color:var(--accent);font-size:12px;font-weight:600;
+  padding:8px;flex:0 0 auto}
+.chat-day-label{align-self:center;font-size:11px;color:var(--text-tertiary);
+  background:color-mix(in srgb,var(--surface) 75%,transparent);border:1px solid var(--border);
+  border-radius:20px;padding:4px 12px;margin:2px 0 8px}
+.chat-thread,.conversation-history{display:flex;flex-direction:column;align-items:stretch;gap:11px;
+  margin-top:0;min-width:0}
+.chat-exchange{display:contents}
+.chat-bubble,.conversation-turn{
+  width:fit-content;min-width:0;max-width:min(88%,540px);
+  padding:10px 13px;border-radius:16px;
+  font-size:14px;line-height:1.52;overflow-wrap:anywhere;white-space:pre-wrap;
+  box-shadow:0 1px 2px rgba(13,40,26,.045);
+}
+.chat-bubble p,.conversation-turn p{font-size:14px;line-height:1.52;margin:0}
+.chat-bot,.chat-answer,.turn-assistant{
+  align-self:flex-start;width:fit-content;max-width:min(90%,550px);
+  background:var(--surface);color:var(--text-primary);
+  border:1px solid var(--chat-bot-border);border-bottom-left-radius:5px;
+  padding:10px 13px;
+}
+.chat-question,.turn-user{
+  align-self:flex-end;background:var(--chat-own);color:var(--chat-own-text);
+  border:1px solid color-mix(in srgb,var(--chat-own) 75%,#92b9a3);
+  border-bottom-right-radius:5px;padding:10px 13px;
+}
+.turn-assistant p{margin-top:4px}
+.conversation-author{display:block;color:var(--positive);font-size:11px;font-weight:700;
+  margin-bottom:3px;line-height:1.25}
+.chat-intro-bubble small{display:block;color:var(--text-tertiary);font-size:11px;
+  line-height:1.4;margin-top:7px}
+.chat-quick-replies{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 14px;
+  align-self:flex-start;max-width:100%}
+.chat-quick-replies button,.chat-quick-replies a{
+  display:inline-flex;align-items:center;justify-content:center;
+  background:var(--surface);border:1px solid #88b8a3;color:var(--positive);
+  border-radius:18px;min-height:44px;padding:10px 12px;font-size:13px;
+  font-weight:600;line-height:1.25;text-decoration:none;cursor:pointer}
+.chat-quick-replies a:focus-visible,.chat-quick-replies button:focus-visible{outline-offset:2px}
+.chat-answer .answer-sources{margin-top:12px;padding-top:9px;white-space:normal}
+.chat-answer .answer-sources a{font-size:12px;line-height:1.35}
+.chat-answer .answer-disclaimer{font-size:11px;line-height:1.5;margin-top:8px}
+.chat-answer .metadata{font-size:10px;margin-top:8px;display:block}
+.chat-compose-row,.ask-input-row{display:flex;align-items:flex-end;gap:8px;width:100%}
+.ask-composer,.conversation-composer{
+  position:fixed;bottom:calc(var(--nav-height) + env(safe-area-inset-bottom));
+  left:0;right:0;max-width:740px;margin-inline:auto;z-index:25;
+  padding:10px 12px;background:var(--chat-bg);
+  border-top:1px solid var(--border);
+}
+.ask-input-row .ask-bar,.chat-compose-row textarea{
+  flex:1;min-width:0;min-height:48px;max-height:130px;
+  border:1px solid var(--border);background:var(--surface);
+  border-radius:23px;padding:9px 14px;box-shadow:none
+}
+.ask-input-row .ask-bar{padding:0 13px;display:flex;align-items:center}
+.ask-bar input[type="search"]{font-size:16px;min-height:46px;height:46px;width:100%;
+  padding:8px 0;border:0;background:transparent;outline:0}
+.ask-bar:focus-within{outline:2px solid var(--focus);outline-offset:1px}
+.chat-compose-row textarea{resize:none;font:inherit;font-size:16px;line-height:1.45;
+  height:48px;min-height:48px;padding:12px 14px}
+.send-button,.conversation-send{
+  flex:0 0 auto;min-width:52px;height:48px;min-height:48px;
+  display:inline-flex;align-items:center;justify-content:center;
+  background:#226d50;color:#fff;border:1px solid #226d50;
+  border-radius:24px;padding:0 15px;font-weight:650;font-size:13px;
+}
+.send-button{width:48px;min-width:48px;padding:0}
+.send-button:disabled,.conversation-send:disabled{opacity:.4}
+.chat-save-status{display:block;margin:3px 0 0 12px;font-size:10px;min-height:10px}
+.chat-page .ask-composer{min-height:68px}
+.civic-conversation-page .conversation-heading{margin-bottom:13px}
+.civic-conversation-page .conversation-history{margin-bottom:14px}
+.conversation-support{margin-top:16px;border:1px solid var(--border);border-radius:14px;
+  padding:12px;background:var(--surface)}
+.conversation-support label{margin:0 0 8px}
+.conversation-shortcut{margin:8px 0}
+.conversation-review{background:var(--surface);border:1px solid var(--border);
+  border-radius:14px;padding:16px;margin-top:15px}
+.conversation-foot{margin:10px 0 14px}
+.conversation-foot .text-link{font-size:12px}
+.conversation-example{background:var(--surface);border-radius:14px;
+  padding:15px;border:1px solid var(--border)}
+.saved-draft-note{border-radius:8px}
+@media(max-width:359px){
+  .chat-page,.civic-conversation-page{padding-inline:9px}
+  .chat-avatar{width:36px;height:36px;flex-basis:36px;font-size:21px}
+  .chat-contact h1{font-size:16px}
+  .chat-quick-replies{gap:6px}
+  .chat-quick-replies button,.chat-quick-replies a{font-size:12px;padding:9px}
+  .ask-composer,.conversation-composer{padding:8px}
+  .chat-bubble,.conversation-turn{max-width:94%}
+}
+@media(prefers-reduced-motion:reduce){.chat-bubble,.conversation-turn{transition:none}}

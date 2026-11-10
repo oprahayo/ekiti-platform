@@ -1,8 +1,7 @@
 import * as React from 'react';
 import { Link } from 'react-router';
 import { lgas } from './fixtures.ts';
-import { useApp, speechSupported } from './state.tsx';
-import { playAnswer, stopSpeech } from './speech.ts';
+import { useApp } from './state.tsx';
 import {
   DRAFT_STORAGE_KEY, OLD_DRAFT_STORAGE_KEY, startConversation, readConversation,
   submitLine, chooseArea, revise, markDownloaded, draftAsText,
@@ -37,7 +36,7 @@ function saveText(text: string) {
   window.setTimeout(() => URL.revokeObjectURL(url), 1200);
 }
 export default function Report() {
-  const { language, openVoice, reportSpeech, setReportSpeech, pendingReportText, setPendingReportText } = useApp();
+  const { language, pendingReportText, setPendingReportText } = useApp();
   const [state, setState] = React.useState<Conversation>(readConversation);
   const [input, setInput] = React.useState('');
   const [areas, setAreas] = React.useState<AreaName[]>([...lgas]);
@@ -47,7 +46,6 @@ export default function Report() {
   const [positionNote, setPositionNote] = React.useState('');
   const [mapOpen, setMapOpen] = React.useState(false);
   const [checking, setChecking] = React.useState(false);
-  const [audioNote, setAudioNote] = React.useState('');
   const [photo, setPhoto] = React.useState<string | null>(null);
   const [photoNote, setPhotoNote] = React.useState('');
   const end = React.useRef<HTMLDivElement>(null);
@@ -74,16 +72,12 @@ export default function Report() {
     return () => clearTimeout(timer);
   }, [state]);
   React.useEffect(() => {
-    if (!reportSpeech) return;
-    setInput(reportSpeech); setReportSpeech(''); editor.current?.focus();
-  }, [reportSpeech, setReportSpeech]);
-  React.useEffect(() => {
     if (!pendingReportText) return;
     setState(current => current.stage === 'describe' ? submitLine(current, pendingReportText, areas) : current);
     setPendingReportText('');
   }, [pendingReportText, setPendingReportText, areas]);
   React.useEffect(() => { end.current?.scrollIntoView({ block: 'nearest' }); }, [state.lines.length, state.stage]);
-  React.useEffect(() => () => { if (photo) URL.revokeObjectURL(photo); stopSpeech(); }, [photo]);
+  React.useEffect(() => () => { if (photo) URL.revokeObjectURL(photo); }, [photo]);
 
   const send = (value = input) => {
     if (!value.trim()) return;
@@ -92,7 +86,7 @@ export default function Report() {
   };
   const clear = () => {
     if (!window.confirm('Clear this private draft and conversation from your device?')) return;
-    setState(startConversation()); setInput(''); setPosition(null); setPhoto(null); setAudioNote('');
+    setState(startConversation()); setInput(''); setPosition(null); setPhoto(null);
     try { localStorage.removeItem(DRAFT_STORAGE_KEY); localStorage.removeItem(OLD_DRAFT_STORAGE_KEY); }
     catch { /* In-memory draft still cleared. */ }
   };
@@ -148,14 +142,15 @@ export default function Report() {
       setPhotoNote('Photo preview prepared locally without original EXIF metadata. It is not uploaded or attached to the text draft.');
     } catch { setPhotoNote('Could not preview the photo; the text draft still works.'); }
   };
-  const lastAssistant = [...state.lines].reverse().find(line => line.role === 'assistant');
   const writing = ['describe', 'location', 'details'].includes(state.stage);
 
   return <main className="page civic-conversation-page report-page" id="main">
-    <header className="page-heading conversation-heading">
-      <p className="eyebrow">Ekiti Civic / Reports</p>
-      <h1>{language === 'yo' ? 'Ṣàlàyé ohun tó ṣẹlẹ̀' : 'Tell me what happened'}</h1>
-      <p className="help-text">Private draft only · No submission or tracking reference</p>
+    <header className="chat-conversation-top conversation-heading">
+      <span className="chat-avatar" aria-hidden="true">e</span>
+      <div className="chat-contact">
+        <h1>{language === 'yo' ? 'Ṣàlàyé ohun tó ṣẹlẹ̀' : 'Tell me what happened'}</h1>
+        <p>Private chat draft · Not submitted</p>
+      </div>
     </header>
     <div className="conversation-history" role="log" aria-live="polite" aria-label="Report preparation conversation" aria-relevant="additions text">
       {state.lines.map(line => <div key={line.id} className={'conversation-turn turn-' + line.role}>
@@ -231,27 +226,22 @@ export default function Report() {
         <Link to="/track">How tracking will work</Link>
       </div>}
     </section>}
-    {writing && <form className="conversation-composer" onSubmit={event => { event.preventDefault(); send(); }}>
+    {writing && <form className="conversation-composer chat-composer" onSubmit={event => { event.preventDefault(); send(); }}>
       <label className="visually-hidden" htmlFor="report-message">Your reply</label>
-      <textarea ref={editor} id="report-message" rows={2} maxLength={4000} value={input}
-        onChange={event => setInput(event.target.value)}
-        onKeyDown={event => {
-          if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
-            event.preventDefault(); send();
-          }
-        }} placeholder={state.stage === 'location' ? 'Type an LGA, e.g. Ido/Osi' :
-          state.stage === 'details' ? 'Add details, or say skip' : 'Describe what happened…'} />
-      <div className="conversation-composer-actions">
-        <span className="metadata">{savedNote}</span>
-        {speechSupported() && <button type="button" className="icon-control" onClick={openVoice} aria-label="Reply using microphone">🎙</button>}
-        <button type="submit" className="conversation-send" disabled={!input.trim()}>Reply ↑</button>
+      <div className="chat-compose-row">
+        <textarea ref={editor} id="report-message" rows={1} maxLength={4000} value={input}
+          onChange={event => setInput(event.target.value)}
+          onKeyDown={event => {
+            if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
+              event.preventDefault(); send();
+            }
+          }} placeholder={state.stage === 'location' ? 'Type an LGA, e.g. Ido/Osi' :
+            state.stage === 'details' ? 'More details, or type skip…' : 'Type your message…'} />
+        <button type="submit" className="conversation-send" disabled={!input.trim()}>Send</button>
       </div>
+      <span className="metadata chat-save-status" role="status">{savedNote}</span>
     </form>}
     <div className="conversation-foot">
-      {lastAssistant && <button type="button" className="text-link" onClick={() => {
-        setAudioNote(playAnswer(localPrompt(lastAssistant.text, language), language).message);
-      }}>Listen to assistant</button>}
-      {audioNote && <p role="status" className="metadata">{audioNote}</p>}
       <button type="button" className="text-link clear-conversation" onClick={clear}>Clear private draft and conversation</button>
     </div>
   </main>;
