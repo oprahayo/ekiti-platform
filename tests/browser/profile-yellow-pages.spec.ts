@@ -112,7 +112,7 @@ test('reviewed listing supports local bookmarks and honest customer review draft
   await page.locator('#directory-review-text').fill('A detailed experience written for browser testing only.');
   await page.getByRole('button', { name: 'Save private review draft' }).click();
   await expect(page.getByText(/Saved on this browser only/)).toBeVisible();
-  await page.getByRole('link', { name: 'Citizen profile' }).click();
+  await page.getByRole('link', { name: 'Profile', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Saved listings: 1' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Unpublished review drafts: 1' })).toBeVisible();
   await page.getByRole('button', { name: 'Unpublished review drafts: 1' }).click();
