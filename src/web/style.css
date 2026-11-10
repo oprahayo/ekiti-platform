@@ -50,7 +50,7 @@ button { cursor: pointer; }
 .context-data { display: flex; flex-wrap: wrap; gap: 8px 25px; }
 .context-data p { margin: 0; font-size: .79rem; color: #476053; }
 .context-data strong { color: var(--ink); font-size: 1.2rem; margin-right: 4px; font-family: Georgia,serif; }
-.context-attribution { color: #657568; margin: 8px 0 0; font-size: .71rem; }
+.context-attribution { color: #51655a; margin: 8px 0 0; font-size: .71rem; }
 .landscape { display: none; }
 .availability { border-bottom: 1px solid var(--rule); padding-block: 17px; display: flex; gap: 5px; flex-direction: column; }
 .availability strong { font-size: .86rem; color: var(--red); }
