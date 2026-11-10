@@ -3,6 +3,7 @@ import { BrowserRouter, Link, NavLink, Route, Routes, useLocation, useNavigate }
 import { demoMetrics, lgas } from './fixtures.ts';
 import { Home, Ask } from './AskExperience.tsx';
 import { AppProvider, speechSupported, useApp } from './state.tsx';
+import { CitizenAuthProvider } from './CitizenAuth.tsx';
 
 const Report = React.lazy(() => import('./Report.tsx'));
 const Track = React.lazy(() => import('./TrackConversation.tsx'));
@@ -157,5 +158,5 @@ function Shell() {
 }
 
 export default function App() {
-  return <BrowserRouter><AppProvider><Shell /></AppProvider></BrowserRouter>;
+  return <BrowserRouter><CitizenAuthProvider><AppProvider><Shell /></AppProvider></CitizenAuthProvider></BrowserRouter>;
 }

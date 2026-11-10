@@ -3,6 +3,8 @@ import { Link, useSearchParams } from 'react-router';
 import { useApp } from './state.tsx';
 import { readReviewDrafts, deleteReviewDraft, type ReviewDraft } from './citizen-local.ts';
 import InfoDialog, { AboutContent } from './InfoDialog.tsx';
+import CitizenSignIn from './CitizenSignIn.tsx';
+import { useCitizenAuth } from './CitizenAuth.tsx';
 
 type Popup = 'about' | 'signin' | 'listing' | 'notifications' | null;
 interface SavedPlace {
@@ -25,6 +27,7 @@ function MenuRow({ title, description, onClick, href, symbol }: {
 
 export default function CitizenProfile() {
   const { savedPlaceIds, toggleSavedPlace, clearSavedPlaces } = useApp();
+  const auth = useCitizenAuth();
   const [params, setParams] = useSearchParams();
   const view = params.get('view');
   const [popup, setPopup] = React.useState<Popup>(null);
@@ -32,6 +35,9 @@ export default function CitizenProfile() {
   const [saved, setSaved] = React.useState<SavedPlace[]>([]);
   const [missing, setMissing] = React.useState(0);
   const [loading, setLoading] = React.useState(false);
+  const [accountReviews,setAccountReviews] = React.useState<{place_id:string;stars:number;status:string;updated_at:string}[]>([]);
+  const [accountClaims,setAccountClaims] = React.useState<{place_id:string;status:string;requested_at:string}[]>([]);
+  const [accountStatus,setAccountStatus] = React.useState('');
   const count = Object.keys(drafts).length;
 
   React.useEffect(() => {
@@ -55,7 +61,28 @@ export default function CitizenProfile() {
     return () => controller.abort();
   }, [view, savedPlaceIds]);
 
-  const setView = (value: 'saved' | 'reviews' | '') => {
+  React.useEffect(() => {
+    if (!auth.account || (view !== 'reviews' && view !== 'claims')) {
+      setAccountReviews([]);setAccountClaims([]);setAccountStatus('');
+      return;
+    }
+    let cancelled = false;
+    setAccountStatus('Checking your private account activity…');
+    const task = view === 'reviews'
+      ? auth.rpc<typeof accountReviews>('civic_my_reviews',{})
+      : auth.rpc<typeof accountClaims>('civic_my_claims',{});
+    void task.then(result => {
+      if (cancelled) return;
+      if (view === 'reviews') setAccountReviews(result as typeof accountReviews);
+      else setAccountClaims(result as typeof accountClaims);
+      setAccountStatus('');
+    }).catch(() => {
+      if (!cancelled) setAccountStatus('Private activity is not available until moderation services are activated.');
+    });
+    return () => { cancelled = true; };
+  }, [auth.account?.id, view]);
+
+  const setView = (value: 'saved' | 'reviews' | 'claims' | '') => {
     setParams(value ? { view: value } : {});
     if (value === 'reviews') setDrafts(readReviewDrafts());
   };
@@ -71,8 +98,8 @@ export default function CitizenProfile() {
         </svg>
       </div>
       <h1>Citizen Profile</h1>
-      <p>Guest browsing · Your device only</p>
-      <button type="button" className="profile-signin" onClick={() => setPopup('signin')}>Sign in or create an account</button>
+      <p>{auth.account ? 'Email-verified account · Not government identity verification' : 'Guest browsing · Your device only'}</p>
+      <button type="button" className="profile-signin" onClick={() => setPopup('signin')}>{auth.account ? 'Account: ' + auth.account.email : 'Sign in or create an account'}</button>
     </div>
 
     <div className="profile-counts" aria-label="Local profile counts">
@@ -118,10 +145,32 @@ export default function CitizenProfile() {
         <div><Link to={'/places/' + id}>Open listing</Link>
           <button type="button" className="text-link" onClick={() => removeDraft(id)}>Delete local draft</button></div>
       </div>)}
+      {auth.account && <div className="profile-account-activity">
+        <h3>Reviews sent for moderation</h3>
+        {accountStatus && <p role="status" className="note">{accountStatus}</p>}
+        {accountReviews.length === 0 && !accountStatus && <p className="note">No submitted reviews on your account yet.</p>}
+        {accountReviews.map(review => <div className="profile-review-entry" key={review.place_id}>
+          <p><strong>{review.stars} out of 5 stars</strong> · <span className="metadata">Status: {review.status}</span></p>
+          <Link to={'/places/' + review.place_id}>View listing</Link>
+        </div>)}
+      </div>}
+    </section>}
+
+    {view === 'claims' && <section className="profile-subview" aria-label="My ownership requests">
+      <div className="profile-subview-heading"><h2>My listing claims</h2>
+        <button type="button" className="text-link" onClick={() => setView('')}>Back to profile</button></div>
+      {accountStatus && <p className="note" role="status">{accountStatus}</p>}
+      {accountClaims.length === 0 && !accountStatus && <p className="note">No submitted ownership requests yet.</p>}
+      {accountClaims.map(claim => <div className="profile-saved-entry" key={claim.place_id}>
+        <Link to={'/places/' + claim.place_id}>View listing</Link>
+        <small>{claim.status === 'verified' ? 'Ownership claim reviewed' : 'Request status: ' + claim.status}</small>
+      </div>)}
+      <p className="metadata">A verified email is not proof of business ownership; claims need review.</p>
     </section>}
 
     {!view && <nav className="profile-menu" aria-label="Profile services">
-      <MenuRow title="My Listings" description="Register, claim, and manage a business" symbol="⌂" onClick={() => setPopup('listing')}/>
+      <MenuRow title="My Listings" description={auth.account ? 'Check your ownership requests' : 'Learn about registering and claiming'} symbol="⌂"
+        onClick={() => auth.account ? setView('claims') : setPopup('listing')}/>
       <MenuRow title="Saved Listings" description="Published businesses saved on this device" symbol="☆" onClick={() => setView('saved')}/>
       <MenuRow title="My Reviews" description="Unpublished drafts on this device" symbol="★" onClick={() => setView('reviews')}/>
       <MenuRow title="Account Details" description="Sign in when identity verification launches" symbol="♙" onClick={() => setPopup('signin')}/>
@@ -132,19 +181,14 @@ export default function CitizenProfile() {
 
     <p className="profile-footer">Independent civic project · Not a government service</p>
 
-    {popup && <InfoDialog title={{
+    {popup === 'signin' && <CitizenSignIn onClose={() => setPopup(null)}/>} 
+    {popup && popup !== 'signin' && <InfoDialog title={{
       about: 'About Ekiti Civic',
       signin: 'Sign in & Citizen Profile',
       listing: 'Business listing & ownership',
       notifications: 'Notifications',
     }[popup]} onClose={() => setPopup(null)}>
       {popup === 'about' && <AboutContent />}
-      {popup === 'signin' && <div className="about-dialog-copy">
-        <p>Guest browsing works today, without creating an account or sharing your personal details.</p>
-        <p>Verified citizen sign-in is not active. We will not collect a password, phone number or identity document in an unconnected form.</p>
-        <p className="privacy-notice">When authentication is approved, account access will support listing claims, review moderation, and private case tracking.</p>
-        <button type="button" className="quiet-action" onClick={() => setPopup(null)}>Continue as guest</button>
-      </div>}
       {popup === 'listing' && <div className="about-dialog-copy">
         <p>We are preparing owner-claimed Yellow Pages listings with photos, verified addresses, and optional map locations.</p>
         <p>Ownership verification, submissions and business management are not accepting data yet. Existing sourced directory entries do not imply an owner has registered.</p>

@@ -5,6 +5,7 @@ import {
   PublicQueryError, parseDirectoryFilters, parseKnowledgeFilters, parsePublicPlaceId,
   searchKnowledge, searchPlaces, getPlace, type DirectoryFilters, type KnowledgeFilters,
 } from './public-data.ts';
+import { parsePublicReviews, publicReviews, type ReviewFilters } from './reviews.ts';
 
 interface Env {
   HYPERDRIVE: { connectionString: string };
@@ -85,8 +86,9 @@ export default {
     const ask = url.pathname === '/api/ask';
     const knowledge = url.pathname === '/api/knowledge';
     const places = url.pathname === '/api/places';
-    const place = url.pathname.startsWith('/api/places/');
-    const isPublicData = knowledge || places || place;
+    const reviews = url.pathname.startsWith('/api/places/') && url.pathname.endsWith('/reviews');
+    const place = url.pathname.startsWith('/api/places/') && !reviews;
+    const isPublicData = knowledge || places || place || reviews;
     if ((!directory && !ask && !isPublicData && url.pathname !== '/api/resolve') ||
       (!isPublicData && url.search))
       return json({ error: 'Unknown route' }, 404);
@@ -103,10 +105,12 @@ export default {
       let point = null;
       let filters: KnowledgeFilters | DirectoryFilters | null = null;
       let placeId: string | null = null;
+      let reviewFilters: ReviewFilters | null = null;
       if (isPublicData) {
         try {
           if (knowledge) filters = parseKnowledgeFilters(url.searchParams);
           else if (places) filters = parseDirectoryFilters(url.searchParams);
+          else if (reviews) reviewFilters = parsePublicReviews(url.pathname,url.searchParams);
           else {
             if (url.search) throw new PublicQueryError();
             placeId = parsePublicPlaceId(url.pathname);
@@ -141,6 +145,10 @@ export default {
         if (places)
           return json({ items: await searchPlaces(client, filters as DirectoryFilters),
             reviewedOnly: true });
+        if (reviews) {
+          const record = await publicReviews(client,reviewFilters!);
+          return record ? json(record) : json({ error: 'Published listing not found' },404);
+        }
         if (place) {
           const record = await getPlace(client, placeId!);
           return record ? json({ item: record, reviewedOnly: true }) :
