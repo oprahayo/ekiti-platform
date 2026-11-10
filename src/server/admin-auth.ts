@@ -24,13 +24,15 @@ export class AdminAuthError extends Error {
 function record(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value);
 }
-function binary(value: string): Uint8Array {
+function binary(value: string): Uint8Array<ArrayBuffer> {
   if (!value || value.length > 8192 || !/^[A-Za-z0-9_-]+$/.test(value))
     throw new AdminAuthError();
   const normal = value.replace(/-/g, '+').replace(/_/g, '/');
   try {
     const data = atob(normal + '='.repeat((4 - normal.length % 4) % 4));
-    return Uint8Array.from(data, char => char.charCodeAt(0));
+    const bytes = new Uint8Array(new ArrayBuffer(data.length));
+    for (let i = 0; i < data.length; i++) bytes[i] = data.charCodeAt(i);
+    return bytes;
   } catch { throw new AdminAuthError(); }
 }
 function jsonPart(part: string): Record<string, unknown> {
