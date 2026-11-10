@@ -99,9 +99,9 @@ export function normalize(text: string): string {
 export function topicFor(question: string): Topic {
   const q = normalize(question);
   const matches: [Topic, RegExp][] = [
-    ['capital', /\\b(capital|olu ilu|olu- ilu|headquarters of ekiti)\\b/],
-    ['history', /\\b(history|created|creation|founded|origin|itan|idasile)\\b/],
-    ['governor', /\\b(governor|governorship|oyebanji|gomina|gomina ekiti)\\b/],
+    ['capital', /\b(capital|olu ilu|olu- ilu|headquarters of ekiti)\b/],
+    ['history', /\b(history|created|creation|founded|origin|itan|idasile)\b/],
+    ['governor', /\b(governor|governorship|oyebanji|gomina|gomina ekiti)\b/],
     ['lga', /\b(lga|lgas|local government|wards?|ijoba ibile|ijoba ibile melo|meloo ni|melo ni|iye ijoba)\b/],
     ['news', /\b(news|latest|today|happening|happen|recent|updates?|iroyin|kini n sele|ki lo n sele|loni|lowolowo)\b/],
     ['budget', /\b(budget|finance|expenditure|appropriation|revenue|isuna|owo ijoba)\b/],
