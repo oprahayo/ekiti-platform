@@ -93,6 +93,13 @@ test('offline shell preserves the locally saved description after an airplane-mo
   await page.evaluate(async () => {
     if (!('serviceWorker' in navigator)) throw new Error('Service workers required for this test');
     await navigator.serviceWorker.ready;
+  });
+  // The first document was loaded before service worker control. An online
+  // reload establishes a controlled page before simulating airplane mode.
+  await page.reload();
+  await page.waitForFunction(() => Boolean(navigator.serviceWorker.controller));
+  await expect(page.locator('#incident-description')).toHaveValue(description);
+  await page.evaluate(async () => {
     await new Promise<void>((resolve, reject) => {
       const started = Date.now();
       const check = async () => {
