@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test('Home has exactly three primary interactive blocks and independent identity', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Welcome to Ekiti' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Welcome to Ekiti Civic' })).toBeVisible();
   await expect(page.locator('.home-actions > *')).toHaveCount(3);
   await expect(page.getByRole('searchbox', { name: 'Ask about Ekiti' })).toBeVisible();
   await expect(page.getByRole('link', { name: /Report a problem/ })).toBeVisible();
@@ -41,7 +41,7 @@ for (const width of [280, 320, 360, 375, 390, 428, 768, 1024, 1440]) {
 
 test('five-tab navigation supports direct deep links', async ({ page }) => {
   for (const [path, heading] of [
-    ['/ask', 'What would you like to know?'],
+    ['/ask', 'Ask anything about Ekiti'],
     ['/explore', 'Explore Ekiti'],
     ['/report', 'What happened?'],
     ['/track', 'Follow a report'],
@@ -63,8 +63,8 @@ test('Ask is editable and clear about demo sources and uncertainty', async ({ pa
   await input.fill('How many local government areas?');
   await input.press('Enter');
   await expect(page.getByText(/16 local government areas/)).toBeVisible();
-  await expect(page.getByText(/Project geographic directory · staging data/)).toBeVisible();
-  await expect(page.getByText('This is a preview, not a live AI answer.')).toBeVisible();
+  await expect(page.getByRole('link', { name: /Ekiti State — government overview/ })).toBeVisible();
+  await expect(page.getByText(/not a full generative AI conversation/)).toBeVisible();
 });
 
 test('Explore filters survive tab changes; all data is identified as demo', async ({ page }) => {
@@ -118,13 +118,11 @@ test('Track requires a token, never puts it in a URL, and labels all events as e
 
 test('theme toggle works, independent of system settings', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Settings' }).click();
-  await page.getByRole('button', { name: 'Use dark mode' }).click();
+  await page.getByRole('button', { name: 'Switch to dark mode' }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-  await page.getByRole('button', { name: 'Settings' }).click();
-  await page.getByRole('button', { name: 'Use light mode' }).click();
+  await page.getByRole('button', { name: 'Switch to light mode' }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
 });
 
@@ -173,7 +171,7 @@ test('voice closes to originating Home screen and falls back to typing after no 
   await expect(page.getByRole('dialog', { name: 'Speak now' })).toBeVisible();
   await page.getByRole('button', { name: 'Close voice mode' }).click();
   await expect(page).toHaveURL(/\/$/);
-  await expect(page.getByRole('heading', { name: 'Welcome to Ekiti' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Welcome to Ekiti Civic' })).toBeVisible();
   await page.getByRole('button', { name: 'Open voice mode' }).click();
   await page.getByRole('button', { name: 'Start voice input' }).click();
   await expect(page.getByText("Didn't catch that")).toBeVisible();
