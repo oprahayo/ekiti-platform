@@ -65,35 +65,19 @@ export async function createPrivateReport(
   try {
     await db.query('BEGIN');
     active = true;
-    // The geography directory is a read-only reference for this writer.
-    const lga = await db.query<{ id: string }>(
-      "SELECT id FROM geo.areas WHERE id = $1 AND area_kind = 'lga' AND verification_state = 'verified'",
-      [input.lgaId],
-    );
-    if (lga.rows.length !== 1) throw new CaseStoreError('invalid_location');
-    if (input.wardId) {
-      const ward = await db.query<{ id: string }>(
-        "SELECT id FROM geo.areas WHERE id = $1 AND area_kind = 'ward' AND parent_id = $2",
-        [input.wardId, input.lgaId],
-      );
-      if (ward.rows.length !== 1) throw new CaseStoreError('invalid_location');
-    }
-    const result = await db.query<{ id: string; public_reference: string; received_at: string }>(
-      `INSERT INTO civic_private.reports (
-         request_id, request_fingerprint, tracking_secret_digest,
-         kind, description, lga_id, ward_id, place, consent_policy_version, delete_at
-       ) VALUES (
-         $1::uuid, decode($2,'hex'), decode($3,'hex'), $4, $5, $6, $7, $8, $9,
-         now() + ($10::int * interval '1 day')
-       ) RETURNING id, public_reference, received_at`,
+    // The application role has only EXECUTE on this audited function.
+    // Its SECURITY DEFINER owner enforces verified LGA/ward membership,
+    // retention bounds, immutable intake and initial event atomically.
+    const result = await db.query<{ public_reference: string; received_at: string }>(
+      `SELECT public_reference, received_at
+         FROM civic_private.accept_private_report(
+           $1::uuid, decode($2,'hex'), decode($3,'hex'),
+           $4, $5, $6, $7, $8, $9, $10::integer
+         )`,
       [input.clientRequestId, fingerprintHex, digestHex, input.kind, input.description,
         input.lgaId, input.wardId, input.place, input.consentPolicyVersion, retentionDays],
     );
     if (result.rows.length !== 1) throw new CaseStoreError('unavailable');
-    await db.query(
-      "INSERT INTO civic_private.case_events (report_id,kind,actor_kind) VALUES ($1,'intake_accepted','system')",
-      [result.rows[0].id],
-    );
     await db.query('COMMIT');
     active = false;
     return {
@@ -112,6 +96,7 @@ export async function createPrivateReport(
     const code = (error as { code?: string } | null)?.code;
     // A request ID already processed cannot be replayed to recover a secret.
     if (code === '23505') throw new CaseStoreError('duplicate_request');
+    if (code === '22023') throw new CaseStoreError('invalid_location');
     throw new CaseStoreError('unavailable');
   }
 }
@@ -125,18 +110,12 @@ export async function readPrivateTimeline(
   db: Queryable, reference: string, secret: string,
 ): Promise<PrivateTimeline> {
   const digest = await secretDigestHex(secret);
-  const report = await db.query<{ id: string }>(
-    `SELECT id FROM civic_private.reports WHERE public_reference=$1::uuid
-       AND tracking_secret_digest=decode($2,'hex') AND delete_at>now()`,
+  const events = await db.query<{ kind: string; at: string }>(
+    `SELECT kind, at
+       FROM civic_private.track_private_report($1::uuid,decode($2,'hex'))`,
     [reference, digest],
   );
-  if (report.rows.length !== 1) throw new CaseStoreError('not_found');
-  const events = await db.query<{ kind: string; at: string }>(
-    `SELECT kind, created_at AS at FROM civic_private.case_events
-       WHERE report_id=$1 AND kind IN ('intake_accepted','under_review','needs_information','closed')
-       ORDER BY id ASC LIMIT 60`,
-    [report.rows[0].id],
-  );
+  if (events.rows.length === 0) throw new CaseStoreError('not_found');
   return {
     reference, platformStatus: 'private_platform_record',
     governmentAcknowledged: false,
