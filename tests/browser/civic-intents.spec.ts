@@ -20,7 +20,7 @@ test('hotel request routes to Explore without presenting fictional hotels as ver
   await expect(page).toHaveURL(/\/explore/);
   await expect(page.locator('#explore-lga')).toHaveValue('ido-osi');
   await expect(page.getByRole('button', { name: 'Hotels' })).toHaveAttribute('aria-pressed', 'true');
-  await expect(page.getByText('Sample listings only. No place below is verified or accepting claims yet.')).toBeVisible();
+  await expect(page.getByText(/Listings appear only after source review/)).toBeVisible();
   await expect(page.getByText('Nothing verified here yet')).toBeVisible();
   await expect(page.locator('.place-row')).toHaveCount(0);
 });
