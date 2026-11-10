@@ -248,6 +248,7 @@ export function createAdminGateway(options: AdminGatewayOptions): (request: Requ
         });
         if (result.result === 'not_found') return notFound();
         if (result.result === 'conflict') return respond({ error: 'Case changed; reload before retrying' }, 409);
+        if (result.result !== 'created' && result.result !== 'replayed') return serviceUnavailable();
         if (!uuid.test(result.eventId) || !Number.isSafeInteger(result.revision) || result.revision < 1)
           return serviceUnavailable();
         return respond({ eventId: result.eventId, revision: result.revision,
