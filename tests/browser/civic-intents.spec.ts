@@ -60,12 +60,15 @@ test('a report microphone returns its transcript to the report composer, not Ask
       }
       abort() {}
     }
-    (window as unknown as { webkitSpeechRecognition: unknown }).webkitSpeechRecognition = Speech;
+    const host = window as unknown as { SpeechRecognition: unknown; webkitSpeechRecognition: unknown };
+    host.SpeechRecognition = Speech;
+    host.webkitSpeechRecognition = Speech;
   });
   await page.goto('/report');
   await page.getByRole('button', { name: 'Reply using microphone' }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
   await page.getByRole('button', { name: 'Start voice input' }).click();
+  await expect(page.getByText('Transcript ready')).toBeVisible();
   await expect(page.locator('#report-message')).toHaveValue('The damaged footbridge needs urgent attention in my area.', { timeout: 5000 });
   await expect(page).toHaveURL(/\/report/);
 });
