@@ -1,9 +1,13 @@
+import { readSavedPlaces, writeSavedPlaces, PLACE_ID } from './citizen-local.ts';
 import type { Language } from '../server/ask-knowledge.ts';
 import * as React from 'react';
 import type { Category } from './fixtures.ts';
 import type { DirectoryIconName } from './DirectoryCategories.tsx';
 
 interface AppState {
+  savedPlaceIds: string[];
+  toggleSavedPlace: (id: string) => void;
+  clearSavedPlaces: () => void;
   language: Language;
   setLanguage: (language: Language) => void;
   dark: boolean;
@@ -41,6 +45,18 @@ export function speechSupported() {
 }
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
+  const [savedPlaceIds, setSavedPlaceIds] = React.useState<string[]>(readSavedPlaces);
+  const toggleSavedPlace = (id: string) => {
+    if (!PLACE_ID.test(id)) return;
+    setSavedPlaceIds(ids => {
+      const updated = ids.includes(id) ? ids.filter(item => item !== id) : [...ids,id].slice(0,60);
+      if (!writeSavedPlaces(updated)) return ids;
+      return updated;
+    });
+  };
+  const clearSavedPlaces = () => {
+    if (writeSavedPlaces([])) setSavedPlaceIds([]);
+  };
   const [dark, setDark] = React.useState(() => {
     try { return localStorage.getItem('ekiti-ui-theme-v2') === 'dark'; }
     catch { return false; }
@@ -70,6 +86,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [dark]);
 
   const value: AppState = {
+    savedPlaceIds, toggleSavedPlace, clearSavedPlaces,
     language, setLanguage,
     dark,
     toggleTheme: () => setDark((value) => !value),
