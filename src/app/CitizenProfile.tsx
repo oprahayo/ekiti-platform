@@ -35,7 +35,7 @@ export default function CitizenProfile() {
   const count = Object.keys(drafts).length;
 
   React.useEffect(() => {
-    if (view !== 'saved' || !savedPlaceIds.length) { setSaved([]); setMissing(0); return; }
+    if (view !== 'saved' || !savedPlaceIds.length) { setSaved([]); setMissing(0); setLoading(false); return; }
     const controller = new AbortController();
     setLoading(true);
     const ids = savedPlaceIds.slice(0, 60);
