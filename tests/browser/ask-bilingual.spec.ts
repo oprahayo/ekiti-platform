@@ -7,7 +7,7 @@ test('English/Yoruba toggle updates centered welcome and persists across reload'
   await expect(page.locator('.chat-quick-replies > *')).toHaveCount(3);
   await page.getByRole('button', { name: 'YOR' }).click();
   await expect(page.getByRole('heading', { name: 'Káàbọ̀ sí Ekiti Civic' })).toBeVisible();
-  await expect(page.getByText('Ẹnu ọ̀nà rẹ sí Ìpínlẹ̀ Èkìtì')).toBeVisible();
+  await expect(page.getByText('Ìjíròrò àkọsílẹ̀ · Ìrànlọ́wọ́ Èkìtì')).toBeVisible();
   await expect(page.getByRole('button', { name: 'YOR' })).toHaveAttribute('aria-pressed', 'true');
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Káàbọ̀ sí Ekiti Civic' })).toBeVisible();
