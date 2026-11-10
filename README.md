@@ -31,6 +31,12 @@ The current launch UI candidate lets residents **talk with Ekiti Civic**, not wo
 
 [Read the first-launch UX, testing and release guardrails](docs/conversational-launch-ui.md).
 
+## Explore Ekiti — illustrated Yellow Pages
+
+Explore now uses a reference-inspired **three-column grid of 24 illustrated service categories**, including all 12 trades in the supplied inspiration plus Ekiti hotels, restaurants, hospitals, schools, nightlife, public offices, markets and tourism. Categories use original black-outline icons with yellow accents, searchable service terms and LGA filtering. Business results remain plain rows. Only approved database entries can be presented as reviewed listings; the existing samples are explicitly fictitious, and map links require reviewed coordinates.
+
+[Explore design, accessibility and directory activation notes](docs/explore-category-grid.md).
+
 ## Development status
 
 The PostGIS resolver accepts citizen-confirmed incident coordinates. The audited GRID3 snapshot covers all 16 LGAs. The INEC reference import contains 177 electoral ward names. Electoral ward polygons await a verified crosswalk, so the current snapshot returns an unmapped ward for an in-state point. [Read the audit and measured coverage](docs/data-sources/2026-11-10-postgis-results.md).

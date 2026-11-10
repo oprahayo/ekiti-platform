@@ -1,6 +1,7 @@
 import type { Language } from '../server/ask-knowledge.ts';
 import * as React from 'react';
 import type { Category } from './fixtures.ts';
+import type { DirectoryIconName } from './DirectoryCategories.tsx';
 
 interface AppState {
   language: Language;
@@ -18,6 +19,8 @@ interface AppState {
   setPendingReportText: (value: string) => void;
   askDraft: string;
   setAskDraft: (value: string) => void;
+  exploreService: DirectoryIconName | null;
+  setExploreService: (value: DirectoryIconName | null) => void;
   exploreCategory: Category;
   setExploreCategory: (value: Category) => void;
   exploreQuery: string;
@@ -56,6 +59,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [pendingReportText, setPendingReportText] = React.useState('');
   const [askDraft, setAskDraft] = React.useState('');
   const [exploreCategory, setExploreCategory] = React.useState<Category>('All');
+  const [exploreService, setExploreService] = React.useState<DirectoryIconName | null>(null);
   const [exploreQuery, setExploreQuery] = React.useState('');
   const [exploreLga, setExploreLga] = React.useState('');
 
@@ -77,6 +81,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     pendingReportText, setPendingReportText,
     askDraft,
     setAskDraft,
+    exploreService, setExploreService,
     exploreCategory, setExploreCategory,
     exploreQuery, setExploreQuery,
     exploreLga, setExploreLga,

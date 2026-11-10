@@ -42,7 +42,7 @@ for (const width of [280, 320, 360, 375, 390, 428, 768, 1024, 1440]) {
 test('five-tab navigation supports direct deep links', async ({ page }) => {
   for (const [path, heading] of [
     ['/ask', 'Ask anything about Ekiti'],
-    ['/explore', 'Explore Ekiti'],
+    ['/explore', 'Browse Categories'],
     ['/report', 'Tell me what happened'],
     ['/track', 'Check a report'],
     ['/scores', 'Public response'],
@@ -69,26 +69,29 @@ test('Ask is editable and clear about demo sources and uncertainty', async ({ pa
 
 test('Explore filters survive tab changes; all data is identified as demo', async ({ page }) => {
   await page.goto('/explore');
-  await expect(page.getByText('Sample listings only. No place below is verified or accepting claims yet.')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Browse Categories' })).toBeVisible();
+  await expect(page.locator('.directory-category-tile')).toHaveCount(24);
   await page.locator('#place-search').fill('school');
   await page.getByRole('button', { name: 'Schools' }).click();
   await expect(page.locator('.place-row')).toHaveCount(1);
   await expect(page.getByText('Example neighborhood school')).toBeVisible();
   await page.getByRole('link', { name: 'Scores', exact: true }).click();
   await page.getByRole('link', { name: 'Explore', exact: true }).click();
-  await expect(page.locator('#place-search')).toHaveValue('school');
+  await expect(page.locator('#place-search')).toHaveValue('');
+  await expect(page.getByRole('heading', { name: 'Sample layout preview' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Schools' })).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('link', { name: /Example neighborhood school/ }).click();
-  await expect(page.getByText(/Do not use this demo listing to find real services/)).toBeVisible();
+  await expect(page.getByText(/This is a fictional directory example/)).toBeVisible();
 });
 
 test('Explore does not load map assets unless explicitly requested', async ({ page }) => {
   const resources: string[] = [];
   page.on('request', request => resources.push(request.url()));
   await page.goto('/explore');
-  await expect(page.locator('.place-row')).toHaveCount(5);
+  await expect(page.locator('.directory-category-tile')).toHaveCount(24);
+  await expect(page.locator('.place-row')).toHaveCount(0);
   expect(resources.some(url => /\/assets\/(map-|lga-)/.test(url))).toBe(false);
-  await page.getByRole('button', { name: /Map · more data/ }).click();
+  await page.getByRole('button', { name: 'View LGA boundaries on map' }).click();
   await expect(page.locator('#map')).toBeVisible();
   await expect(page.getByText('Illustrative places are not geocoded or pinned.')).toBeVisible();
 });
