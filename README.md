@@ -45,7 +45,7 @@ The Yellow Pages profile now supports real **moderated review feeds and rating s
 
 ## Administrative operations console (isolated demonstration)
 
-The first administrative application milestone is available as a **separate local React/Vite console** with a three-pane inbox, internal case workflow, audit-style demo history, responsive navigation and sample-only analytics. All cases are visibly fictional and there is **no live reporting API, moderator login or database write access**. Agency delivery/view status remains unverified.
+The first administrative application milestone is available as a **separate local React/Vite console** with a three-pane inbox, internal case workflow, audit-style demo history, responsive navigation, listing/review/ownership/knowledge/correction moderation queues, office-routing advisory review and sample-only analytics. All cases are visibly fictional and there is **no live reporting API, moderator login or database write access**. Agency delivery/view status remains unverified.
 
 Run `npm run dev:admin` locally (port 5174). The output of `npm run build:admin` is `dist-admin/` and is not part of the public citizen build. The next operational milestone is authenticated moderator access and a privacy-reviewed private reporting service, not public deployment of the demo.
 
