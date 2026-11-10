@@ -1,163 +1,141 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <meta name="theme-color" content="#123d35" />
-    <meta name="description" content="Explore Ekiti's verified local government areas and prepare private civic report drafts. Independent civic project." />
-    <title>Ekiti Civic — Know your community</title>
-  </head>
-  <body>
-    <a class="skip" href="#location">Skip to location finder</a>
-    <header class="site-header">
-      <div class="wrap header-inner">
-        <a class="identity" href="#top" aria-label="Ekiti Civic home">
-          <span class="identity-mark" aria-hidden="true">E</span>
-          <span class="identity-name">Ekiti <span>Civic</span><small>Independent community platform</small></span>
-        </a>
-        <nav class="site-nav" aria-label="Main navigation">
-          <a href="#about">What you can do</a>
-          <a href="#location">Find a location</a>
-          <a href="#report" data-open-draft>Report draft</a>
-        </nav>
-        <a class="header-action" href="#location">Explore Ekiti <span aria-hidden="true">↗</span></a>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#f8f5ef" />
+  <meta name="description" content="An independent place to explore verified Ekiti local government and ward information and prepare private civic report drafts." />
+  <title>Ekiti Civic — Find your community</title>
+</head>
+<body>
+  <a class="skip" href="#location">Skip to the community finder</a>
+  <div class="identity-rule" aria-hidden="true"></div>
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a href="#top" class="identity" aria-label="Ekiti Civic home">
+        <span class="identity-wordmark">ekiti<span>.</span></span>
+        <span class="identity-detail">CIVIC<br /><small>Independent platform</small></span>
+      </a>
+      <nav class="site-nav" aria-label="Main navigation">
+        <a href="#location">Explore Ekiti</a>
+        <a href="#report" data-open-draft>Report draft</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero" id="top" aria-labelledby="hero-title">
+      <div class="wrap hero-inner">
+        <div class="hero-copy">
+          <p class="overline">For Ekiti, and everyone who calls it home</p>
+          <h1 id="hero-title">Find your place<br />in <em>Ekiti.</em></h1>
+          <p class="hero-lede">Explore local government areas, find your ward, or keep a record of something happening in your community.</p>
+          <div class="hero-actions">
+            <a class="action-primary" href="#location">Explore your area <span aria-hidden="true">→</span></a>
+            <a class="action-text" href="#report" data-open-draft>Write a private draft <span aria-hidden="true">↗</span></a>
+          </div>
+        </div>
+        <div class="hero-context" aria-label="Ekiti verified reference information">
+          <div class="landscape" aria-hidden="true"><span class="sun"></span><span class="hill-back"></span><span class="hill-front"></span><span class="river"></span></div>
+          <div class="context-data">
+            <p><strong>16</strong> Local government areas</p>
+            <p><strong>177</strong> Verified electoral ward names</p>
+          </div>
+          <p class="context-attribution">Geographic data verified against GRID3 and INEC references.</p>
+        </div>
       </div>
-    </header>
+    </section>
 
-    <main id="main">
-      <section class="hero" id="top" aria-labelledby="hero-title">
-        <div class="wrap hero-inner">
-          <div class="hero-copy">
-            <p class="eyebrow eyebrow-light"><span class="eyebrow-dot"></span> A clearer view of Ekiti State</p>
-            <h1 id="hero-title">Know your community.<br /><em>Make your voice count.</em></h1>
-            <p class="hero-lede">Find your local government area, explore verified geographic information, and document what matters to your community.</p>
-            <div class="hero-actions">
-              <a class="btn btn-bright" href="#location">Explore your area <span aria-hidden="true">↗</span></a>
-              <a class="btn btn-outline" href="#report" data-open-draft>Start a private draft</a>
+    <div class="availability wrap" role="note"><strong>What works today</strong><span>Find an area, check a location, or download a private report draft. Online submission and case tracking are not yet available.</span></div>
+
+    <section class="explore wrap" id="location" aria-labelledby="location-title">
+      <div class="section-intro">
+        <p class="overline">01 — Explore Ekiti</p>
+        <h2 id="location-title">Where are you looking?</h2>
+        <p>Start with a local government area. You can add a ward or landmark if you know it.</p>
+      </div>
+
+      <div class="layout">
+        <div class="area-fields" aria-labelledby="area-title">
+          <h3 id="area-title">Choose an area</h3>
+          <p id="directory-status" role="status">Loading the area directory…</p>
+          <button id="retry" type="button" hidden>Retry directory</button>
+          <div id="fields"></div>
+          <p id="ward-help" class="hint"></p>
+          <label for="place">Town or landmark <small>Optional</small></label>
+          <input id="place" aria-describedby="place-hint" maxlength="160" list="settlements" placeholder="e.g. near the central market" />
+          <datalist id="settlements"></datalist>
+          <p class="hint" id="place-hint">Enter your own description of this place.</p>
+        </div>
+
+        <aside class="summary" aria-labelledby="summary-title">
+          <p class="overline">Your current selection</p>
+          <h3 id="summary-title">Location details</h3>
+          <dl aria-live="polite" aria-atomic="true">
+            <dt>Local government area</dt><dd id="summary-lga">None selected</dd>
+            <dt>Electoral ward · manual</dt><dd id="summary-ward">Unspecified</dd>
+            <dt>Town or landmark</dt><dd id="summary-place">Unspecified</dd>
+          </dl>
+          <p id="evidence" role="status">No incident position confirmed.</p>
+        </aside>
+      </div>
+
+      <details class="optional-tools" id="position-tools">
+        <summary id="position-title"><span>Check an exact position</span><small>Optional — map, GPS, or coordinates</small></summary>
+        <div class="position" aria-label="Optional location verification">
+          <p>Only use this if the precise location matters. A device location or map pin is not sent to our server until you select <strong>Confirm incident position</strong>.</p>
+          <div class="actions">
+            <button id="open-map" type="button" aria-expanded="false" aria-controls="map-box">Open Ekiti map</button>
+            <button id="gps" type="button">Use device GPS</button>
+          </div>
+          <div id="map-box" hidden>
+            <div id="map" aria-label="Ekiti LGA boundary map"></div>
+            <p class="hint">Tap to select a point. Boundaries © eHealth Africa and Proxy Logics / GRID3 (2020), <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.</p>
+          </div>
+          <form id="coords">
+            <p class="subheading">Or enter coordinates</p>
+            <div class="pair">
+              <label>Latitude<input id="lat" type="number" inputmode="decimal" min="-90" max="90" step="any" required /></label>
+              <label>Longitude<input id="lon" type="number" inputmode="decimal" min="-180" max="180" step="any" required /></label>
             </div>
-            <p class="hero-disclaimer">Staging preview · Independently built · Not a government service</p>
-          </div>
-          <div class="hero-art" aria-hidden="true">
-            <div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="orbit orbit-three"></div>
-            <div class="art-center"><span class="art-symbol">⌖</span><span>EKITI<br />STATE</span></div>
-            <div class="art-card art-card-top"><span class="art-card-label">LOCAL GOVERNMENTS</span><strong>16 <span>LGAs</span></strong><i class="art-line"></i></div>
-            <div class="art-card art-card-bottom"><span class="art-card-label">ELECTORAL WARDS</span><strong>177 <span>names</span></strong><small>Verified reference directory</small></div>
-          </div>
+            <button class="primary" type="submit">Confirm incident position</button>
+            <button id="clear" type="button" hidden>Clear position</button>
+          </form>
+          <p id="point-status" role="status"></p>
         </div>
-      </section>
+      </details>
+    </section>
 
-      <section class="intro-section wrap" id="about" aria-labelledby="intro-title">
-        <div class="section-heading">
-          <div><p class="eyebrow">A space for every community</p><h2 id="intro-title">Start with what you need.</h2></div>
-          <p>Simple tools today. More ways to participate as the platform develops.</p>
+    <section class="report-section" id="report" aria-labelledby="report-title">
+      <div class="wrap report-inner">
+        <div class="section-intro">
+          <p class="overline">02 — Keep a record</p>
+          <h2 id="report-title">Something to say?</h2>
+          <p>Write a complaint, issue, or commendation and save it to your device. This is a private draft, not a submitted report.</p>
         </div>
-        <div class="feature-grid">
-          <article class="feature">
-            <div class="feature-icon" aria-hidden="true">⌖</div>
-            <h3>Find your community</h3>
-            <p>Browse Ekiti's 16 LGAs and 177 verified ward names without needing GPS.</p>
-            <a href="#location">Find a location <span aria-hidden="true">↗</span></a>
-          </article>
-          <article class="feature">
-            <div class="feature-icon" aria-hidden="true">▤</div>
-            <h3>Document an issue</h3>
-            <p>Make a private, downloadable draft of a complaint, issue, or commendation.</p>
-            <a href="#report" data-open-draft>Write a draft <span aria-hidden="true">↗</span></a>
-          </article>
-          <article class="feature">
-            <div class="feature-icon" aria-hidden="true">◎</div>
-            <h3>Check a location</h3>
-            <p>Use the Ekiti map to check a confirmed point against verified LGA boundaries.</p>
-            <a href="#position-title">View map tools <span aria-hidden="true">↗</span></a>
-          </article>
-        </div>
-      </section>
-
-      <section class="explorer-section" id="location" aria-labelledby="location-title">
-        <div class="wrap">
-          <div class="section-heading explorer-heading">
-            <div><p class="eyebrow">Explore Ekiti / Your location</p><h2 id="location-title">Where in Ekiti?</h2></div>
-            <p>Choose an area to begin. You can add a ward or more precise location later.</p>
-          </div>
-          <div class="steps" aria-label="How to prepare a location-based draft">
-            <span><b>01</b> Choose an area</span><span><b>02</b> Check a position <small>optional</small></span><span><b>03</b> Save a draft</span>
-          </div>
-          <div class="layout">
-            <section class="panel area-panel" aria-labelledby="area-title">
-              <div class="panel-heading"><span class="step-icon" aria-hidden="true">01</span><div><h3 id="area-title">Choose your area</h3><p>No location permission needed.</p></div></div>
-              <div id="directory-status" role="status">Loading the area directory…</div>
-              <button id="retry" hidden>Retry directory</button>
-              <div id="fields"></div>
-              <p id="ward-help" class="hint"></p>
-              <label for="place">Town or landmark <small>Optional</small></label>
-              <input id="place" aria-describedby="place-hint" maxlength="160" list="settlements" placeholder="e.g. near the market" />
-              <datalist id="settlements"></datalist>
-              <p class="hint" id="place-hint">Describe the location in your own words.</p>
-            </section>
-            <aside class="panel summary" aria-labelledby="summary-title">
-              <div class="summary-top"><span class="summary-indicator" aria-hidden="true"></span><span>YOUR LOCATION</span></div>
-              <h3 id="summary-title">Your selection</h3>
-              <dl>
-                <dt>Local government area</dt><dd id="summary-lga">None selected</dd>
-                <dt>Electoral ward · manual</dt><dd id="summary-ward">Unspecified</dd>
-                <dt>Town or landmark</dt><dd id="summary-place">Unspecified</dd>
-              </dl>
-              <div id="evidence" role="status">No incident position confirmed.</div>
-              <p class="summary-note">Your choices stay on this page unless you explicitly confirm coordinates for a boundary check.</p>
-            </aside>
-            <section class="panel position" aria-labelledby="position-title">
-              <div class="panel-heading"><span class="step-icon" aria-hidden="true">02</span><div><h3 id="position-title">Check a precise position <small>Optional</small></h3><p>Only if you need to verify where something happened.</p></div></div>
-              <div class="position-content">
-                <div class="position-options">
-                  <p class="position-subtitle">Choose how to add a point</p>
-                  <div class="actions">
-                    <button id="open-map" class="option-button" aria-expanded="false" aria-controls="map-box">Open Ekiti map</button>
-                    <button id="gps" class="option-button">Use device GPS</button>
-                  </div>
-                  <p class="hint">Using GPS is optional. Your device asks permission before sharing its position.</p>
-                </div>
-                <form id="coords" class="coordinate-form">
-                  <p class="position-subtitle">Or enter coordinates</p>
-                  <div class="pair">
-                    <label>Latitude<input id="lat" type="number" inputmode="decimal" min="-90" max="90" step="any" placeholder="7.6" required /></label>
-                    <label>Longitude<input id="lon" type="number" inputmode="decimal" min="-180" max="180" step="any" placeholder="5.2" required /></label>
-                  </div>
-                  <button class="primary">Confirm incident position</button>
-                  <button id="clear" type="button" hidden>Clear position</button>
-                </form>
-              </div>
-              <div id="map-box" hidden>
-                <div id="map" aria-label="Ekiti LGA boundary map"></div>
-                <p class="hint">Tap the map to choose a point. Boundaries © eHealth Africa and Proxy Logics / GRID3 (2020), <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.</p>
-              </div>
-              <p id="point-status" role="status"></p>
-            </section>
-          </div>
-        </div>
-      </section>
-
-      <section class="report-section wrap" id="report" aria-labelledby="report-title">
-        <div class="report-banner"><div><p class="eyebrow">Step 03 / Record what matters</p><h2 id="report-title">Keep a record of what happened.</h2><p>Write an issue, complaint, or commendation, then download it privately to your device.</p></div><span class="report-emblem" aria-hidden="true">✎</span></div>
-        <details class="panel draft">
-          <summary><span>Prepare a report draft</span><small>Private download · No submission</small></summary>
-          <div class="draft-body">
-            <p class="draft-alert">This is a draft tool, not a reporting service. No agency receives your report and the platform does not track it.</p>
+        <details class="draft">
+          <summary>Prepare a report draft</summary>
+          <div class="draft-content">
+            <p class="draft-alert">Reports are not sent to government offices or stored by this platform. There is no case tracking yet.</p>
             <form id="draft-form" autocomplete="off">
               <label for="draft-kind">Report type</label>
-              <select id="draft-kind" required><option value="">Choose a type</option><option>Complaint</option><option>Commendation</option><option>Issue</option></select>
+              <select id="draft-kind" required>
+                <option value="">Choose a type</option><option>Complaint</option><option>Commendation</option><option>Issue</option>
+              </select>
               <label for="draft-description">What happened?</label>
-              <textarea id="draft-description" rows="5" required maxlength="4000" placeholder="Describe what happened, where, and when…" aria-describedby="draft-help"></textarea>
-              <p class="hint" id="draft-help">Include only details you want in your downloaded file. Exact selector coordinates are excluded, but your words may identify people or places.</p>
+              <textarea id="draft-description" rows="5" required maxlength="4000" aria-describedby="draft-help" placeholder="Describe the situation in your own words"></textarea>
+              <p class="hint" id="draft-help">Only include details you want to save. Exact selector coordinates are excluded from the download, but your own words may identify a person or place.</p>
               <p class="hint" id="draft-privacy">Privacy: Downloading does not submit a report. The saved text file stays on your device. Clearing the form will not delete that file; remove it yourself if you use a shared device.</p>
               <div class="draft-actions"><button class="primary" type="submit">Download draft</button><button type="reset">Clear report text and type</button></div>
               <p role="status" id="draft-status"></p>
             </form>
           </div>
         </details>
-      </section>
+      </div>
+    </section>
+  </main>
 
-      <footer class="footer"><div class="wrap footer-inner"><div><strong>Ekiti Civic</strong><p>An independent civic project. Not affiliated with or acting for government agencies.</p></div><p>Staging preview · Report submission and tracking are not yet available.</p></div></footer>
-    </main>
-    <script type="module" src="/src/web/main.ts"></script>
-  </body>
+  <footer class="site-footer"><div class="wrap footer-inner"><p><strong>ekiti.</strong> Civic — independent community platform</p><p>Not affiliated with the Ekiti State Government. Staging release.</p></div></footer>
+  <script type="module" src="/src/web/main.ts"></script>
+</body>
 </html>
