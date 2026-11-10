@@ -1,14 +1,13 @@
 import * as React from 'react';
 import { BrowserRouter, Link, NavLink, Route, Routes, useLocation, useNavigate, useParams } from 'react-router';
-import { categories, demoMetrics, demoPlaces, demoTimeline, lgas } from './fixtures.ts';
+import { categories, demoMetrics, demoPlaces, lgas } from './fixtures.ts';
 import { Home, Ask } from './AskExperience.tsx';
 import { AppProvider, speechSupported, useApp } from './state.tsx';
 
 const Report = React.lazy(() => import('./Report.tsx'));
+const Track = React.lazy(() => import('./TrackConversation.tsx'));
 const VoiceOverlay = React.lazy(() => import('./VoiceOverlay.tsx'));
 const MapLocation = React.lazy(() => import('./MapLocation.tsx'));
-const DEMO_REF = 'DEMO-EKP-2026-00001';
-const DEMO_TOKEN = 'DEMO-ONLY-NOT-VALID';
 
 function Icon({ name }: { name: 'home' | 'explore' | 'report' | 'track' | 'scores' | 'mic' | 'settings' | 'search' }) {
   const shapes: Record<typeof name, React.ReactNode> = {
@@ -47,7 +46,7 @@ function HeaderControls() {
 }
 
 function Explore() {
-  const { exploreCategory, setExploreCategory, exploreQuery, setExploreQuery, exploreLga, setExploreLga } = useApp();
+  const { exploreCategory, setExploreCategory, exploreQuery, setExploreQuery, exploreLga, setExploreLga, setAskDraft } = useApp();
   const [mapOpen, setMapOpen] = React.useState(false);
   const filtered = demoPlaces.filter(place => (
     (exploreCategory === 'All' || place.category === exploreCategory) &&
@@ -63,8 +62,8 @@ function Explore() {
       </header>
       <label htmlFor="place-search" className="visually-hidden">Search places</label>
       <input id="place-search" type="search" placeholder="Search places" value={exploreQuery} onChange={event => setExploreQuery(event.target.value)} />
-      <div className="choice-row category-row" role="group" aria-label="Filter category">
-        {categories.map(category => <button type="button" className="chip" aria-pressed={exploreCategory === category} key={category} onClick={() => setExploreCategory(category)}>{category}</button>)}
+      <div className="directory-filters" role="group" aria-label="Filter category">
+        {categories.map(category => <button type="button" className="directory-filter" aria-pressed={exploreCategory === category} key={category} onClick={() => setExploreCategory(category)}>{category}</button>)}
       </div>
       <label htmlFor="explore-lga" className="select-label">Local government area</label>
       <select id="explore-lga" value={exploreLga} onChange={event => setExploreLga(event.target.value)}>
@@ -96,6 +95,8 @@ function Explore() {
         <MapLocation onPoint={() => { /* Demo places have no verified geocoded points. */ }} />
         <p className="note">The map shows verified LGA boundaries. Illustrative places are not geocoded or pinned.</p>
       </React.Suspense>}
+      <p className="directory-footer">Looking for a place not shown here?</p>
+      <Link to="/ask?focus=1" className="text-link" onClick={() => setAskDraft('Find a business in Ekiti')}>Ask Ekiti Civic to help</Link>
       <p className="directory-footer">Own a business? Claim or submit a listing.</p>
       <p className="note">Moderated listing submissions are not available in this demo.</p>
     </main>
@@ -115,60 +116,8 @@ function PlaceDetails() {
       <dt>Local government</dt><dd>{lgas.find(item => item.id === place.lgaId)?.name}</dd>
       <dt>About</dt><dd>{place.description}</dd>
     </dl>
-    <p className="warning-note">Do not use this demo listing to find real services or contact a business.</p>
+    <p className="warning-note">Do not use this demo listing to find real services or contact a business. Directions, contact details and owner claims require a verified location and moderation.</p>
     <Link to="/explore" className="text-link">Explore more examples</Link>
-  </main>;
-}
-
-function Track() {
-  const { publicId } = useParams();
-  const [token, setToken] = React.useState('');
-  const [visible, setVisible] = React.useState(false);
-  const [error, setError] = React.useState('');
-  const [escalation, setEscalation] = React.useState(false);
-  const submit = (event: React.FormEvent) => {
-    event.preventDefault();
-    if (publicId === DEMO_REF && token === DEMO_TOKEN) {
-      setVisible(true); setError('');
-    } else {
-      setVisible(false);
-      setError('No live case lookup is available. The demonstration accepts only the example reference and token.');
-    }
-  };
-  return <main className="page track-page" id="main">
-    <header className="page-heading"><p className="eyebrow">Track</p><h1>Follow a report</h1><p className="help-text">No real submissions or tracking are connected yet.</p></header>
-    <form onSubmit={submit} className="track-form">
-      <label htmlFor="case-reference">Case reference</label>
-      <input id="case-reference" readOnly value={publicId || ''} placeholder="Open a sample case below" />
-      <label htmlFor="tracking-token">Private tracking token</label>
-      <input id="tracking-token" type="password" autoComplete="off" value={token} onChange={event => setToken(event.target.value)} placeholder="Token is never placed in a URL" />
-      <button className="primary-action" type="submit">Check status</button>
-    </form>
-    {error && <p role="alert" className="form-error">{error}</p>}
-    {!publicId && <div className="sample-entry">
-      <p>See what a properly evidenced timeline could look like.</p>
-      <Link to={'/track/' + DEMO_REF}>Open demo case</Link>
-      <p className="metadata">Demo token: {DEMO_TOKEN}</p>
-    </div>}
-    {publicId === DEMO_REF && !visible && <p className="note">Use the example token <code>{DEMO_TOKEN}</code> to inspect the fictional timeline. Nothing is stored.</p>}
-    {visible && <section className="track-result">
-      <div className="status-note"><strong>Demo case only</strong><span>No real report or official communication exists.</span></div>
-      <p className="metadata">Case: {publicId}</p>
-      <p className="status-legend">● Recorded in demo &nbsp; ◐ Claimed/unverified &nbsp; ○ Waiting</p>
-      <ol className="case-timeline">
-        {demoTimeline.map((event, index) => <li key={index} className={'event-' + event.state}>
-          <h2>{event.title}</h2>
-          <p>{event.detail}</p>
-          <small>Evidence: {event.evidence}</small>
-        </li>)}
-      </ol>
-      <div className="escalation">
-        <p className="body-emphasis">Example overdue threshold · 14 days without acknowledgment</p>
-        <button type="button" className="quiet-action" onClick={() => setEscalation(true)} disabled={escalation}>Preview escalation</button>
-        {escalation && <p role="status">Demo only — no escalation request was sent.</p>}
-      </div>
-      <p className="disabled-row" aria-disabled="true">Download signed receipt — unavailable in demo</p>
-    </section>}
   </main>;
 }
 
@@ -217,7 +166,7 @@ function BottomNav() {
 }
 
 function Shell() {
-  const { voiceOpen, closeVoice, setAskDraft, language } = useApp();
+  const { voiceOpen, closeVoice, setAskDraft, setReportSpeech, setTrackSpeech, language } = useApp();
   const navigate = useNavigate();
   const location = useLocation();
   const [hasSpeech, setHasSpeech] = React.useState(false);
@@ -233,12 +182,24 @@ function Shell() {
   }, [location.pathname]);
   const closeVoiceToText = () => {
     closeVoice();
-    navigate('/ask?focus=1');
+    if (location.pathname === '/report') {
+      document.getElementById('report-message')?.focus();
+    } else if (location.pathname.startsWith('/track')) {
+      document.getElementById('tracking-message')?.focus();
+    } else {
+      navigate('/ask?focus=1');
+    }
   };
   const applyTranscript = (transcript: string) => {
-    setAskDraft(transcript);
     closeVoice();
-    navigate('/ask?focus=1');
+    if (location.pathname === '/report') {
+      setReportSpeech(transcript);
+    } else if (location.pathname.startsWith('/track')) {
+      setTrackSpeech(transcript);
+    } else {
+      setAskDraft(transcript);
+      navigate('/ask?focus=1');
+    }
   };
   return <div className="app-shell">
     <a className="skip-link" href="#main">Skip to content</a>

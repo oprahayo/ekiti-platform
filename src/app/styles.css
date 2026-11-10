@@ -328,3 +328,52 @@ button { min-height: 44px; border-radius: var(--radius-input); font-size: 14px; 
   .header-languages button { padding-inline: var(--s-1); }
   .wordmark { font-size: 23px; }
 }
+
+/* Conversational civic journeys: text-led, not form steps or marketing cards. */
+.civic-conversation-page { padding-bottom: calc(var(--nav-height) + 180px + env(safe-area-inset-bottom)); }
+.conversation-heading { margin-bottom: var(--s-6); }
+.conversation-history { display: flex; flex-direction: column; gap: var(--s-5); }
+.conversation-turn { max-width: 100%; min-width: 0; overflow-wrap: anywhere; }
+.turn-assistant { align-self: flex-start; width: 100%; border-left: 2px solid var(--border); padding: var(--s-1) 0 var(--s-1) var(--s-4); }
+.conversation-author { color: var(--text-secondary); font-size: 12px; font-weight: 600; }
+.turn-assistant p { margin-top: var(--s-2); color: var(--text-primary); font-size: 15px; white-space: pre-wrap; }
+.turn-user { align-self: flex-end; max-width: min(90%,500px); background: var(--surface-muted); border-radius: var(--radius-input); padding: var(--s-3) var(--s-4); }
+.turn-user p { font-size: 15px; line-height: 1.55; white-space: pre-wrap; }
+.conversation-support { margin-top: var(--s-5); border-top: 1px solid var(--border); padding-top: var(--s-4); }
+.conversation-support label { font-weight: 500; }
+.conversation-support select { margin-bottom: var(--s-2); }
+.conversation-disclosure { margin-block: var(--s-4); padding: var(--s-2) 0 var(--s-3); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.conversation-disclosure summary { cursor: pointer; font-size: 14px; font-weight: 500; min-height: 44px; display: flex; align-items: center; }
+.conversation-disclosure .note { margin: var(--s-3) 0; }
+.conversation-disclosure .quiet-action { margin: var(--s-2) var(--s-3) var(--s-2) 0; }
+.conversation-disclosure .text-link { margin: var(--s-2) 0; }
+.conversation-shortcut { display: inline-block; margin: var(--s-4) 0; min-height: 44px; }
+.conversation-review { margin-top: var(--s-6); border-top: 1px solid var(--border); padding-top: var(--s-5); }
+.conversation-review h2 { font-size: 18px; }
+.conversation-review .review-list { margin-block: var(--s-4); }
+.review-edit-links { display: flex; flex-wrap: wrap; gap: 0 var(--s-5); }
+.review-edit-links button { min-height: 44px; }
+.privacy-notice { border-left: 3px solid var(--warning); background: color-mix(in srgb,var(--warning) 7%,var(--surface)); padding: var(--s-3) var(--s-4); font-size: 14px; margin: var(--s-4) 0; }
+.conversation-review .primary-action { margin-top: var(--s-4); }
+.conversation-complete { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-3); padding: var(--s-3) 0; }
+.conversation-complete p { color: var(--positive); font-size: 14px; }
+.conversation-composer { position: fixed; z-index: 21; bottom: calc(var(--nav-height) + env(safe-area-inset-bottom)); left: 0; right: 0; max-width: 740px; margin-inline: auto; padding: var(--s-3) var(--s-4); background: var(--surface); border-top: 1px solid var(--border); }
+.conversation-composer textarea { min-height: 64px; max-height: 165px; width: 100%; resize: vertical; font-size: 16px; padding: var(--s-3); }
+.conversation-composer-actions { display: flex; align-items: center; gap: var(--s-3); justify-content: flex-end; margin-top: var(--s-1); }
+.conversation-composer-actions .metadata { flex: 1; }
+.conversation-send { min-height: 44px; padding: var(--s-2) var(--s-4); background: var(--text-primary); border: 1px solid var(--text-primary); border-radius: var(--radius-input); color: var(--surface); font-weight: 500; }
+.conversation-foot { margin-top: var(--s-6); display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-2); }
+.clear-conversation { color: var(--danger); }
+.saved-draft-note { margin: var(--s-5) 0; border-left: 3px solid var(--positive); padding: var(--s-3) var(--s-4); background: var(--surface-muted); font-size: 14px; }
+.conversation-example { margin-block: var(--s-6); border-top: 1px solid var(--border); padding-top: var(--s-5); }
+.conversation-example .case-timeline li h3 { font-size: 15px; font-weight: 600; }
+.directory-filters { display: flex; max-width: 100%; overflow-x: auto; overflow-y: hidden; border-bottom: 1px solid var(--border); margin: var(--s-4) 0; gap: var(--s-4); scrollbar-width: thin; }
+.directory-filter { border: 0; border-radius: 0; min-height: 48px; flex: 0 0 auto; background: transparent; padding: var(--s-2) 0; color: var(--text-secondary); font-size: 14px; font-weight: 400; }
+.directory-filter[aria-pressed="true"] { color: var(--text-primary); box-shadow: inset 0 -2px 0 var(--text-primary); font-weight: 600; }
+@media (min-width: 720px) {
+  .conversation-composer { padding-inline: var(--s-8); }
+}
+@media (max-width: 319px) {
+  .conversation-composer { padding-inline: var(--s-3); }
+  .turn-user { max-width: 95%; }
+}

@@ -1,369 +1,258 @@
 import * as React from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router';
+import { Link } from 'react-router';
 import { lgas } from './fixtures.ts';
+import { useApp, speechSupported } from './state.tsx';
+import { playAnswer, stopSpeech } from './speech.ts';
+import {
+  DRAFT_STORAGE_KEY, OLD_DRAFT_STORAGE_KEY, startConversation, readConversation,
+  submitLine, chooseArea, revise, markDownloaded, draftAsText,
+  type Conversation, type AreaName, type ReportKind,
+} from './report-conversation.ts';
 
 const MapLocation = React.lazy(() => import('./MapLocation.tsx'));
-const DRAFT_KEY = 'ekiti-report-preview-v2';
-const SAMPLE_REFERENCE = 'DEMO-EKP-2026-00001';
-const SAMPLE_TOKEN = 'DEMO-ONLY-NOT-VALID';
-
-type ReportKind = 'Issue' | 'Complaint' | 'Commendation';
-interface Area { id: string; name: string; kind: 'lga' | 'ward'; parentId: string; }
-interface ReportDraft {
-  kind: ReportKind;
-  description: string;
-  lgaId: string;
-  wardId: string;
-  place: string;
+type Area = AreaName & { kind: 'lga' | 'ward'; parentId: string };
+const promptTranslation: Record<string, string> = {
+  'Tell me what happened': 'Sọ ohun tó ṣẹlẹ̀ ní àdúgbò rẹ fún mi. Èyí jẹ́ àkọsílẹ̀ àdáni, kì í ṣe ìfíṣùn ránṣẹ́.',
+  'Could you add a little more': 'Jọ̀wọ́ ṣàlàyé rẹ̀ sí i kí àkọsílẹ̀ lè péye.',
+  'Thank you. Which local': 'Ẹ ṣé. Ìjọba ìbílẹ̀ wo ni ìṣẹ̀lẹ̀ náà ti ṣẹlẹ̀? O lè kọ orúkọ rẹ̀ tàbí yàn án.',
+  'I could not confidently': 'Mi ò lè fìdí ìjọba ìbílẹ̀ yẹn múlẹ̀. Jọ̀wọ́ yàn án láti inú àtòjọ.',
+  'Understood —': 'Mo gbọ́. Ṣé ohun míì wà tó yẹ kí a fi kún àkọsílẹ̀, bí ọjọ́ tàbí àmì ibi? Tẹ “skip” láti kọjá.',
+  'Here is what I understood': 'Èyí ni àkótán ohun tí o sọ. Ṣàyẹ̀wò, ṣàtúnṣe rẹ̀ kí o tó gba àkọsílẹ̀ náà.',
+  'Please tell me the corrected': 'Jọ̀wọ́ sọ àtúnṣe àlàyé náà.',
+  'Which local government area should': 'Ìjọba ìbílẹ̀ wo ni kí n lò dípò èyí?',
+  'What additional details': 'Àlàyé míì wo ni o fẹ́ kún un?',
+  'Your file was prepared': 'A ti pèsè fáìlì àdáni rẹ. A kò fi ránṣẹ́ sí ìjọba tàbí fún un ní nọ́mbà ìtọ́pinpin.',
+};
+function localPrompt(value: string, language: 'en' | 'yo') {
+  if (language === 'en') return value;
+  const match = Object.keys(promptTranslation).find(key => value.startsWith(key));
+  return match ? promptTranslation[match] : value;
 }
-
-const initialDraft: ReportDraft = { kind: 'Issue', description: '', lgaId: '', wardId: '', place: '' };
-
-function restoreDraft(): ReportDraft {
-  try {
-    const raw = localStorage.getItem(DRAFT_KEY);
-    if (!raw) return { ...initialDraft };
-    const candidate: unknown = JSON.parse(raw);
-    if (typeof candidate !== 'object' || candidate === null) return { ...initialDraft };
-    const record = candidate as Partial<ReportDraft>;
-    return {
-      kind: record.kind === 'Complaint' || record.kind === 'Commendation' ? record.kind : 'Issue',
-      description: typeof record.description === 'string' ? record.description.slice(0, 4000) : '',
-      lgaId: typeof record.lgaId === 'string' ? record.lgaId : '',
-      wardId: typeof record.wardId === 'string' ? record.wardId : '',
-      place: typeof record.place === 'string' ? record.place.slice(0, 160) : '',
-    };
-  } catch { return { ...initialDraft }; }
+function saveText(text: string) {
+  const url = URL.createObjectURL(new Blob([text], { type: 'text/plain;charset=utf-8' }));
+  const anchor = document.createElement('a');
+  anchor.href = url; anchor.download = 'ekiti-private-report-draft.txt';
+  document.body.appendChild(anchor);
+  anchor.click(); anchor.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1200);
 }
-
-function stepFromParams(params: URLSearchParams) {
-  const value = Number(params.get('step') || 1);
-  return Number.isInteger(value) && value >= 1 && value <= 4 ? value : 1;
-}
-
-async function preparePhoto(file: File): Promise<{ url: string; size: number }> {
-  if (!file.type.startsWith('image/') || file.size > 5_000_000)
-    throw new Error('Choose an image smaller than 5 MB.');
-  if (typeof createImageBitmap !== 'function') throw new Error('Photo preview is unavailable in this browser.');
-  const image = await createImageBitmap(file);
-  try {
-    const scale = Math.min(1, 1280 / Math.max(image.width, image.height));
-    const canvas = document.createElement('canvas');
-    canvas.width = Math.max(1, Math.round(image.width * scale));
-    canvas.height = Math.max(1, Math.round(image.height * scale));
-    const context = canvas.getContext('2d');
-    if (!context) throw new Error('Image preview is unavailable.');
-    context.drawImage(image, 0, 0, canvas.width, canvas.height);
-    // A new JPEG contains raster pixels, not the source file's EXIF metadata.
-    const blob = await new Promise<Blob>((resolve, reject) => {
-      canvas.toBlob((value) => value ? resolve(value) : reject(new Error('Could not process photo.')), 'image/jpeg', 0.82);
-    });
-    return { url: URL.createObjectURL(blob), size: blob.size };
-  } finally { image.close(); }
-}
-
 export default function Report() {
-  const [params, setParams] = useSearchParams();
-  const navigate = useNavigate();
-  const step = stepFromParams(params);
-  const [maxReached, setMaxReached] = React.useState(1);
-  const [draft, setDraft] = React.useState<ReportDraft>(restoreDraft);
-  const [saveStatus, setSaveStatus] = React.useState('Saved on this device');
-  const [error, setError] = React.useState('');
-  const [areas, setAreas] = React.useState<Area[]>([]);
-  const [directoryError, setDirectoryError] = React.useState('');
-  const [locationStatus, setLocationStatus] = React.useState('');
-  const [point, setPoint] = React.useState<{ lat: number; lon: number } | null>(null);
-  const [pointEvidence, setPointEvidence] = React.useState('');
+  const { language, openVoice, reportSpeech, setReportSpeech, pendingReportText, setPendingReportText } = useApp();
+  const [state, setState] = React.useState<Conversation>(readConversation);
+  const [input, setInput] = React.useState('');
+  const [areas, setAreas] = React.useState<AreaName[]>([...lgas]);
+  const [directoryNote, setDirectoryNote] = React.useState('');
+  const [savedNote, setSavedNote] = React.useState('');
+  const [position, setPosition] = React.useState<{ lat: number; lon: number } | null>(null);
+  const [positionNote, setPositionNote] = React.useState('');
   const [mapOpen, setMapOpen] = React.useState(false);
   const [checking, setChecking] = React.useState(false);
-  const [consent, setConsent] = React.useState(false);
-  const [photo, setPhoto] = React.useState<{ url: string; size: number } | null>(null);
-  const [photoStatus, setPhotoStatus] = React.useState('');
-  const [copyStatus, setCopyStatus] = React.useState('');
+  const [audioNote, setAudioNote] = React.useState('');
+  const [photo, setPhoto] = React.useState<string | null>(null);
+  const [photoNote, setPhotoNote] = React.useState('');
+  const end = React.useRef<HTMLDivElement>(null);
+  const editor = React.useRef<HTMLTextAreaElement>(null);
 
   React.useEffect(() => {
-    setSaveStatus('Saving…');
-    const timer = window.setTimeout(() => {
-      try {
-        localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
-        setSaveStatus('Draft saved · just now');
-      } catch { setSaveStatus('Device storage unavailable. Copy your text before leaving.'); }
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [draft]);
-
-  React.useEffect(() => {
-    if (step > maxReached) setParams({ step: '1' }, { replace: true });
-  }, [step, maxReached, setParams]);
-
-  // Once this lazily loaded screen has arrived, keep its public code available
-  // in the offline shell even if the service worker activated after page load.
-  React.useEffect(() => {
-    if (!('serviceWorker' in navigator)) return;
-    void navigator.serviceWorker.ready.then(ready => {
-      const assets = performance.getEntriesByType('resource')
-        .map(entry => new URL(entry.name, location.href))
-        .filter(url => url.origin === location.origin && url.pathname.startsWith('/assets/'))
-        .map(url => url.pathname);
-      ready.active?.postMessage({ type: 'CACHE_LOADED_ASSETS', assets });
-    }).catch(() => {});
-  }, []);
-
-  React.useEffect(() => {
-    if (step !== 2 || areas.length) return;
     const controller = new AbortController();
     fetch('/api/areas', { signal: controller.signal }).then(async response => {
-      if (!response.ok) throw new Error('unavailable');
+      if (!response.ok) throw new Error('Unavailable');
       return response.json() as Promise<Area[]>;
-    }).then(value => {
-      setAreas(value.filter(item => item.kind === 'lga' || item.kind === 'ward'));
-      setDirectoryError('');
+    }).then(rows => {
+      const found = rows.filter(row => row.kind === 'lga');
+      if (found.length === 16) setAreas(found);
     }).catch(() => {
-      if (!controller.signal.aborted) setDirectoryError('Ward directory unavailable. You can still choose an LGA and continue.');
+      if (!controller.signal.aborted) setDirectoryNote('The live area directory is unavailable. The saved 16-LGA reference list is shown.');
     });
     return () => controller.abort();
-  }, [step, areas.length]);
+  }, []);
+  React.useEffect(() => {
+    const timer = window.setTimeout(() => {
+      try { localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(state)); setSavedNote('Saved on this device'); }
+      catch { setSavedNote('Device storage unavailable. Download before leaving.'); }
+    }, 450);
+    return () => clearTimeout(timer);
+  }, [state]);
+  React.useEffect(() => {
+    if (!reportSpeech) return;
+    setInput(reportSpeech); setReportSpeech(''); editor.current?.focus();
+  }, [reportSpeech, setReportSpeech]);
+  React.useEffect(() => {
+    if (!pendingReportText) return;
+    setState(current => current.stage === 'describe' ? submitLine(current, pendingReportText, areas) : current);
+    setPendingReportText('');
+  }, [pendingReportText, setPendingReportText, areas]);
+  React.useEffect(() => { end.current?.scrollIntoView({ block: 'nearest' }); }, [state.lines.length, state.stage]);
+  React.useEffect(() => () => { if (photo) URL.revokeObjectURL(photo); stopSpeech(); }, [photo]);
 
-  React.useEffect(() => () => {
-    if (photo) URL.revokeObjectURL(photo.url);
-  }, [photo]);
-
-  const update = (patch: Partial<ReportDraft>) => {
-    setDraft(current => ({ ...current, ...patch }));
-    setError('');
-  };
-  const next = () => {
-    setError('');
-    if (step === 1 && draft.description.trim().length < 20) {
-      setError('Write at least 20 characters describing what happened.');
-      return;
-    }
-    if (step === 2 && !draft.lgaId) {
-      setError('Choose the local government area where the incident happened.');
-      return;
-    }
-    if (step === 3 && !consent) {
-      setError('Confirm that you understand this is a demo, not a real submission.');
-      return;
-    }
-    if (step >= 4) return;
-    setMaxReached(value => Math.max(value, step + 1));
-    setParams({ step: String(step + 1) });
-  };
-  const back = () => {
-    if (step > 1) {
-      setError('');
-      navigate(-1);
-    }
+  const send = (value = input) => {
+    if (!value.trim()) return;
+    setState(current => submitLine(current, value, areas));
+    setInput('');
   };
   const clear = () => {
-    if (!window.confirm('Clear your saved report draft from this device?')) return;
-    setDraft({ ...initialDraft });
-    setConsent(false);
-    setPoint(null);
-    setPointEvidence('');
-    setMaxReached(1);
-    setParams({ step: '1' }, { replace: true });
-    try { localStorage.removeItem(DRAFT_KEY); } catch { /* No storage permission */ }
+    if (!window.confirm('Clear this private draft and conversation from your device?')) return;
+    setState(startConversation()); setInput(''); setPosition(null); setPhoto(null); setAudioNote('');
+    try { localStorage.removeItem(DRAFT_STORAGE_KEY); localStorage.removeItem(OLD_DRAFT_STORAGE_KEY); }
+    catch { /* In-memory draft still cleared. */ }
   };
-
-  const candidateLgas = areas.some(item => item.kind === 'lga')
-    ? areas.filter(item => item.kind === 'lga') : lgas;
-  const wards = areas.filter(item => item.kind === 'ward' && item.parentId === draft.lgaId);
-  const lgaName = candidateLgas.find(item => item.id === draft.lgaId)?.name || 'Not selected';
-  const wardName = wards.find(item => item.id === draft.wardId)?.name || 'Not specified';
-
-  const proposeGPS = () => {
-    if (!navigator.geolocation) {
-      setLocationStatus('GPS is unavailable. Choose an LGA manually.');
-      return;
-    }
-    setLocationStatus('Waiting for device permission…');
-    navigator.geolocation.getCurrentPosition(
-      ({ coords }) => {
-        setPoint({ lat: coords.latitude, lon: coords.longitude });
-        setPointEvidence('');
-        setLocationStatus('Position proposed. Confirm before checking the boundary.');
-      },
-      () => setLocationStatus('Location permission denied or unavailable. Manual selection still works.'),
-      { enableHighAccuracy: false, maximumAge: 0, timeout: 10000 },
-    );
+  const download = () => {
+    saveText(draftAsText(state.draft));
+    if (state.stage === 'review') setState(current => markDownloaded(current));
   };
-  const checkBoundary = async () => {
-    if (!point) return;
-    setChecking(true);
-    setLocationStatus('Checking against verified LGA boundaries…');
+  const gps = () => {
+    if (!navigator.geolocation) { setPositionNote('GPS unavailable; choose an LGA instead.'); return; }
+    setPositionNote('Requesting device permission…');
+    navigator.geolocation.getCurrentPosition(({ coords }) => {
+      setPosition({ lat: coords.latitude, lon: coords.longitude });
+      setPositionNote('Position proposed. It has not been sent to the server. Confirm to check the boundary.');
+    }, () => setPositionNote('GPS denied or unavailable; choose an LGA instead.'),
+    { enableHighAccuracy: false, maximumAge: 0, timeout: 10000 });
+  };
+  const verifyPoint = async () => {
+    if (!position || checking || state.stage !== 'location') return;
+    setChecking(true); setPositionNote('Checking LGA boundary…');
     try {
       const response = await fetch('/api/resolve', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ latitude: point.lat, longitude: point.lon, confirmed: true }),
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ latitude: position.lat, longitude: position.lon, confirmed: true }),
       });
-      if (!response.ok) throw new Error('lookup_failed');
-      const result = await response.json() as {
-        lga?: { match?: { id: string; name: string }; status?: string };
-        ward?: { status?: string };
-      };
-      if (result.lga?.match?.id) {
-        setPointEvidence('LGA matched in verified boundary data: ' + result.lga.match.name +
-          '. Ward location is not spatially verified.');
-        if (!draft.lgaId) update({ lgaId: result.lga.match.id });
-      } else {
-        setPointEvidence('No unambiguous LGA match found. Choose an area manually.');
-      }
-      setLocationStatus('Boundary check finished.');
-    } catch {
-      setLocationStatus('Boundary service unavailable. You can continue with a manual LGA.');
-    } finally { setChecking(false); }
+      if (!response.ok) throw new Error('Unavailable');
+      const result = await response.json() as { lga?: { match?: AreaName } };
+      const match = result.lga?.match;
+      if (match && areas.some(area => area.id === match.id)) {
+        setState(current => chooseArea(current, match));
+        setPositionNote('Boundary match: ' + match.name + '. Ward borders are not verified.');
+      } else setPositionNote('No certain LGA match. Choose manually.');
+    } catch { setPositionNote('Boundary check unavailable. Choose manually.'); }
+    finally { setChecking(false); }
   };
-
-  const selectPhoto = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const previewPhoto = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
-    setPhotoStatus('Preparing a metadata-free preview…');
-    try {
-      const nextPhoto = await preparePhoto(file);
-      setPhoto(nextPhoto);
-      setPhotoStatus('Local preview created with original EXIF metadata removed. Nothing uploaded.');
-    } catch (cause) {
-      setPhotoStatus(cause instanceof Error ? cause.message : 'Could not preview this image.');
-    }
     event.target.value = '';
-  };
-
-  const copyToken = async () => {
+    if (!file) return;
+    if (!file.type.startsWith('image/') || file.size > 5_000_000 || !('createImageBitmap' in window)) {
+      setPhotoNote('Choose an image smaller than 5 MB. Preview is not supported in every browser.'); return;
+    }
     try {
-      await navigator.clipboard.writeText(SAMPLE_TOKEN);
-      setCopyStatus('Demo token copied. It is not valid for tracking.');
-    } catch { setCopyStatus('Copy unavailable. This demo token is not valid.'); }
+      const image = await createImageBitmap(file);
+      const scale = Math.min(1, 1000 / Math.max(image.width, image.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(image.width * scale); canvas.height = Math.round(image.height * scale);
+      const context = canvas.getContext('2d');
+      if (!context) throw new Error('Canvas unavailable');
+      context.drawImage(image, 0, 0, canvas.width, canvas.height); image.close();
+      const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob(b =>
+        b ? resolve(b) : reject(new Error('Preview error')), 'image/jpeg', .8));
+      setPhoto(URL.createObjectURL(blob));
+      setPhotoNote('Photo preview prepared locally without original EXIF metadata. It is not uploaded or attached to the text draft.');
+    } catch { setPhotoNote('Could not preview the photo; the text draft still works.'); }
   };
+  const lastAssistant = [...state.lines].reverse().find(line => line.role === 'assistant');
+  const writing = ['describe', 'location', 'details'].includes(state.stage);
 
-  return (
-    <main className="page report-page" id="main">
-      <div className="page-heading">
-        <p className="eyebrow">Report · demonstration</p>
-        <h1>{step === 1 ? 'What happened?' : step === 2 ? 'Where is it?' : step === 3 ? 'Review your draft' : 'Preview complete'}</h1>
-        <p className="help-text">This is a UI preview. No report is submitted or tracked.</p>
+  return <main className="page civic-conversation-page report-page" id="main">
+    <header className="page-heading conversation-heading">
+      <p className="eyebrow">Ekiti Civic / Reports</p>
+      <h1>{language === 'yo' ? 'Ṣàlàyé ohun tó ṣẹlẹ̀' : 'Tell me what happened'}</h1>
+      <p className="help-text">Private draft only · No submission or tracking reference</p>
+    </header>
+    <div className="conversation-history" role="log" aria-live="polite" aria-label="Report preparation conversation" aria-relevant="additions text">
+      {state.lines.map(line => <div key={line.id} className={'conversation-turn turn-' + line.role}>
+        {line.role === 'assistant' && <span className="conversation-author">Ekiti Civic</span>}
+        <p lang={line.role === 'assistant' && language === 'yo' ? 'yo' : undefined}>
+          {line.role === 'assistant' ? localPrompt(line.text, language) : line.text}
+        </p>
+      </div>)}
+      <div ref={end} />
+    </div>
+    {state.stage !== 'location' && positionNote.startsWith('Boundary match:') && <p className="boundary-evidence" role="status">{positionNote}</p>}
+    {state.stage === 'location' && <section className="conversation-support" aria-label="Optional location tools">
+      <label htmlFor="report-area">Or choose the local government area</label>
+      <select id="report-area" value="" onChange={event => {
+        const area = areas.find(item => item.id === event.target.value);
+        if (area) {
+          setPosition(null); setPositionNote('');
+          setState(current => chooseArea(current, area));
+        }
+      }}>
+        <option value="">Choose an LGA</option>
+        {areas.map(area => <option key={area.id} value={area.id}>{area.name}</option>)}
+      </select>
+      {directoryNote && <p role="status" className="note">{directoryNote}</p>}
+      <details className="conversation-disclosure">
+        <summary>Optional: check a precise map location</summary>
+        <p className="note">GPS requires permission; the position is sent only when you confirm.</p>
+        <button type="button" className="quiet-action" onClick={gps}>Use device GPS</button>
+        <button type="button" className="text-link" onClick={() => setMapOpen(current => !current)}>
+          {mapOpen ? 'Hide map' : 'Open Ekiti map'}
+        </button>
+        {mapOpen && <React.Suspense fallback={<p role="status">Loading map…</p>}>
+          <MapLocation onPoint={(lat, lon) => {
+            setPosition({ lat, lon }); setPositionNote('Map point selected. Confirm before checking its boundary.');
+          }} />
+        </React.Suspense>}
+        {position && <button type="button" className="quiet-action" onClick={() => void verifyPoint()} disabled={checking}>Confirm incident position</button>}
+        {positionNote && <p role="status" className="note">{positionNote}</p>}
+      </details>
+    </section>}
+    {state.stage === 'details' && <button type="button" className="text-link conversation-shortcut" onClick={() => send('skip')}>No more details — continue</button>}
+    {(state.stage === 'review' || state.stage === 'saved') && <section className="conversation-review" aria-labelledby="report-review-title">
+      <h2 id="report-review-title">Your private draft</h2>
+      <dl className="review-list">
+        <dt>Report type</dt><dd><select aria-label="Report type" value={state.draft.kind}
+          onChange={event => setState(current => ({ ...current, draft: { ...current.draft, kind: event.target.value as ReportKind } }))}>
+          <option>Issue</option><option>Complaint</option><option>Commendation</option></select></dd>
+        <dt>What happened</dt><dd>{state.draft.description}</dd>
+        <dt>Local government area</dt><dd>{state.draft.lgaName}</dd>
+        <dt>Extra details</dt><dd>{state.draft.detail || 'None provided'}</dd>
+      </dl>
+      <div className="review-edit-links" role="group" aria-label="Make corrections">
+        <button type="button" className="text-link" onClick={() => setState(current => revise(current, 'description'))}>Edit description</button>
+        <button type="button" className="text-link" onClick={() => {
+          setPosition(null); setPositionNote('');
+          setState(current => revise(current, 'location'));
+        }}>Change LGA</button>
+        <button type="button" className="text-link" onClick={() => setState(current => revise(current, 'details'))}>Edit details</button>
       </div>
-
-      <div className="report-progress" aria-label="Report progress">
-        {[1, 2, 3, 4].map(number => (
-          <button type="button" key={number}
-            aria-label={'Step ' + number + (number <= maxReached ? ', available' : ', locked')}
-            aria-current={number === step ? 'step' : undefined}
-            disabled={number > maxReached}
-            onClick={() => setParams({ step: String(number) })} />
-        ))}
+      <details className="conversation-disclosure">
+        <summary>Optional: preview photo (not uploaded)</summary>
+        <label htmlFor="draft-photo">Choose a photo</label>
+        <input id="draft-photo" type="file" accept="image/*" onChange={event => void previewPhoto(event)} />
+        {photo && <img className="photo-preview" alt="Local photo preview, not uploaded" src={photo} />}
+        {photoNote && <p className="note" role="status">{photoNote}</p>}
+        <p className="note">Photos are not included in downloaded text files.</p>
+      </details>
+      <p className="privacy-notice">This draft is stored only on this device. It is not sent to an agency. Real tracking begins only after secure reporting launches.</p>
+      {state.stage === 'review' && <button type="button" className="primary-action" onClick={download}>Download private draft</button>}
+      {state.stage === 'saved' && <div className="conversation-complete">
+        <p role="status">Download prepared · Not submitted</p>
+        <button type="button" className="quiet-action" onClick={download}>Download again</button>
+        <Link to="/track">How tracking will work</Link>
+      </div>}
+    </section>}
+    {writing && <form className="conversation-composer" onSubmit={event => { event.preventDefault(); send(); }}>
+      <label className="visually-hidden" htmlFor="report-message">Your reply</label>
+      <textarea ref={editor} id="report-message" rows={2} maxLength={4000} value={input}
+        onChange={event => setInput(event.target.value)}
+        onKeyDown={event => {
+          if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
+            event.preventDefault(); send();
+          }
+        }} placeholder={state.stage === 'location' ? 'Type an LGA, e.g. Ido/Osi' :
+          state.stage === 'details' ? 'Add details, or say skip' : 'Describe what happened…'} />
+      <div className="conversation-composer-actions">
+        <span className="metadata">{savedNote}</span>
+        {speechSupported() && <button type="button" className="icon-control" onClick={openVoice} aria-label="Reply using microphone">🎙</button>}
+        <button type="submit" className="conversation-send" disabled={!input.trim()}>Reply ↑</button>
       </div>
-
-      <div className="report-step" key={step}>
-        {step === 1 && (
-          <section aria-label="Incident description">
-            <p className="field-legend">Choose a type</p>
-            <div className="choice-row" role="group" aria-label="Report type">
-              {(['Issue', 'Complaint', 'Commendation'] as ReportKind[]).map(kind => (
-                <button type="button" className="chip" aria-pressed={draft.kind === kind} key={kind} onClick={() => update({ kind })}>{kind}</button>
-              ))}
-            </div>
-            <label htmlFor="incident-description">What should be recorded?</label>
-            <textarea id="incident-description" value={draft.description}
-              onChange={event => update({ description: event.target.value.slice(0, 4000) })}
-              rows={8} maxLength={4000}
-              placeholder="Describe the issue, location and what you observed…" />
-            <div className="field-bottom"><span>{saveStatus}</span><span>{draft.description.length} / 4000</span></div>
-            <p className="note">This text is stored only in this browser for drafting. Clear it on shared devices.</p>
-          </section>
-        )}
-
-        {step === 2 && (
-          <section aria-label="Incident location">
-            <p className="body-emphasis">Choose the incident location, not necessarily yours.</p>
-            <button type="button" className="quiet-action" onClick={proposeGPS}>Use my current location</button>
-            <p className="note">Only after you tap — never in the background.</p>
-            <label htmlFor="lga">Local government area</label>
-            <select id="lga" value={draft.lgaId} onChange={event => {
-              update({ lgaId: event.target.value, wardId: '' });
-              setPointEvidence('');
-            }}>
-              <option value="">Select an LGA</option>
-              {candidateLgas.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
-            </select>
-            <label htmlFor="ward">Electoral ward <span className="field-optional">Optional</span></label>
-            <select id="ward" value={draft.wardId} disabled={!draft.lgaId || !wards.length}
-              onChange={event => update({ wardId: event.target.value })}>
-              <option value="">Not specified</option>
-              {wards.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
-            </select>
-            {directoryError && <p className="warning-note" role="status">{directoryError}</p>}
-            {draft.wardId && <p className="warning-note">Ward selected by you. Its exact geographic boundary is not verified.</p>}
-            <label htmlFor="place">Landmark <span className="field-optional">Optional</span></label>
-            <input id="place" maxLength={160} value={draft.place} onChange={event => update({ place: event.target.value })} placeholder="Town, road or nearby place" />
-            <button type="button" className="text-link" onClick={() => setMapOpen(value => !value)}>
-              {mapOpen ? 'Hide map' : 'Open Ekiti map · more data'}
-            </button>
-            {mapOpen && <React.Suspense fallback={<p role="status">Loading map only now…</p>}>
-              <MapLocation onPoint={(lat, lon) => {
-                setPoint({ lat, lon });
-                setPointEvidence('');
-                setLocationStatus('Map point proposed. Confirm it before boundary lookup.');
-              }} />
-            </React.Suspense>}
-            {point && <button type="button" className="quiet-action" onClick={checkBoundary} disabled={checking}>Confirm incident position</button>}
-            {locationStatus && <p role="status" className="note">{locationStatus}</p>}
-            {pointEvidence && <p className="boundary-evidence" role="status">{pointEvidence}</p>}
-            {pointEvidence && <button type="button" className="text-link" onClick={() => {
-              setPoint(null); setPointEvidence(''); setLocationStatus('Choose a different area or point.');
-            }}>Location is wrong — correct it</button>}
-          </section>
-        )}
-
-        {step === 3 && (
-          <section aria-label="Review and consent">
-            <dl className="review-list">
-              <dt>Report type</dt><dd>{draft.kind}</dd>
-              <dt>What happened</dt><dd>{draft.description}</dd>
-              <dt>LGA</dt><dd>{lgaName}</dd>
-              <dt>Ward</dt><dd>{wardName}</dd>
-              <dt>Landmark</dt><dd>{draft.place || 'Not provided'}</dd>
-              <dt>Visibility</dt><dd>Anonymous · demo only</dd>
-            </dl>
-            <label htmlFor="report-photo">Photo <span className="field-optional">Optional · local preview only</span></label>
-            <input type="file" id="report-photo" accept="image/*" onChange={selectPhoto} />
-            {photo && <img className="photo-preview" src={photo.url} alt="Local image preview; never uploaded" />}
-            {photoStatus && <p className="note" role="status">{photoStatus}</p>}
-            <p className="warning-note">This application cannot receive reports yet. There is no actual case, submission, or government notification.</p>
-            <label className="check-line"><input type="checkbox" checked={consent} onChange={event => setConsent(event.target.checked)} />
-              <span>I understand this is a demonstration and nothing will be submitted.</span>
-            </label>
-            <Link to="/report?step=1" className="text-link">Edit description</Link>
-          </section>
-        )}
-
-        {step === 4 && (
-          <section className="preview-success" aria-label="Illustrative completion">
-            <div className="preview-mark" aria-hidden="true">◌</div>
-            <h2>Demo complete</h2>
-            <p>No report was stored, transmitted, or sent to an agency.</p>
-            <p className="field-legend">Example reference · not valid</p>
-            <code className="reference-text">{SAMPLE_REFERENCE}</code>
-            <p className="field-legend">Example private token · not valid</p>
-            <div className="token-line"><code>{SAMPLE_TOKEN}</code><button type="button" onClick={copyToken}>Copy</button></div>
-            {copyStatus && <p role="status" className="note">{copyStatus}</p>}
-            <p className="warning-note">A real reference and token will only appear after secure report storage is approved and implemented.</p>
-          </section>
-        )}
-      </div>
-
-      {error && <p role="alert" className="form-error">{error}</p>}
-      <div className="report-actions">
-        {step < 4 && <button type="button" className="primary-action" onClick={next}>
-          {step === 1 ? 'Continue to location' : step === 2 ? 'Review draft' : 'Preview completion'}
-        </button>}
-        {step === 4 && <Link className="primary-action action-anchor" to={'/track/' + SAMPLE_REFERENCE}>Preview tracking</Link>}
-        {step > 1 && step < 4 && <button type="button" className="text-link" onClick={back}>Back</button>}
-        {step === 1 && <button type="button" className="text-link" onClick={clear}>Clear saved draft</button>}
-      </div>
-    </main>
-  );
+    </form>}
+    <div className="conversation-foot">
+      {lastAssistant && <button type="button" className="text-link" onClick={() => {
+        setAudioNote(playAnswer(localPrompt(lastAssistant.text, language), language).message);
+      }}>Listen to assistant</button>}
+      {audioNote && <p role="status" className="metadata">{audioNote}</p>}
+      <button type="button" className="text-link clear-conversation" onClick={clear}>Clear private draft and conversation</button>
+    </div>
+  </main>;
 }

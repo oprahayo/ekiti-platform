@@ -25,6 +25,12 @@ The mobile interface now includes a central Ask experience, English/Yorùbá lan
 
 [View the researched source registry, usage limits and news freshness policy](docs/ask-ekiti-sources.md).
 
+## First-launch conversational UI
+
+The current launch UI candidate lets residents **talk with Ekiti Civic**, not work through consecutive reporting forms. The assistant asks what happened, which LGA is involved, and for extra details; it reviews the response for corrections and offers a private text download. **Nothing is submitted and no tracking reference is issued.** Reports are stored only in device localStorage for draft recovery, so clear them on shared devices. The Track tab provides an explicitly fictional example. Chat can direct a hotel or clinic request to Explore category/LGA filters, but business listings there are **illustrative**, not verified services. Real data ingestion, approved report intake, moderation and owner claims are separate backend work.
+
+[Read the first-launch UX, testing and release guardrails](docs/conversational-launch-ui.md).
+
 ## Development status
 
 The PostGIS resolver accepts citizen-confirmed incident coordinates. The audited GRID3 snapshot covers all 16 LGAs. The INEC reference import contains 177 electoral ward names. Electoral ward polygons await a verified crosswalk, so the current snapshot returns an unmapped ward for an in-state point. [Read the audit and measured coverage](docs/data-sources/2026-11-10-postgis-results.md).

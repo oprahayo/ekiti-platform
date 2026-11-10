@@ -10,6 +10,12 @@ interface AppState {
   voiceOpen: boolean;
   openVoice: () => void;
   closeVoice: () => void;
+  reportSpeech: string;
+  setReportSpeech: (value: string) => void;
+  trackSpeech: string;
+  setTrackSpeech: (value: string) => void;
+  pendingReportText: string;
+  setPendingReportText: (value: string) => void;
   askDraft: string;
   setAskDraft: (value: string) => void;
   exploreCategory: Category;
@@ -45,6 +51,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     try { localStorage.setItem('ekiti-ui-language', value); } catch { /* Works without storage */ }
   };
   const [voiceOpen, setVoiceOpen] = React.useState(false);
+  const [reportSpeech, setReportSpeech] = React.useState('');
+  const [trackSpeech, setTrackSpeech] = React.useState('');
+  const [pendingReportText, setPendingReportText] = React.useState('');
   const [askDraft, setAskDraft] = React.useState('');
   const [exploreCategory, setExploreCategory] = React.useState<Category>('All');
   const [exploreQuery, setExploreQuery] = React.useState('');
@@ -63,6 +72,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     voiceOpen,
     openVoice: () => { if (speechSupported()) setVoiceOpen(true); },
     closeVoice: () => setVoiceOpen(false),
+    reportSpeech, setReportSpeech,
+    trackSpeech, setTrackSpeech,
+    pendingReportText, setPendingReportText,
     askDraft,
     setAskDraft,
     exploreCategory, setExploreCategory,
