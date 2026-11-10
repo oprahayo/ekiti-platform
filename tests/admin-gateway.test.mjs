@@ -247,7 +247,7 @@ test('notes reject cross-site requests, overlarge payloads, unexpected fields an
     body:JSON.stringify(validNote),
   }))).status,403);
   assert.equal((await request(path,'POST',{ ...validNote, latitude:7.6 })).status,400);
-  assert.equal((await request(path,'POST',{ ...validNote, text:'too short' })).status,400);
+  assert.equal((await request(path,'POST',{ ...validNote, text:'short' })).status,400);
   assert.equal((await request(path,'POST',{ ...validNote, text:'a'.repeat(1600) })).status,400);
   assert.equal((await request(path,'POST',{ ...validNote, requestId:'bad' })).status,400);
   const { request: reader } = await setup('directory_reviewer');
