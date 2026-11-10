@@ -12,6 +12,9 @@ The Ekiti Civic administrative operations console is a separate React/Vite app, 
 - Append-only in-memory activity history; queue state is derived from events, not an editable status flag.
 - Internal assignment, awaiting clarification, supervisor escalation, platform resolution, reopening and notes. A reason is required for every action except assignment.
 - Sample-only analytics and a reset control.
+- Five separate moderation work queues: **listing submissions, citizen reviews, business ownership claims, civic knowledge and corrections**, with an evidence check and reasoned decisions retained in demo memory.
+- Ownership claim requests cannot be marked approved/verified from self-declarations or email OTP; human proof review is a separate restricted backend process.
+- A case-based **office-routing review** which proposes only a general triage scope by category, keeps ward boundaries unmapped, and explicitly refuses to invent receiving offices, dispatch, delivery or read receipts.
 - Separate **Agency delivery** and **Agency viewed** evidence indicators, both fixed to **Not verified**. No authorized agency receipt or view events can be emitted by the demo.
 
 Every case is prefixed `DEMO-` and is synthetic. The interface states that it makes no server requests, saves no changes and handles no real citizen cases. It never displays fabricated official tracking, government acknowledgement or dispatch.
@@ -32,6 +35,34 @@ npm run test:all
 ```
 
 The admin Vite build outputs to `dist-admin/`; it is not deployed. No new SQL migration, Supabase setting or Worker route is activated.
+
+## Recovered original product scope (not yet complete)
+
+This console supports a larger civic platform, not only case tracking. The original operational requirements are:
+
+1. **Automatic classification with human checks:** case type, geography and severity; state/LGA/ward/community resolution must use a source-verified administrative hierarchy. A text label or weak similarity is not verification. Current ward polygons are unmapped.
+2. **Agency directory and routing:** maintain authorized offices, jurisdictions, responsible services, contact endpoints, acceptance/transfer procedures, staff teams and permissions. Route only to approved destinations using verified rules and allow triage review when jurisdiction is uncertain.
+3. **Government interaction and accountability:** distinct stages for platform intake, suggested routing, attempted forwarding, confirmed delivery/office receipt, authenticated view/read, official response, follow-up, independently verified resolution and reopening. No stage is inferred from time elapsed or a platform moderator's action.
+4. **Overdue reminders and escalation:** enforce defined service-level policies and business calendars; record actual attempted and successful notifications, no-responses and escalations. The earlier seven-day acknowledgement window was a proposal, **not a binding policy**.
+5. **Directory/content moderation:** approve sourced place records, verify claims (not just email possession), handle ratings/reviews, corrections, publisher provenance, copyright/licensing, evidence dates and appeals. Never publish a pending contribution by default.
+6. **Public accountability:** expose only approved redacted indicators with source evidence, denominators, update dates, response-vs-no-response distinctions, access constraints and exportable open data/APIs. Anonymous citizen narratives, precise incident coordinates and tracking tokens stay private.
+7. **Platform administration:** distinct moderator, directory reviewer, case manager, government officer, supervisor, auditor and platform administrator permissions, enforced on every server request.
+
+### Proposed authorization and event semantics
+
+| Responsibility | Required evidence | Public interpretation |
+| --- | --- | --- |
+| Platform submitted/accepted | Database commit, consent/policy version and intake event | The independent platform holds a report |
+| Suggested routing | Source/office mapping and human approval where ambiguous | Internal recommendation only |
+| Forwarding attempted | Gateway send attempt and destination | Not equivalent to delivered |
+| Delivered to office | Verified gateway delivery or authenticated office acceptance | Agency receipt is confirmed |
+| Viewed/read by officer | Authenticated officer principal and case-access event | Case was accessed, not necessarily addressed |
+| Awaiting official response | Recorded office receipt/view and a policy deadline | No official answer yet |
+| Responded | Recorded official response and actor authorization | A response exists; resolution not implied |
+| Resolved/reopened | Documented action/outcome, with any independent verification clearly labeled | Claimed vs verified resolution are separate |
+| Ignored/unanswered | Objective policy-defined elapsed window with no qualifying reply | Never assume motive; display "No recorded response" |
+
+An append-only backend event journal will be the canonical state source. Do not let the frontend directly update status or pretend to sign official read events.
 
 ## Next milestone — secure operational backend (not implemented)
 
