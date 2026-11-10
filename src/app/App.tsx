@@ -9,7 +9,6 @@ import { CitizenAuthProvider } from './CitizenAuth.tsx';
 const Report = React.lazy(() => import('./ReportJourney.tsx'));
 const LegacyReport = React.lazy(() => import('./Report.tsx'));
 const ListingDraft = React.lazy(() => import('./ContributionDrafts.tsx'));
-const CommunityPostDraft = React.lazy(() => import('./ContributionDrafts.tsx').then(module => ({ default: module.CommunityPostDraft })));
 const Track = React.lazy(() => import('./TrackConversation.tsx'));
 const Explore = React.lazy(() => import('./ExploreDirectory.tsx'));
 const PlaceDetails = React.lazy(() => import('./PlaceDetails.tsx'));
@@ -123,7 +122,6 @@ function Shell() {
           <Route path="/explore" element={<Explore />} />
           <Route path="/report" element={<Report />} />
           <Route path="/report/text-draft" element={<LegacyReport />} />
-          <Route path="/post" element={<CommunityPostDraft />} />
           <Route path="/listings/new" element={<ListingDraft />} />
           <Route path="/track" element={<Track />} />
           <Route path="/track/:publicId" element={<Track />} />
