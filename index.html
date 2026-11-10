@@ -96,6 +96,26 @@
           <p id="point-status" role="status"></p>
         </section>
       </div>
+      <details class="panel draft">
+        <summary>Prepare a report draft</summary>
+        <p>Download a text copy for your own records. It includes your selected area and description.
+          The platform does not receive the draft.</p>
+        <form id="draft-form" autocomplete="off">
+          <label for="draft-kind">Report type</label>
+          <select id="draft-kind" required>
+            <option value="">Choose a type</option>
+            <option>Complaint</option><option>Commendation</option><option>Issue</option>
+          </select>
+          <label for="draft-description">What happened?</label>
+          <textarea id="draft-description" rows="4" required maxlength="4000"
+            aria-describedby="draft-help"></textarea>
+          <p class="hint" id="draft-help">Include only details you want in the downloaded file.
+            The location selector’s exact coordinates are excluded.</p>
+          <button class="primary" type="submit">Download draft</button>
+          <button type="reset">Clear report text and type</button>
+          <p role="status" id="draft-status"></p>
+        </form>
+      </details>
       <footer>Independent civic project · No reports are submitted from this page.</footer>
     </main>
     <script type="module" src="/src/web/main.ts"></script>
