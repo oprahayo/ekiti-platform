@@ -9,6 +9,9 @@ FROM (VALUES
 
 SELECT geo.stage_boundary(area_key,source_key,feature,4326) FROM features;
 
+\set grid3_staging true
+\i validate_grid3.sql
+
 -- Only the pinned, reviewed features qualify for promotion. Preserve manual
 -- disputes and rejections and do not promote unrelated staging records.
 UPDATE geo.areas a SET verification_state='verified',data_source_id=f.source_key

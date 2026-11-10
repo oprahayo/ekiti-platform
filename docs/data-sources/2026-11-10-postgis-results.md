@@ -12,6 +12,12 @@ The INEC Ekiti registration-area directory lists 177 distinct parent/name pairs.
 
 The INEC directory uses ADO, GBOYIN and IREPODUN where GRID3 uses Ado-Ekiti, Gbonyin and Irepodun/Ifelodun. The importer explicitly maps these parent labels within the 16-LGA checklist. The 2015 INEC directory uses Gbonyin. The state directory's Ayekire and the About Ekiti page's Aiyekire remain candidate aliases. GRID3 codes and INEC serials are source-specific and must not be joined by ordinal position. [INEC 2015 directory](https://wp1.inecnigeria.org/wp-content/uploads/2019/02/PU_Directory_Revised_January_2015_Ekiti.pdf) · [Earlier alias audit](2026-11-10-ekiti-geography-audit.md)
 
+## Import and coverage checks
+
+Acquire the INEC PDF from the directory URL above. The reviewed version has SHA-256 `7af4fe924412edd4107a3bfc48e405999889a9a637f53d831d6e9fcceb632eba`. Maintainers can supply a matching local copy through `--inec-pdf`. CI retrieves the PDF directly, runs the same parser and import twice, and checks the ordered database rows against a reviewed fingerprint. A publisher revision requires review before changing either fingerprint.
+
+The GRID3 gate checks the expected state and all 16 LGA IDs against their release-specific source record IDs, area kinds and parents. Every staged geometry must match its reviewed input. Quarantine entries from either reviewed GRID3 source, disputed areas and rejected boundaries stop promotion. The allowed uncovered area, area beyond the state and pairwise LGA overlap are each 0 m² for this snapshot. The gate runs before promotion within the import transaction. A failure rolls back the batch including any new quarantine rows, and psql reports the reason. Running scripts/coverage.sql separately rechecks the stored manifest, verification states, quarantine and topology. Electoral wards may still have zero verified polygons.
+
 ## Operational wards
 
 The CIESIN v4.0 service returned 174 Ekiti features in EPSG:4326. All passed PostGIS validity checks. Efon has 9 operational features for 10 electoral names. Ekiti South-West has 9 for 11. Counts agree in the other 14 LGAs, but even equal counts can mask different identities. For example, INEC names Efon's wards EFON I through EFON X, while GRID3 uses local names including Idagba/Apare. No official identifier crosswalk was established.

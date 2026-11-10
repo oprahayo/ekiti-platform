@@ -23,6 +23,8 @@ The project team has provided existing social channels: [Instagram @inekitioffic
 
 The PostGIS resolver accepts citizen-confirmed incident coordinates. The audited GRID3 snapshot covers all 16 LGAs. The INEC reference import contains 177 electoral ward names. Electoral ward polygons await a verified crosswalk, so the current snapshot returns an unmapped ward for an in-state point. [Read the audit and measured coverage](docs/data-sources/2026-11-10-postgis-results.md).
 
+[GitHub Actions checks](https://github.com/oprahayo/ekiti-platform/actions/workflows/tests.yml)
+
 ## Local development
 
 Use Node.js 22.16+, npm, Python 3, psql, PostgreSQL 16 and PostGIS. For the optional INEC name import, install Poppler (pdftotext). Set DATABASE_URL to a blank development database created from template0. Run migrations as its owner with permission to install PostGIS and create the NOLOGIN reader role. On an existing starter database, apply only migration 0002 if 0001 and its seed have already run.
@@ -36,11 +38,12 @@ curl -fLsS https://inecnigeria.org/documents/resources/rac/EKITI.pdf -o /tmp/eki
 python3 scripts/import_geo.py --inec-pdf /tmp/ekiti-rac.pdf
 psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f scripts/coverage.sql
 npm run test:postgis
+python3 tests/import_checks.py
 ```
 
-Imports check the exact reviewed input hashes and run in one transaction. Tests use the imported state/LGA snapshot and roll back their writes. The PostGIS CI service runs independently of external data downloads.
+Imports check the exact reviewed input hashes and run in one transaction. Tests use the imported state/LGA snapshot and roll back their writes. CI downloads the official PDF into runner temporary storage, checks its pinned SHA-256, imports it twice, then checks a fingerprint of all 177 stored serial/name/parent mappings and all 16 parents. A missing or changed source fails CI. The PDF is not redistributed.
 
-Grant ekiti_location_reader to a dedicated backend login with no existing table or schema-write privileges. Use its connection pool with the server entry point resolveIncidentLocation(db, latitude, longitude) in src/server/location.ts. Its database call accepts coordinates in latitude, longitude order. The RPC returns verified candidates, source IDs and edge flags. The server reports per-level status, hierarchy consistency and whether confirmation is required. Exact borders and overlapping matches require confirmation. Keep DATABASE_URL in the server environment.
+Grant ekiti_location_reader to a dedicated backend login with no existing table or schema-write privileges. Use its connection pool with the server entry point resolveIncidentLocation(db, latitude, longitude) in src/server/location.ts. Its database call accepts coordinates in latitude, longitude order. The RPC returns verified candidates, source IDs and edge flags. The server reports per-level status, hierarchy consistency and whether confirmation is required. Exact borders and overlapping matches require confirmation. Keep DATABASE_URL in the server environment. The planned Worker transport uses [Hyperdrive and a restricted origin login](docs/adr/0002-worker-postgres-transport.md).
 
 ## Milestone 01 completion criteria
 

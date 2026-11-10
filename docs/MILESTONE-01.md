@@ -18,12 +18,14 @@ This is an engineering milestone, **not** a working civic report intake site.
 - [x] Domain resolution contract and deterministic reconciliation tests
 - [x] SQL migration for geo tables, verified geometry candidates, quarantine
 - [x] Provisional name checklist for 16 LGAs (not certified)
-- [x] Import 177 INEC registration-area names and their parent LGAs from a pinned official PDF
+- [x] Optional local INEC import, required in CI. Verify the 177 registration-area names and their 16 LGA parents from the pinned official PDF
 - [x] Audit the GRID3 state, LGA and operational ward releases and record license terms
 - [x] Verified state and LGA imports, restricted server resolver and PostGIS integration tests
 - [ ] Verified electoral ward geometry and operational-to-electoral crosswalk
 - [ ] Full HTTP endpoint, rate limits and permissions
 - [ ] Location picker / optional map UI
 - [ ] Deployment / staging validation
+
+The picker is a separate UI phase because a citizen must be able to self-declare an incident location when ward geometry is unavailable or a border match is ambiguous. Device GPS requires separate confirmation.
 
 No application should claim geographic coverage is complete until the boundary audit proves it.

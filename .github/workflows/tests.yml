@@ -27,7 +27,13 @@ jobs:
         run: |
           psql postgres://postgres:ci@localhost:5432/postgres -c 'CREATE DATABASE ekiti_test TEMPLATE template0'
           psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f db/migrations/0001_geography.sql -f db/migrations/0002_location.sql -f db/seeds/0001_ekiti_lgas.sql
-          python3 scripts/import_geo.py
-          python3 scripts/import_geo.py
+      - name: Import and verify the pinned INEC directory
+        run: |
+          command -v pdftotext || (sudo apt-get update && sudo apt-get install -y poppler-utils)
+          curl --fail --location --silent --show-error --retry 3 --max-time 60 \
+            https://inecnigeria.org/documents/resources/rac/EKITI.pdf -o "$RUNNER_TEMP/ekiti.pdf"
+          python3 scripts/import_geo.py --inec-pdf "$RUNNER_TEMP/ekiti.pdf"
+          python3 scripts/import_geo.py --inec-pdf "$RUNNER_TEMP/ekiti.pdf"
+          python3 tests/import_checks.py
       - run: npm run test:postgis
       - run: psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f scripts/coverage.sql

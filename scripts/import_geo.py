@@ -36,8 +36,8 @@ def copy_rows(table, rows):
 
 
 def ward_rows(pdf, parents):
-    checked(pdf, "rac")
-    layout = subprocess.check_output(["pdftotext", "-layout", str(pdf), "-"], text=True)
+    raw = checked(pdf, "rac")
+    layout = subprocess.check_output(["pdftotext", "-layout", "-enc", "UTF-8", "-", "-"], input=raw).decode("utf-8")
     rows = []
     for line in layout.splitlines():
         match = re.fullmatch(r"\s*(\d+)\s+(.+?)\s{2,}(.+?)\s*", line)
@@ -73,6 +73,7 @@ def main():
             records.append((key, f"grid3-{kind}-2020", json.dumps(feature)))
     sql = """BEGIN;
     SELECT pg_advisory_xact_lock(23178501);
+    LOCK TABLE geo.areas, geo.boundaries, geo.import_quarantine IN SHARE ROW EXCLUSIVE MODE;
     CREATE TEMP TABLE features(area_key text PRIMARY KEY,source_key text,feature jsonb) ON COMMIT DROP;
     """ + copy_rows("features", records)
     sql += (ROOT / "scripts/import_grid3.sql").read_text()
@@ -88,9 +89,21 @@ def main():
         INSERT INTO geo.areas(id,parent_id,name,area_kind,data_source_id,verification_state)
         SELECT id,parent_id,name,'ward','inec-ekiti-rac','verified' FROM wards
         ON CONFLICT(id) DO NOTHING;
+        DO $$ BEGIN
+          IF (SELECT count(*) FROM geo.areas WHERE data_source_id='inec-ekiti-rac') <> 177
+            OR EXISTS (
+              SELECT FROM wards w LEFT JOIN geo.areas a ON a.id=w.id
+              LEFT JOIN geo.areas p ON p.id=a.parent_id
+              WHERE (a.area_kind,a.name,a.parent_id,a.verification_state,a.data_source_id)
+                IS DISTINCT FROM ('ward',w.name,w.parent_id,'verified','inec-ekiti-rac')
+                OR (p.area_kind,p.parent_id,p.verification_state)
+                IS DISTINCT FROM ('lga','ekiti','verified')
+            ) THEN RAISE EXCEPTION 'INEC import differs from the reviewed 177 ward references';
+          END IF;
+        END $$;
         """
     subprocess.run(["psql", "-X", "-v", "ON_ERROR_STOP=1", os.environ["DATABASE_URL"]],
-                   input=sql + "\nCOMMIT;\n", text=True, check=True)
+                   input=sql + "\nCOMMIT;\n", text=True, check=True, cwd=ROOT / "scripts")
 
 
 if __name__ == "__main__":
