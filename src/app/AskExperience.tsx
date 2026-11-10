@@ -92,7 +92,6 @@ export function Ask({ home = false }: { home?: boolean }) {
     setMessages([...inMemoryMessages]);
     setSending(true);
     setAskDraft('');
-    if (home) navigate('/ask', { replace: true });
     try {
       const response = await fetch('/api/ask', {
         method: 'POST',
