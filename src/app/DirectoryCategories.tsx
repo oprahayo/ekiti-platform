@@ -47,11 +47,15 @@ export const directoryCategories: readonly DirectoryCategory[] = [
 ];
 
 export function DirectoryMark() {
-  return <svg className="directory-mark" viewBox="0 0 64 72" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M32 17c-12 0-21 9-21 21 0 13 21 31 21 31s21-18 21-31c0-12-9-21-21-21Z" />
-    <circle cx="32" cy="38" r="10" fill="var(--directory-yellow)" />
-    <circle cx="32" cy="38" r="2.5" fill="currentColor" stroke="none" />
-    <path d="M32 4v7M13 12l5 6M51 12l-5 6" />
+  // Original Yellow Pages book + location mark, not a government emblem.
+  return <svg className="directory-mark" viewBox="0 0 76 72" aria-hidden="true" fill="none"
+    stroke="currentColor" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M37 58C26 51 17 49 6 53V11c12-4 23-1 31 6v41Z"/>
+    <path d="M37 58c11-7 20-9 32-5V11c-12-4-23-1-32 6v41Z"/>
+    <path d="M37 17v41M12 18c8-2 14 0 20 5M43 23c7-5 13-6 20-5"/>
+    <path d="M19 29c7-1 11 1 13 4M43 34c5-4 10-5 17-4" stroke="var(--directory-yellow)" strokeWidth="5"/>
+    <path d="M56 41c0-5 4-8 8-8s8 3 8 8-8 14-8 14-8-9-8-14Z" fill="var(--directory-yellow)" strokeWidth="2.5"/>
+    <circle cx="64" cy="41" r="2" fill="currentColor" stroke="none"/>
   </svg>;
 }
 
