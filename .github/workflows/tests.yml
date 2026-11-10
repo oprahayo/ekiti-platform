@@ -35,6 +35,10 @@ jobs:
           python3 scripts/import_geo.py --inec-pdf "$RUNNER_TEMP/ekiti.pdf"
           python3 scripts/import_geo.py --inec-pdf "$RUNNER_TEMP/ekiti.pdf"
           python3 tests/import_checks.py
+      - name: Install knowledge and directory schema in disposable CI database
+        run: psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f db/migrations/0004_knowledge_directory.sql
+      - name: Verify reviewed-content isolation and public reader functions
+        run: node --experimental-strip-types --test tests/knowledge-postgis.mjs
       - run: npm run test:postgis
       - run: psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f scripts/coverage.sql
 
