@@ -83,7 +83,7 @@ function Sidebar({
 function CaseList({
   view, cases, query, onQuery, selectedId, onSelect,
 }: {
-  view: Exclude<View, 'analytics'>;
+  view: Queue | 'all';
   cases: AdminCase[];
   query: string;
   onQuery: (query: string) => void;
