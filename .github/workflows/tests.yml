@@ -5,10 +5,35 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgis/postgis:16-3.5
+        env:
+          POSTGRES_PASSWORD: ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 5s
+          --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgres://postgres:ci@localhost:5432/ekiti_test
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: npm install --no-audit --no-fund
-      - run: npm run test:all
+      - run: npm ci && npm run test:all
+      - name: Create isolated geographic database
+        run: |
+          psql postgres://postgres:ci@localhost:5432/postgres -c 'CREATE DATABASE ekiti_test TEMPLATE template0'
+          psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f db/migrations/0001_geography.sql -f db/migrations/0002_location.sql -f db/seeds/0001_ekiti_lgas.sql
+      - name: Import and verify the pinned INEC directory
+        run: |
+          command -v pdftotext || (sudo apt-get update && sudo apt-get install -y poppler-utils)
+          curl --fail --location --silent --show-error --retry 3 --max-time 60 \
+            https://inecnigeria.org/documents/resources/rac/EKITI.pdf -o "$RUNNER_TEMP/ekiti.pdf"
+          python3 scripts/import_geo.py --inec-pdf "$RUNNER_TEMP/ekiti.pdf"
+          python3 scripts/import_geo.py --inec-pdf "$RUNNER_TEMP/ekiti.pdf"
+          python3 tests/import_checks.py
+      - run: npm run test:postgis
+      - run: psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f scripts/coverage.sql
