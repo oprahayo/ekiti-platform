@@ -50,9 +50,9 @@ CREATE TABLE civic.claim_intents (
 CREATE INDEX civic_claims_owner_idx ON civic.claim_intents(claimant_id,requested_at DESC);
 
 ALTER TABLE civic.reviews ENABLE ROW LEVEL SECURITY;
-ALTER TABLE civic.reviews FORCE ROW LEVEL SECURITY;
 ALTER TABLE civic.claim_intents ENABLE ROW LEVEL SECURITY;
-ALTER TABLE civic.claim_intents FORCE ROW LEVEL SECURITY;
+-- Table owner security-definer functions must bypass RLS while public/authenticated
+-- callers have no direct table privileges or policies. Do not add FORCE here.
 
 REVOKE ALL ON civic.reviews,civic.claim_intents FROM PUBLIC,anon,authenticated;
 REVOKE ALL ON ALL SEQUENCES IN SCHEMA civic FROM PUBLIC,anon,authenticated;
