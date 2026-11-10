@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const styles = readFileSync(new URL('../src/app/styles.css', import.meta.url), 'utf8');
-const jsx = readFileSync(new URL('../src/app/App.tsx', import.meta.url), 'utf8');
+const jsx = readFileSync(new URL('../src/app/AskExperience.tsx', import.meta.url), 'utf8');
 const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 
 function luminance(hex) {

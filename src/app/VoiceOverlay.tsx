@@ -1,3 +1,4 @@
+import type { Language } from '../server/ask-knowledge.ts';
 import * as React from 'react';
 import { voiceExamples } from './fixtures.ts';
 
@@ -24,23 +25,28 @@ function constructorForSpeech(): RecognitionConstructor | undefined {
 }
 
 export default function VoiceOverlay({
+  language,
   onClose,
   onType,
   onTranscript,
 }: {
+  language: Language;
   onClose: () => void;
   onType: () => void;
   onTranscript: (transcript: string) => void;
 }) {
   const [state, setState] = React.useState<VoiceState>('idle');
   const [exampleIndex, setExampleIndex] = React.useState(0);
+  const prompts = language === 'yo'
+    ? ['Mélòó ni ìjọba ìbílẹ̀ Èkìtì?', 'Kí ló ń ṣẹlẹ̀ ní Èkìtì lónìí?', 'Ìwé ìṣúná Èkìtì']
+    : [...voiceExamples];
   const recognition = React.useRef<BrowserRecognition | null>(null);
   const finishTimeout = React.useRef<number | null>(null);
   const completed = React.useRef(false);
   const closeRef = React.useRef<HTMLButtonElement>(null);
 
   React.useEffect(() => {
-    const id = window.setInterval(() => setExampleIndex((index) => (index + 1) % voiceExamples.length), 2600);
+    const id = window.setInterval(() => setExampleIndex((index) => (index + 1) % prompts.length), 2600);
     closeRef.current?.focus();
     const keydown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose();
@@ -52,7 +58,7 @@ export default function VoiceOverlay({
       recognition.current?.abort();
       if (finishTimeout.current !== null) clearTimeout(finishTimeout.current);
     };
-  }, [onClose]);
+  }, [onClose, prompts.length]);
 
   const startListening = () => {
     const Speech = constructorForSpeech();
@@ -64,7 +70,7 @@ export default function VoiceOverlay({
     completed.current = false;
     const instance = new Speech();
     recognition.current = instance;
-    instance.lang = 'en-NG';
+    instance.lang = language === 'yo' ? 'yo-NG' : 'en-NG';
     instance.interimResults = false;
     instance.continuous = false;
     instance.onresult = (event) => {
@@ -102,7 +108,7 @@ export default function VoiceOverlay({
           ? 'Tap the microphone to try again'
           : state === 'thinking'
             ? 'Review the words before sending'
-            : 'Ask about services, places, or projects'}</p>
+            : language === 'yo' ? 'Béèrè nípa iṣẹ́ àti Ìpínlẹ̀ Èkìtì' : 'Ask about services, places, or projects'}</p>
         <div className={'voice-cluster ' + (state === 'listening' ? 'is-listening' : '')}>
           <span className="voice-ripple voice-ripple-one" aria-hidden="true" />
           <span className="voice-ripple voice-ripple-two" aria-hidden="true" />
@@ -116,11 +122,11 @@ export default function VoiceOverlay({
         </div>
         <div className="voice-example" aria-live="off">
           <small>Try saying</small>
-          <p key={exampleIndex}>{voiceExamples[exampleIndex]}</p>
+          <p key={exampleIndex}>{prompts[exampleIndex]}</p>
         </div>
       </div>
       <button className="voice-type" type="button" onClick={onType}>Text always works — tap to type</button>
-      <p className="voice-privacy">Speech processing is provided by your browser. No audio is stored by Ekiti Civic.</p>
+      <p className="voice-privacy">Browser speech recognition may send audio to its provider. Ekiti Civic does not store recordings. Yoruba recognition depends on browser support.</p>
     </div>
   );
 }

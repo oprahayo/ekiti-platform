@@ -19,6 +19,12 @@ Open-source civic infrastructure for Ekiti State, Nigeria: trustworthy local inf
 
 The project team has provided existing social channels: [Instagram @inekitiofficial](https://www.instagram.com/inekitiofficial) and [TikTok @inekitiofficial](https://www.tiktok.com/@inekitiofficial). Their existence does not settle the software's final public brand. A contact email has been provided privately; confirm publication before adding it to this public repository.
 
+## Ask Ekiti — source-backed English/Yoruba chat
+
+The mobile interface now includes a central Ask experience, English/Yorùbá language switching, a one-tap light/dark toggle, source citations, live official press-release RSS lookup with dated fallback, optional voice recognition and browser text-to-speech playback. No paid AI token or LLM API is required. The answers are curated/extractive and **cannot answer arbitrary questions like a full generative model**. If a topic is unsupported or recent information is unverified, the app says so. Browser-supported Yoruba voice recognition and speech playback vary by device.
+
+[View the researched source registry, usage limits and news freshness policy](docs/ask-ekiti-sources.md).
+
 ## Development status
 
 The PostGIS resolver accepts citizen-confirmed incident coordinates. The audited GRID3 snapshot covers all 16 LGAs. The INEC reference import contains 177 electoral ward names. Electoral ward polygons await a verified crosswalk, so the current snapshot returns an unmapped ward for an in-state point. [Read the audit and measured coverage](docs/data-sources/2026-11-10-postgis-results.md).

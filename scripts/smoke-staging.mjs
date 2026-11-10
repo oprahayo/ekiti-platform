@@ -39,6 +39,23 @@ const evidence = await response.json();
 assert.equal(evidence.stateBoundaryStatus, 'inside');
 assert.equal(evidence.lga.match?.id, 'efon');
 assert.equal(evidence.ward.status, 'unmapped');
+// Ask can resolve English and Yoruba facts without an AI API key or a DB write.
+for (const [language, question] of [
+  ['en', 'How many LGAs are in Ekiti?'],
+  ['yo', 'Mélòó ni ìjọba ìbílẹ̀ Èkìtì?'],
+]) {
+  const answerResponse = await request('/api/ask', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ language, question }),
+  });
+  assert.equal(answerResponse.headers.get('Cache-Control'), 'no-store');
+  const answer = await answerResponse.json();
+  assert.equal(answer.topic, 'lga');
+  assert.equal(answer.language, language);
+  assert.ok(answer.sources.length > 0);
+  assert.equal(answer.confidence, 'source-backed');
+}
 console.log(
-  'Page, verified directory, Efon boundary lookup and unmapped ward passed at ' + origin.origin,
+  'Page, verified directory, Efon boundary lookup, unmapped ward and English/Yoruba Ask passed at ' + origin.origin,
 );

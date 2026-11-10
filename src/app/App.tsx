@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { BrowserRouter, Link, NavLink, Route, Routes, useLocation, useNavigate, useParams } from 'react-router';
-import { categories, demoAnswer, demoMetrics, demoPlaces, demoTimeline, lgas } from './fixtures.ts';
+import { categories, demoMetrics, demoPlaces, demoTimeline, lgas } from './fixtures.ts';
+import { Home, Ask } from './AskExperience.tsx';
 import { AppProvider, speechSupported, useApp } from './state.tsx';
 
 const Report = React.lazy(() => import('./Report.tsx'));
@@ -8,9 +9,6 @@ const VoiceOverlay = React.lazy(() => import('./VoiceOverlay.tsx'));
 const MapLocation = React.lazy(() => import('./MapLocation.tsx'));
 const DEMO_REF = 'DEMO-EKP-2026-00001';
 const DEMO_TOKEN = 'DEMO-ONLY-NOT-VALID';
-
-type Message = { id: number; question: string; response: ReturnType<typeof demoAnswer> };
-let inMemoryMessages: Message[] = [];
 
 function Icon({ name }: { name: 'home' | 'explore' | 'report' | 'track' | 'scores' | 'mic' | 'settings' | 'search' }) {
   const shapes: Record<typeof name, React.ReactNode> = {
@@ -26,123 +24,26 @@ function Icon({ name }: { name: 'home' | 'explore' | 'report' | 'track' | 'score
   return <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{shapes[name]}</svg>;
 }
 
-function Settings() {
-  const { dark, toggleTheme } = useApp();
-  const [open, setOpen] = React.useState(false);
-  return (
-    <div className="settings-wrap">
-      <button type="button" className="icon-control" onClick={() => setOpen(value => !value)} aria-expanded={open} aria-label="Settings">
-        <Icon name="settings" />
-      </button>
-      {open && <div className="settings-panel" role="group" aria-label="Display settings">
-        <p>Display</p>
-        <button type="button" onClick={toggleTheme}>{dark ? 'Use light mode' : 'Use dark mode'}</button>
-        <span>Low-data mode is always on.</span>
-      </div>}
+function HeaderControls() {
+  const { dark, toggleTheme, language, setLanguage } = useApp();
+  return <div className="header-controls">
+    <div className="header-languages" role="group" aria-label="Answer language">
+      <button type="button" onClick={() => setLanguage('en')}
+        aria-pressed={language === 'en'} lang="en">EN</button>
+      <span aria-hidden="true">/</span>
+      <button type="button" onClick={() => setLanguage('yo')}
+        aria-pressed={language === 'yo'} lang="yo">YOR</button>
     </div>
-  );
-}
-
-function AskBar({ home = false, onSubmit }: { home?: boolean; onSubmit?: () => void }) {
-  const navigate = useNavigate();
-  const { askDraft, setAskDraft, openVoice } = useApp();
-  const [hasSpeech, setHasSpeech] = React.useState(false);
-  React.useEffect(() => setHasSpeech(speechSupported()), []);
-  const focusAsk = () => { if (home) navigate('/ask?focus=1'); };
-  return (
-    <div className={'ask-bar ' + (home ? 'ask-home' : '')} role="search">
-      <Icon name="search" />
-      <input id={home ? 'home-ask-input' : 'ask-input'} type="search" aria-label="Ask about Ekiti"
-        placeholder="Ask about Ekiti…" readOnly={home}
-        value={home ? '' : askDraft}
-        onFocus={focusAsk}
-        onChange={event => setAskDraft(event.target.value)}
-        onKeyDown={event => { if (event.key === 'Enter') { if (home) focusAsk(); else onSubmit?.(); } }} />
-      {hasSpeech && <button className="icon-control mic-trigger" aria-label="Open voice mode" type="button" onClick={openVoice}><Icon name="mic" /></button>}
-    </div>
-  );
-}
-
-function Home() {
-  return (
-    <main className="home-page page" id="main">
-      <h1>Welcome to Ekiti</h1>
-      <div className="home-actions">
-        <AskBar home />
-        <Link to="/report" className="home-row">
-          <span className="row-icon icon-danger"><Icon name="report" /></span>
-          <span><strong>Report a problem</strong><small>Start a private draft</small></span>
-          <span aria-hidden="true" className="row-arrow">→</span>
-        </Link>
-        <Link to="/explore" className="home-row">
-          <span className="row-icon"><Icon name="explore" /></span>
-          <span><strong>Explore Ekiti</strong><small>Find places and local areas</small></span>
-          <span aria-hidden="true" className="row-arrow">→</span>
-        </Link>
-      </div>
-      <p className="independence">Independent civic project · Not a government service</p>
-    </main>
-  );
-}
-
-function Ask() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { askDraft, setAskDraft } = useApp();
-  const [messages, setMessages] = React.useState<Message[]>(() => inMemoryMessages);
-  React.useEffect(() => {
-    if (new URLSearchParams(location.search).has('focus')) {
-      document.getElementById('ask-input')?.focus();
-    }
-  }, [location.search]);
-  const submit = (question = askDraft) => {
-    const clean = question.trim().slice(0, 350);
-    if (!clean) return;
-    const next = [...inMemoryMessages, { id: Date.now(), question: clean, response: demoAnswer(clean) }];
-    inMemoryMessages = next;
-    setMessages(next);
-    setAskDraft('');
-    navigate('/ask', { replace: true });
-  };
-  return (
-    <main className="page ask-page" id="main">
-      <header className="page-heading">
-        <p className="eyebrow">Ask</p>
-        <h1>What would you like to know?</h1>
-        <p className="help-text">Answers are demo responses until verified source retrieval is connected.</p>
-      </header>
-      {messages.length === 0 && <section aria-label="Example questions">
-        <p className="metadata">Try a question</p>
-        <div className="choice-row">
-          {['How many LGAs?', 'Where are clinics?', 'Find hotels in Ikogosi'].map(question => (
-            <button className="chip" key={question} type="button" onClick={() => submit(question)}>{question}</button>
-          ))}
-        </div>
-      </section>}
-      <div className="chat-thread" aria-live="polite">
-        {messages.map(message => <div className="chat-exchange" key={message.id}>
-          <p className="chat-question">{message.question}</p>
-          <div className="chat-answer">
-            <p>{message.response.text}</p>
-            <span className="source-line">Source: {message.response.source}</span>
-            <span className="source-line">Updated: demo fixture · 10 Nov 2026</span>
-            <span className="source-line">{message.response.confidence}</span>
-            <p className="help-text">This is a preview, not a live AI answer.</p>
-          </div>
-        </div>)}
-      </div>
-      {messages.length > 0 && <div className="chat-related">
-        <Link to="/explore">Explore areas</Link>
-        <Link to="/report">Write a report draft</Link>
-      </div>}
-      <div className="ask-composer">
-        <div className="ask-input-row">
-          <AskBar onSubmit={() => submit()} />
-          <button className="send-button" type="button" onClick={() => submit()} disabled={!askDraft.trim()}>Send</button>
-        </div>
-      </div>
-    </main>
-  );
+    <button type="button" className="icon-control theme-switch" onClick={toggleTheme}
+      aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
+      title={dark ? 'Light mode' : 'Dark mode'}>
+      {dark ? <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
+        <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.5 1.5m11.2 11.2 1.5 1.5M4.9 19.1l1.5-1.5M17.6 6.4l1.5-1.5"/>
+      </svg> : <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
+        <path d="M20.2 15.2A8.6 8.6 0 0 1 8.8 3.8 8.5 8.5 0 1 0 20.2 15.2Z"/>
+      </svg>}
+    </button>
+  </div>;
 }
 
 function Explore() {
@@ -316,7 +217,7 @@ function BottomNav() {
 }
 
 function Shell() {
-  const { voiceOpen, closeVoice, setAskDraft } = useApp();
+  const { voiceOpen, closeVoice, setAskDraft, language } = useApp();
   const navigate = useNavigate();
   const location = useLocation();
   const [hasSpeech, setHasSpeech] = React.useState(false);
@@ -342,8 +243,8 @@ function Shell() {
   return <div className="app-shell">
     <a className="skip-link" href="#main">Skip to content</a>
     <header className="app-header">
-      <Link className="wordmark" to="/" aria-label="Ekiti Civic home">ekiti<span>.</span><small>civic</small></Link>
-      <Settings />
+      <Link className="wordmark" to="/" aria-label="Ekiti Civic home">ekit<span className="brand-i">i</span><small>civic</small></Link>
+      <HeaderControls />
     </header>
     <div className="screen">
       <React.Suspense fallback={<p className="page" role="status">Loading screen…</p>}>
@@ -361,7 +262,7 @@ function Shell() {
       </React.Suspense>
     </div>
     <BottomNav />
-    {voiceOpen && hasSpeech && <React.Suspense fallback={null}><VoiceOverlay onClose={closeVoice} onType={closeVoiceToText} onTranscript={applyTranscript} /></React.Suspense>}
+    {voiceOpen && hasSpeech && <React.Suspense fallback={null}><VoiceOverlay language={language} onClose={closeVoice} onType={closeVoiceToText} onTranscript={applyTranscript} /></React.Suspense>}
   </div>;
 }
 
