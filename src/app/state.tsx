@@ -1,7 +1,10 @@
+import type { Language } from '../server/ask-knowledge.ts';
 import * as React from 'react';
 import type { Category } from './fixtures.ts';
 
 interface AppState {
+  language: Language;
+  setLanguage: (language: Language) => void;
   dark: boolean;
   toggleTheme: () => void;
   voiceOpen: boolean;
@@ -33,6 +36,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     try { return localStorage.getItem('ekiti-ui-theme-v2') === 'dark'; }
     catch { return false; }
   });
+  const [language, setLanguageState] = React.useState<Language>(() => {
+    try { return localStorage.getItem('ekiti-ui-language') === 'yo' ? 'yo' : 'en'; }
+    catch { return 'en'; }
+  });
+  const setLanguage = (value: Language) => {
+    setLanguageState(value);
+    try { localStorage.setItem('ekiti-ui-language', value); } catch { /* Works without storage */ }
+  };
   const [voiceOpen, setVoiceOpen] = React.useState(false);
   const [askDraft, setAskDraft] = React.useState('');
   const [exploreCategory, setExploreCategory] = React.useState<Category>('All');
@@ -46,6 +57,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [dark]);
 
   const value: AppState = {
+    language, setLanguage,
     dark,
     toggleTheme: () => setDark((value) => !value),
     voiceOpen,
