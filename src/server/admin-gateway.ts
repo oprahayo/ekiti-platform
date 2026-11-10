@@ -232,7 +232,7 @@ export function createAdminGateway(options: AdminGatewayOptions): (request: Requ
           (lgaId !== null && r.lgaId !== lgaId) || !caseScope(identity, membership, r, now)))
           return serviceUnavailable(); // Never leak any out-of-scope repository row.
         await repo.recordRead({ actorId: identity.subject, action: 'case_list', caseId: null, lgaId });
-        return respond({ items: found.map(projectCase), hasMore: false, cap: limit }, 200);
+        return respond({ items: found.map(projectCase), pageLimit: limit, paginationAvailable: false }, 200);
       }
       const id = casePath?.[1];
       if (!id || !uuid.test(id)) return notFound();
