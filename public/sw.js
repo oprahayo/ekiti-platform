@@ -67,3 +67,16 @@ self.addEventListener('fetch', event => {
     })());
   }
 });
+
+// Cache only public JS/CSS that the visitor already loaded. This also protects
+// a lazily loaded Report screen if it was opened before worker activation.
+self.addEventListener('message', event => {
+  const data = event.data;
+  if (!data || data.type !== 'CACHE_LOADED_ASSETS' || !Array.isArray(data.assets)) return;
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE);
+    const urls = data.assets.slice(0, 40).filter(path =>
+      typeof path === 'string' && /^\/assets\/[a-zA-Z0-9_./-]+\.(?:js|css|mjs)$/.test(path));
+    await Promise.allSettled(urls.map(path => cache.add(path)));
+  })());
+});
