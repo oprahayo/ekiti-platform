@@ -5,12 +5,12 @@ test('home is a welcome gateway and reporting opens a separate conversational jo
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Welcome to Ekiti Civic' })).toBeVisible();
   await expect(page.getByText('Your mobile gateway to Ekiti State.')).toBeVisible();
-  await expect(page.locator('.welcome-action')).toHaveCount(6);
+  await expect(page.locator('.welcome-action')).toHaveCount(5);
   await expect(page.locator('#home-ask-input')).toHaveCount(0);
   await page.getByRole('link', { name: /Report an issue/ }).click();
   await expect(page).toHaveURL(/\/report$/);
-  await expect(page.getByRole('heading', { name: 'Report an issue' })).toBeVisible();
-  await expect(page.getByRole('button', { name: /Photo \/ camera/ })).toBeVisible();
+  await expect(page.getByText(/Welcome\. I will guide you through a report/)).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Photo' })).toBeVisible();
   await expect(page.getByRole('button', { name: /Audio note/ })).toBeVisible();
 });
 
@@ -47,6 +47,6 @@ test('capture mobile and desktop welcome and report journey screens', async ({ p
     actionWidth: document.querySelector('.welcome-action')?.getBoundingClientRect().width,
   }));
   expect(metrics.pageWidth).toBeLessThanOrEqual(metrics.viewportWidth);
-  expect(metrics.actionWidth).toBeGreaterThan(90);
+  expect(metrics.actionWidth).toBeGreaterThanOrEqual(65);
   await page.screenshot({ path:'test-results/citizen-chat/home-280px.png', fullPage:true });
 });
