@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Link, useSearchParams } from 'react-router';
+import { Link } from 'react-router';
 import { directoryCategories } from './DirectoryCategories.tsx';
 import { lgas } from './fixtures.ts';
 
@@ -47,7 +47,6 @@ export default function ListingDraft() {
 }
 
 export function CommunityPostDraft() {
-  const [params] = useSearchParams();
   const [title,setTitle] = React.useState('');
   const [body,setBody] = React.useState('');
   const [category,setCategory] = React.useState('Community notice');

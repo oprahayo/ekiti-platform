@@ -198,7 +198,7 @@ export default function ExploreDirectory() {
       }}>
         <span aria-hidden="true">☷</span><strong>Categories</strong>
       </button>
-      <Link to="/profile" className="directory-quick-link">
+      <Link to="/listings/new" className="directory-quick-link">
         <span aria-hidden="true">＋</span><strong>Add listing</strong>
       </Link>
     </div>
@@ -295,7 +295,7 @@ export default function ExploreDirectory() {
       <Link to="/ask?focus=1" className="text-link" onClick={() => setAskDraft('Find a business in Ekiti')}>
         Ask Ekiti Civic
       </Link>
-      <p className="directory-footer">Own a business? Listing submission and owner claiming are coming after verification and moderation are enabled.</p>
+      <p className="directory-footer">Own a business? <a href="/listings/new">Prepare a listing</a> for future verification and moderation. Nothing is published automatically.</p>
       <p className="directory-independence">Independent civic project · Not a government service</p>
     </div>
   </main>;

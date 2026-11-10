@@ -1,11 +1,14 @@
 import * as React from 'react';
 import { BrowserRouter, Link, NavLink, Route, Routes, useLocation } from 'react-router';
 import { demoMetrics, lgas } from './fixtures.ts';
-import { Home, Ask } from './AskExperience.tsx';
+import { Ask } from './AskExperience.tsx';
+import WelcomeHome from './WelcomeHome.tsx';
 import { AppProvider, useApp } from './state.tsx';
 import { CitizenAuthProvider } from './CitizenAuth.tsx';
 
-const Report = React.lazy(() => import('./Report.tsx'));
+const Report = React.lazy(() => import('./ReportJourney.tsx'));
+const LegacyReport = React.lazy(() => import('./Report.tsx'));
+const Drafts = React.lazy(() => import('./ContributionDrafts.tsx'));
 const Track = React.lazy(() => import('./TrackConversation.tsx'));
 const Explore = React.lazy(() => import('./ExploreDirectory.tsx'));
 const PlaceDetails = React.lazy(() => import('./PlaceDetails.tsx'));
@@ -114,10 +117,13 @@ function Shell() {
     <div className="screen">
       <React.Suspense fallback={<p className="page" role="status">Loading screen…</p>}>
         <Routes>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<WelcomeHome />} />
           <Route path="/ask" element={<Ask />} />
           <Route path="/explore" element={<Explore />} />
           <Route path="/report" element={<Report />} />
+          <Route path="/report/text-draft" element={<LegacyReport />} />
+          <Route path="/post" element={<Drafts.CommunityPostDraft />} />
+          <Route path="/listings/new" element={<Drafts.default />} />
           <Route path="/track" element={<Track />} />
           <Route path="/track/:publicId" element={<Track />} />
           <Route path="/scores" element={<Scores />} />
