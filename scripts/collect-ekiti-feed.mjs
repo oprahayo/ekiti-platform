@@ -41,7 +41,7 @@ export async function collectCandidates(fetcher = fetch, now = new Date()) {
       break;
     } catch { /* Failed source is not proof of no news. */ }
   }
-  const seen = new Set<string>();
+  const seen = new Set();
   const candidates = records.filter(record => {
     if (seen.has(record.url)) return false;
     seen.add(record.url);
