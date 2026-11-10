@@ -45,11 +45,20 @@ export function ModerationWorkspace() {
         : 'Moderation is unavailable.');
     }
   };
-  return <main className="operations-section">
+  return <main className={'operations-section ' + (mobileReviewOpen ? 'detail-open' : '')}>
     <header className="operations-intro">
       <p className="eyebrow">QUALITY & SAFETY</p><h1>Moderation</h1>
       <p>Review proposed listings, citizen reviews, ownership claims, corrections and sourced knowledge. Actions are isolated demonstrations and never publish or verify a real record.</p>
     </header>
+    <div className="moderation-mobile-picker">
+      <label htmlFor="review-category">Review category</label>
+      <select id="review-category" aria-label="Review category" value={kind}
+        onChange={event => switchKind(event.target.value as ModerationKind)}>
+        {kinds.map(key => <option key={key} value={key}>
+          {MODERATION_LABELS[key]} · {items.filter(item => item.kind === key && item.status === 'pending').length}
+        </option>)}
+      </select>
+    </div>
     <div className="moderation-categories" role="group" aria-label="Moderation queues">
       {kinds.map(key => <button type="button" key={key} className={kind === key ? 'active' : ''}
         onClick={() => switchKind(key)} aria-pressed={kind === key}>
@@ -110,7 +119,7 @@ export function RoutingWorkspace({ cases }: { cases: AdminCase[] }) {
   const [mobileRouteOpen, setMobileRouteOpen] = React.useState(false);
   const selected = cases.find(item => item.id === selectedId) ?? cases[0];
   const assessment = selected && assessDemoRoute(selected);
-  return <main className="operations-section">
+  return <main className={'operations-section ' + (mobileRouteOpen ? 'detail-open' : '')}>
     <header className="operations-intro">
       <p className="eyebrow">TRIAGE & RESPONSIBILITY</p><h1>Office routing</h1>
       <p>Prepare an internal routing assessment using category and LGA. A suggested level of government is not a verified office, assignment, delivery or official acknowledgement.</p>

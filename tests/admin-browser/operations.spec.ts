@@ -129,3 +129,27 @@ test('view deep links and browser history stay in sync without exposing case det
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Moderation' })).toBeVisible();
 });
+
+test('all five moderation categories are discoverable through a native mobile filter', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 720 });
+  await page.goto('/?view=moderation');
+  const category = page.getByLabel('Review category');
+  await expect(category).toBeVisible();
+  for (const value of ['listing', 'review', 'claim', 'knowledge', 'correction']) {
+    await category.selectOption(value);
+    await expect(page.locator('.moderation-list-item')).toHaveCount(value === 'listing' ? 2 : 1);
+  }
+  await page.locator('.moderation-list-item').first().click();
+  await expect(page.locator('.moderation-inspector')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Moderation' })).toBeHidden();
+});
+
+test('overview quick actions lead to real demo workflows, not dead dashboard tiles', async ({ page }) => {
+  await page.goto('/?view=analytics');
+  await page.getByRole('button', { name: /Review unassigned cases/ }).click();
+  await expect(page.getByLabel('Filter cases by status')).toHaveValue('inbox');
+  await page.getByRole('navigation', { name: 'Primary admin navigation' })
+    .getByRole('button', { name: /Overview/ }).click();
+  await page.getByRole('button', { name: /Moderate contributions/ }).click();
+  await expect(page.getByRole('heading', { name: 'Moderation' })).toBeVisible();
+});

@@ -15,8 +15,9 @@ Reviewed the **actual Chromium-rendered** administrative app from Playwright scr
 ## Delivered UX changes
 
 - Four visible, stable primary destinations: **Cases, Moderation, Routing, Overview**. Consistent SVG icons instead of miscellaneous Unicode glyphs.
-- Native, keyboard-accessible **Filter by status** selector inside Cases, with truthful counts.
-- Separate mobile list and inspector views for Moderation and Routing, explicit back controls, no hidden side-scroll navigation.
+- Native, keyboard-accessible **Filter by status** selector inside Cases, with truthful counts. Moderation now has a native mobile category selector so none of the five review types are off-screen.
+- Overview now offers three working actions into Unassigned, Moderation and Routing instead of relying solely on generic metric cards.
+- Separate mobile list and inspector views for Moderation and Routing, explicit back controls, no hidden side-scroll navigation. When a detail opens, introductory copy and category controls move out of the way.
 - Direct, whitelisted `?view=` URL state for these sections/queues; browser back/forward works. No private case data, narratives, GPS or token enters a URL.
 - Condensed demo notice on mobile; results from internal actions clearly say they were **local only**.
 - Regression tests for 280px navigation visibility, mobile two-step detail flows, deep-link/back behavior and routing/claim safeguards.

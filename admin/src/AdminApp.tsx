@@ -254,7 +254,7 @@ function CaseDetails({
   </section>;
 }
 
-function Analytics({ cases }: { cases: AdminCase[] }) {
+function Analytics({ cases, onNavigate }: { cases: AdminCase[]; onNavigate: (next: View) => void }) {
   const counts = queueCounts(cases);
   const total = cases.length;
   const kindCounts = ['Complaint', 'Issue', 'Commendation'].map(kind =>
@@ -263,6 +263,20 @@ function Analytics({ cases }: { cases: AdminCase[] }) {
     <div className="analytics-top"><p className="eyebrow">OPERATIONS / DEMO</p>
       <h1>Workspace overview</h1>
       <p>Numbers below refer only to fictional cases in this browser session. No government performance metrics are published.</p></div>
+    <section className="attention-panel" aria-label="Next actions">
+      <div className="attention-title"><h2>Next actions</h2><span>Sample work only</span></div>
+      <div className="attention-actions">
+        <button type="button" onClick={() => onNavigate('inbox')}>
+          <strong>Review unassigned cases</strong><span>{counts.inbox} pending in sample inbox</span>
+        </button>
+        <button type="button" onClick={() => onNavigate('moderation')}>
+          <strong>Moderate contributions</strong><span>Listings, reviews and ownership claims</span>
+        </button>
+        <button type="button" onClick={() => onNavigate('routing')}>
+          <strong>Check office routing</strong><span>Review suggested jurisdiction manually</span>
+        </button>
+      </div>
+    </section>
     <div className="analytics-metrics">
       <div><small>All cases</small><strong>{total}</strong><span>Simulated records</span></div>
       <div><small>Unassigned</small><strong>{counts.inbox}</strong><span>In platform inbox</span></div>
@@ -334,7 +348,7 @@ export function AdminApp() {
         <span className="notice-wide"> All cases and updates are fictional and stay in memory. Live intake, staff login, notifications and government connections are not enabled.</span>
         <span className="notice-mobile"> Sample records; no live reports or government access.</span>
       </div>
-      {view === 'analytics' ? <Analytics cases={cases} /> :
+      {view === 'analytics' ? <Analytics cases={cases} onNavigate={changeView} /> :
         view === 'moderation' ? <ModerationWorkspace /> :
         view === 'routing' ? <RoutingWorkspace cases={cases} /> :
         <div className={'case-workspace ' + (mobileDetail ? 'mobile-detail-open' : '')}>
