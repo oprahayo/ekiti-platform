@@ -12,7 +12,7 @@ The new API offers a genuinely testable security boundary (using disposable, gen
 - Valid issuer-signed, scoped, short-lived AAL2 JWT; server-fetched active staff membership. No browser-provided roles or privilege claims.
 - Per-identity rate limiting through a required edge/service limiter, separate from public location limits.
 - `GET /admin/api/me`: role and authorized area metadata only.
-- `GET /admin/api/cases?lga=...&limit=1..25`: narrowly bounded metadata list, filtered by independent staff LGA grants, with **second-pass enforcement** even if the repository returns an unauthorized row.
+- `GET /admin/api/cases?lga=...&limit=1..25`: narrowly bounded metadata list, filtered by independent staff LGA grants, with **second-pass enforcement** even if the repository returns an unauthorized row. Every repository read receives the verified actor UUID, and its database implementation must perform a second, independent staff-membership/LGA check rather than trusting web-supplied scopes.
 - `GET /admin/api/cases/:uuid`: case metadata, only for authorized members and areas; unauthorized case IDs return the same 404 as nonexistent ones.
 - `GET /admin/api/cases/:uuid/events`: up to 50 platform events, excluding private report narratives, GPS, contact information and tracking secrets; access logged through a required audit hook.
 - `POST /admin/api/cases/:uuid/notes`: strictly bounded (1.5 KB) note with version check and UUIDv4 idempotency ID. The private repository contract requires **a single transaction** covering revision check, note event creation, audit entry and replay lookup. Only internal platform notes are possible; there are no government delivery, receipt, viewed or response endpoints.

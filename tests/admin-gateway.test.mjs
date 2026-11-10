@@ -59,14 +59,22 @@ function makeRepo(role = 'case_manager', allowedLgaIds = ['ado-ekiti']) {
       allowedLgaIds, verifiedOfficeId: role === 'government_officer' ? 'office-1' : null,
     },
     async getMembership() { return this.membership; },
-    async listCases({ allowedLgas, lgaId, limit }) {
+    actorReads: [],
+    async listCases({ actorId, allowedLgas, lgaId, limit }) {
+      this.actorReads.push({ method: 'listCases', actorId });
       if (this.overrideList) return this.overrideList;
       return [...cases.values()].filter(item =>
         (allowedLgas === null || allowedLgas.includes(item.lgaId)) &&
         (lgaId === null || item.lgaId === lgaId)).slice(0,limit);
     },
-    async findCase(id) { return cases.get(id) ?? null; },
-    async listEvents(id, limit) { return (events.get(id) || []).slice(0,limit); },
+    async findCase(id, actorId) {
+      this.actorReads.push({ method: 'findCase', actorId });
+      return cases.get(id) ?? null;
+    },
+    async listEvents(id, limit, actorId) {
+      this.actorReads.push({ method: 'listEvents', actorId });
+      return (events.get(id) || []).slice(0,limit);
+    },
     async recordRead(data) {
       if (this.failAudit) throw new Error('Private database unavailable');
       audit.push({ type: 'read', ...data });
@@ -158,6 +166,8 @@ test('verified staff can read only allowlisted case fields and own role metadata
   assert.equal((await timeline.json()).events[0].trackingSecret,undefined);
   assert.deepEqual(repository.audit.map(a => a.action),
     ['case_list','case_read','event_read']);
+  assert.ok(repository.actorReads.every(item => item.actorId === subject),
+    'Every repository read must be scoped by the server-verified actor ID');
 });
 
 test('wrong LGA is private 404 and out-of-scope lists never leak even with a buggy repository', async () => {

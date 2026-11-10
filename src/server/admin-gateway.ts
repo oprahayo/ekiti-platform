@@ -41,15 +41,18 @@ export interface InternalNoteCommand {
 /**
  * Production implementations MUST enforce the LGA scope at database query time.
  * A second, independent scope check is applied to every result in this gateway.
+ * Every private database read receives the server-verified actorId: the repository
+ * MUST independently look up that principal and enforce LGA grants in SQL.
+ * Never assume caller-provided allowedLgas is sufficient for access control.
  * createInternalNote must atomically check revision, persist ONE internal event,
  * and record the actor's audit entry in the SAME transaction. Replays must return
  * the original result; conflicting reuse of an idempotency key must be rejected.
  */
 export interface PrivateAdminRepository {
   getMembership(subject: string): Promise<StaffMembership | null>;
-  listCases(input: { allowedLgas: readonly string[] | null; lgaId: string | null; limit: number }): Promise<readonly AdminCaseRecord[]>;
-  findCase(id: string): Promise<AdminCaseRecord | null>;
-  listEvents(caseId: string, limit: number): Promise<readonly AdminCaseEvent[]>;
+  listCases(input: { actorId: string; allowedLgas: readonly string[] | null; lgaId: string | null; limit: number }): Promise<readonly AdminCaseRecord[]>;
+  findCase(id: string, actorId: string): Promise<AdminCaseRecord | null>;
+  listEvents(caseId: string, limit: number, actorId: string): Promise<readonly AdminCaseEvent[]>;
   createInternalNote(command: InternalNoteCommand): Promise<InternalNoteResult>;
   recordRead(input: { actorId: string; action: 'case_list' | 'case_read' | 'event_read'; caseId: string | null; lgaId: string | null }): Promise<void>;
 }
@@ -224,7 +227,7 @@ export function createAdminGateway(options: AdminGatewayOptions): (request: Requ
         if (lgaId !== null && !lgaSlug.test(lgaId)) return invalid();
         const permitted = membership.role === 'platform_admin' ? null : membership.allowedLgaIds;
         if (lgaId !== null && permitted !== null && !permitted.includes(lgaId)) return forbidden();
-        const found = await repo.listCases({ allowedLgas: permitted, lgaId, limit });
+        const found = await repo.listCases({ actorId: identity.subject, allowedLgas: permitted, lgaId, limit });
         if (!Array.isArray(found) || found.length > limit || found.some(r => !validCase(r) ||
           (lgaId !== null && r.lgaId !== lgaId) || !caseScope(identity, membership, r, now)))
           return serviceUnavailable(); // Never leak any out-of-scope repository row.
@@ -233,7 +236,7 @@ export function createAdminGateway(options: AdminGatewayOptions): (request: Requ
       }
       const id = casePath?.[1];
       if (!id || !uuid.test(id)) return notFound();
-      const record = await repo.findCase(id.toLowerCase());
+      const record = await repo.findCase(id.toLowerCase(), identity.subject);
       if (!record || !validCase(record) || !caseScope(identity, membership, record, now)) return notFound();
       if (isWrite) {
         if (!authorizeAdmin({ identity, membership, capability: 'case.note',
@@ -255,7 +258,7 @@ export function createAdminGateway(options: AdminGatewayOptions): (request: Requ
           replayed: result.result === 'replayed', scope: 'platform_internal' }, result.result === 'created' ? 201 : 200);
       }
       if (casePath?.[2] === 'events') {
-        const events = await repo.listEvents(record.id, 50);
+        const events = await repo.listEvents(record.id, 50, identity.subject);
         if (!Array.isArray(events) || events.length > 50 || events.some(e =>
           !e || !uuid.test(e.id) ||
           !['intake_accepted','under_review','needs_information','closed','internal_note'].includes(e.kind) ||
