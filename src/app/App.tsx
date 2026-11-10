@@ -361,7 +361,7 @@ function Shell() {
       </React.Suspense>
     </div>
     <BottomNav />
-    {voiceOpen && hasSpeech && <React.Suspense fallback={null}><VoiceOverlay onClose={closeVoiceToText} onTranscript={applyTranscript} /></React.Suspense>}
+    {voiceOpen && hasSpeech && <React.Suspense fallback={null}><VoiceOverlay onClose={closeVoice} onType={closeVoiceToText} onTranscript={applyTranscript} /></React.Suspense>}
   </div>;
 }
 
