@@ -69,7 +69,7 @@ async function readAsk(request: Request): Promise<{ question: string; language: 
   const value = parsed as Record<string, unknown>;
   if (Object.keys(value).some(key => key !== 'question' && key !== 'language')) return null;
   if (typeof value.question !== 'string' || value.question.trim().length < 2 || value.question.trim().length > 400 ||
-      /[\\u0000-\\u001f]/.test(value.question)) return null;
+      Array.from(value.question).some(character => character.charCodeAt(0) < 32)) return null;
   if (value.language !== 'en' && value.language !== 'yo') return null;
   return { question: value.question.trim(), language: value.language };
 }
