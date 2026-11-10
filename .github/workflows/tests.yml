@@ -56,3 +56,12 @@ jobs:
           npm run staging:check
           npx playwright install --with-deps chromium
           npm run test:browser
+
+      - name: Preserve rendered citizen chat screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: citizen-chat-visual-review
+          path: test-results/citizen-chat/
+          if-no-files-found: ignore
+          retention-days: 5
