@@ -1,4 +1,5 @@
 import pg from 'pg';
+import { handlePrivateReporting, type PrivateReportingEnv } from './private-report-routes.ts';
 import { resolveIncidentLocation } from './location.ts';
 import { answerQuestion } from './ask.ts';
 import {
@@ -7,7 +8,7 @@ import {
 } from './public-data.ts';
 import { parsePublicReviews, publicReviews, type ReviewFilters } from './reviews.ts';
 
-interface Env {
+interface Env extends PrivateReportingEnv {
   HYPERDRIVE: { connectionString: string };
   LOCATION_LIMIT: { limit(options: { key: string }): Promise<{ success: boolean }> };
 }
@@ -82,6 +83,9 @@ async function readAsk(request: Request): Promise<{ question: string; language: 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
+    if (url.pathname === '/api/reports' || url.pathname === '/api/tracking') {
+      return handlePrivateReporting(request, env);
+    }
     const directory = url.pathname === '/api/areas';
     const ask = url.pathname === '/api/ask';
     const knowledge = url.pathname === '/api/knowledge';
