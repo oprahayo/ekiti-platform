@@ -50,11 +50,15 @@ function ReviewComposer({ placeId }: { placeId: string }) {
   const [stars, setStars] = React.useState(initial?.stars || 0);
   const [body, setBody] = React.useState(initial?.text || '');
   const [status, setStatus] = React.useState('');
+  const [savedDraft, setSavedDraft] = React.useState(Boolean(initial));
   const [authOpen, setAuthOpen] = React.useState(false);
   const write = () => {
     if (stars < 1) { setStatus('Choose a rating from 1 to 5 stars first.'); return; }
     if (body.trim().length < 15) { setStatus('Describe your experience in at least 15 characters.'); return; }
-    if (saveReviewDraft(placeId, stars, body.trim())) setStatus('Saved on this browser only · Not posted or counted in ratings.');
+    if (saveReviewDraft(placeId, stars, body.trim())) {
+      setSavedDraft(true);
+      setStatus('Saved on this browser only · Not posted or counted in ratings.');
+    }
     else setStatus('Could not save to this browser. Copy your text before leaving.');
   };
   return <div className="directory-review-editor">
@@ -74,8 +78,8 @@ function ReviewComposer({ placeId }: { placeId: string }) {
     <div className="directory-review-actions">
       <button type="button" className="primary-action" onClick={write}>Save private review draft</button>
       <button type="button" className="quiet-action" onClick={() => setAuthOpen(true)}>Sign in to publish</button>
-      {initial && <button type="button" className="text-link" onClick={() => {
-        if (deleteReviewDraft(placeId)) { setStars(0); setBody(''); setStatus('Local draft deleted.'); }
+      {savedDraft && <button type="button" className="text-link" onClick={() => {
+        if (deleteReviewDraft(placeId)) { setStars(0); setBody(''); setSavedDraft(false); setStatus('Local draft deleted.'); }
       }}>Delete saved draft</button>}
     </div>
     {status && <p className="note" role="status">{status}</p>}
@@ -118,7 +122,7 @@ export default function PlaceDetails() {
     <Link to="/explore" className="directory-back-link">← Back to directory</Link>
     <p className="eyebrow">Illustrative listing · not verified</p>
     <h1>{preview.name}</h1>
-    <p className="directory-data-note">This is a fictional example. No real address, reviews, rating, contacts, directions, or verified availability exists for it.</p>
+    <p className="directory-data-note">This is a fictional directory example. No real address, reviews, rating, contacts, directions, or verified availability exists for it.</p>
     <dl className="detail-list">
       <dt>Category</dt><dd>{preview.category}</dd>
       <dt>Local government area</dt><dd>{lgas.find(area => area.id === preview.lgaId)?.name}</dd>
