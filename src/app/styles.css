@@ -686,3 +686,31 @@ button { min-height: 44px; border-radius: var(--radius-input); font-size: 14px; 
   .profile-counts span { font-size: 11px; }
   .profile-row-copy small { font-size: 11px; }
 }
+
+
+/* Launch candidate: real source-reviewed ratings, opt-in email login,
+   and moderated ownership requests. Never use visual success for pending claims. */
+.published-reviews { margin: var(--s-4) 0 var(--s-5); }
+.published-rating-summary { display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap; margin: var(--s-3) 0; }
+.published-rating-summary strong { font-size: 18px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.published-rating-summary > span:last-child { font-size: 13px; color: var(--text-secondary); }
+.rating-stars { display: inline-flex; align-items: center; color: #aa7600; font-size: 20px; letter-spacing: 2px; white-space: nowrap; }
+.rating-stars > span { color: var(--text-tertiary); }
+.published-review-list { margin-top: var(--s-4); }
+.published-review { padding: var(--s-4) 0; border-bottom: 1px solid var(--border); }
+.published-review > p:first-child { display: flex; align-items: center; flex-wrap: wrap; gap: var(--s-3); }
+.published-review > p:last-child { margin-top: var(--s-2); white-space: pre-wrap; overflow-wrap: anywhere; font-size: 14px; }
+.profile-account-activity { padding-top: var(--s-5); margin-top: var(--s-5); border-top: 1px solid var(--border); }
+.profile-account-activity h3 { font-size: 16px; font-weight: 650; }
+.citizen-signin-dialog form { display: flex; flex-direction: column; gap: var(--s-2); margin: var(--s-4) 0; }
+.citizen-signin-dialog label { margin-top: var(--s-1); }
+.citizen-signin-dialog input { width: 100%; }
+.citizen-signin-dialog .primary-action { margin-top: var(--s-2); }
+.citizen-signin-dialog > .metadata { display: block; margin-top: var(--s-4); }
+.citizen-signin-dialog .quiet-action { margin-top: var(--s-3); }
+.civic-dialog form .field-bottom { margin-top: var(--s-1); }
+.civic-dialog form > .primary-action { margin-top: var(--s-4); }
+@media (max-width: 359px) {
+  .published-rating-summary { gap: var(--s-2); }
+  .rating-stars { font-size: 17px; letter-spacing: 1px; }
+}
