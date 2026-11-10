@@ -8,7 +8,7 @@ export default function MapLocation({
   const [error, setError] = React.useState('');
   React.useEffect(() => {
     let cancelled = false;
-    let map: { clear: () => void; resize: () => void } | undefined;
+    let map: { clear: () => void; resize: () => void; destroy: () => void } | undefined;
     import('../web/map.ts').then(({ openMap }) => {
       if (cancelled) return;
       map = openMap(onPoint, () => {
@@ -18,7 +18,7 @@ export default function MapLocation({
     }).catch(() => {
       if (!cancelled) setError('The map could not load. Try the area selector instead.');
     });
-    return () => { cancelled = true; map?.clear(); };
+    return () => { cancelled = true; map?.destroy(); };
   }, [onPoint]);
   return (
     <div className="map-region">
