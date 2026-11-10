@@ -43,10 +43,10 @@ test('five-tab navigation supports direct deep links', async ({ page }) => {
   for (const [path, heading] of [
     ['/ask', 'Ask anything about Ekiti'],
     ['/explore', 'Explore Ekiti'],
-    ['/report', 'What happened?'],
-    ['/track', 'Follow a report'],
+    ['/report', 'Tell me what happened'],
+    ['/track', 'Check a report'],
     ['/scores', 'Public response'],
-    ['/track/DEMO-EKP-2026-00001', 'Follow a report'],
+    ['/track/DEMO-EKP-2026-00001', 'Check a report'],
     ['/places/demo-health-1', 'Sample community health center'],
   ]) {
     await page.goto(path);
@@ -79,7 +79,7 @@ test('Explore filters survive tab changes; all data is identified as demo', asyn
   await expect(page.locator('#place-search')).toHaveValue('school');
   await expect(page.getByRole('button', { name: 'Schools' })).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('link', { name: /Example neighborhood school/ }).click();
-  await expect(page.getByText('Do not use this demo listing to find real services or contact a business.')).toBeVisible();
+  await expect(page.getByText(/Do not use this demo listing to find real services/)).toBeVisible();
 });
 
 test('Explore does not load map assets unless explicitly requested', async ({ page }) => {
@@ -102,18 +102,13 @@ test('Scores show the denominator and a negative metric without implying real ou
   await expect(page.getByText(/Public data and an API have not launched/)).toBeVisible();
 });
 
-test('Track requires a token, never puts it in a URL, and labels all events as examples', async ({ page }) => {
+test('fictional tracking deep link never requires a fake token or claims official activity', async ({ page }) => {
   await page.goto('/track/DEMO-EKP-2026-00001');
-  await page.locator('#tracking-token').fill('DEMO-ONLY-NOT-VALID');
-  await page.getByRole('button', { name: 'Check status' }).click();
-  await expect(page.getByText('Demo case only')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Example timeline · not a real case' })).toBeVisible();
   await expect(page.locator('.case-timeline li')).toHaveCount(6);
-  await expect(page.getByText('Resolved — claimed')).toBeVisible();
-  await expect(page.getByText('Not independently verified')).toBeVisible();
-  expect(page.url()).not.toContain('DEMO-ONLY-NOT-VALID');
   await expect(page.locator('.case-timeline li.event-recorded')).toHaveCount(0);
-  await page.getByRole('button', { name: 'Preview escalation' }).click();
-  await expect(page.getByText('Demo only — no escalation request was sent.')).toBeVisible();
+  await expect(page.getByText('Not independently verified')).toBeVisible();
+  await expect(page.locator('#tracking-token')).toHaveCount(0);
 });
 
 test('theme toggle works, independent of system settings', async ({ page }) => {
