@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Link } from 'react-router';
 import { demoPlaces, lgas } from './fixtures.ts';
-import { DirectoryIcon, DirectoryMark, categoryForGroup, directoryCategories } from './DirectoryCategories.tsx';
+import { DirectoryIcon, categoryForGroup, directoryCategories } from './DirectoryCategories.tsx';
 import { useApp } from './state.tsx';
 
 const MapLocation = React.lazy(() => import('./MapLocation.tsx'));
@@ -29,13 +29,12 @@ export default function ExploreDirectory() {
   const {
     exploreService, setExploreService, exploreCategory, setExploreCategory,
     exploreQuery, setExploreQuery, exploreLga, setExploreLga, setAskDraft,
+    deviceLocation, requestDeviceLocation, selectManualArea,
   } = useApp();
   const [mapOpen, setMapOpen] = React.useState(false);
   const [places, setPlaces] = React.useState<ReviewedPlace[]>([]);
   const [loadState, setLoadState] = React.useState<LoadState>('idle');
-  const [gpsSuggestion, setGpsSuggestion] = React.useState<{ lat: number; lon: number } | null>(null);
-  const [gpsStatus, setGpsStatus] = React.useState('');
-  const [gpsBusy, setGpsBusy] = React.useState(false);
+
 
   const activeCategory = React.useMemo(() =>
     exploreService
@@ -115,96 +114,52 @@ export default function ExploreDirectory() {
   };
   const clearFilters = () => {
     allCategories();
-    setExploreLga('');
-  };
-  const locate = () => {
-    if (!navigator.geolocation) {
-      setGpsStatus('GPS unavailable. Select an LGA instead.');
-      return;
-    }
-    setGpsStatus('Requesting location permission…');
-    navigator.geolocation.getCurrentPosition(({ coords }) => {
-      setGpsSuggestion({ lat: coords.latitude, lon: coords.longitude });
-      setGpsStatus('Location proposed. Confirm before checking its LGA on the server.');
-    }, () => setGpsStatus('Location denied or unavailable. Choose an LGA instead.'),
-    { enableHighAccuracy: false, timeout: 10000, maximumAge: 0 });
-  };
-  const confirmNearby = async () => {
-    if (!gpsSuggestion || gpsBusy) return;
-    setGpsBusy(true);
-    setGpsStatus('Checking verified LGA boundary…');
-    try {
-      const response = await fetch('/api/resolve', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ latitude: gpsSuggestion.lat, longitude: gpsSuggestion.lon, confirmed: true }),
-      });
-      if (!response.ok) throw new Error('Unavailable');
-      const data = await response.json() as { lga?: { match?: { id: string; name: string } } };
-      const match = data.lga?.match;
-      if (!match || !lgas.some(lga => lga.id === match.id)) {
-        setGpsStatus('No verified Ekiti LGA match found. You can choose an area manually.');
-      } else {
-        setExploreLga(match.id);
-        setGpsStatus('Showing results in ' + match.name + '. This is an LGA filter, not an accurate distance search.');
-      }
-    } catch {
-      setGpsStatus('Location lookup unavailable. Select an LGA manually.');
-    } finally {
-      setGpsSuggestion(null);
-      setGpsBusy(false);
-    }
+    selectManualArea('');
   };
 
   return <main className="page explore-page directory-page" id="main">
-    <section className="directory-hero" aria-label="Ekiti Yellow Pages">
-    <header className="directory-header">
-      <DirectoryMark />
-      <p className="directory-eyebrow">EKITI YELLOW PAGES · BUSINESSES, SERVICES & PLACES</p>
-      <h1>Browse Categories</h1>
-      <p>Find local businesses, services and places across Ekiti State.</p>
-    </header>
-
-    <div className="directory-search">
-      <svg width="25" height="25" viewBox="0 0 24 24" aria-hidden="true"
-        fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round">
-        <circle cx="10.5" cy="10.5" r="7"/><path d="m16 16 5 5"/>
-      </svg>
-      <label htmlFor="place-search" className="visually-hidden">Search services and places</label>
-      <input id="place-search" type="search" autoComplete="off" value={exploreQuery}
-        placeholder="Search for a service or place…"
-        onChange={event => {
-          setExploreQuery(event.target.value);
-          setExploreService(null);
-          setExploreCategory('All');
-        }} />
-    </div>
-
-    <div className="directory-area">
-      <label htmlFor="explore-lga">Location</label>
-      <select id="explore-lga" value={exploreLga}
-        onChange={event => setExploreLga(event.target.value)}>
-        <option value="">All Ekiti · 16 LGAs</option>
-        {lgas.map(lga => <option key={lga.id} value={lga.id}>{lga.name}</option>)}
-      </select>
-    </div>
-
-    <div className="directory-quick-actions" aria-label="Directory shortcuts">
-      <button type="button" onClick={locate}>
-        <span aria-hidden="true">⌖</span><strong>Near me</strong>
-      </button>
-      <button type="button" onClick={() => {
-        clearFilters(); document.querySelector('.directory-categories')?.scrollIntoView({ behavior: 'auto', block: 'start' });
-      }}>
-        <span aria-hidden="true">☷</span><strong>Categories</strong>
-      </button>
-      <Link to="/listings/new" className="directory-quick-link">
-        <span aria-hidden="true">＋</span><strong>Add listing</strong>
-      </Link>
-    </div>
-    {gpsSuggestion && <button type="button" className="directory-gps-confirm" disabled={gpsBusy}
-      onClick={() => void confirmNearby()}>Confirm location and find LGA</button>}
-    {gpsStatus && <p className="directory-gps-status" role="status">{gpsStatus}</p>}
+    <section className="directory-hero" aria-label="Browse Ekiti">
+      <header className="directory-header">
+        <h1>Browse Categories</h1>
+        <p>Find places and services in Ekiti.</p>
+      </header>
+      <div className="directory-search-row">
+        <div className="directory-search">
+          <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"
+            fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+            <circle cx="10.5" cy="10.5" r="7"/><path d="m16 16 5 5"/>
+          </svg>
+          <label htmlFor="place-search" className="visually-hidden">Search services and places</label>
+          <input id="place-search" type="search" autoComplete="off" value={exploreQuery}
+            placeholder="Hotels, services, places…"
+            onChange={event => {
+              setExploreQuery(event.target.value);
+              setExploreService(null);
+              setExploreCategory('All');
+            }} />
+        </div>
+        <button type="button" className="directory-nearby" disabled={deviceLocation.status === 'loading'}
+          onClick={() => void requestDeviceLocation()}>
+          <span aria-hidden="true">⌖</span>
+          <span>{deviceLocation.status === 'loading' ? 'Checking' : 'Near me'}</span>
+        </button>
+      </div>
+      <p className={'directory-location-summary directory-location-' + deviceLocation.status} role="status">
+        {deviceLocation.status === 'prompt'
+          ? 'Enable location to browse your verified Ekiti area, or explore freely.'
+          : deviceLocation.message}
+      </p>
+      <details className="directory-manual-area">
+        <summary>Browse another area (optional)</summary>
+        <div className="directory-area">
+          <label htmlFor="explore-lga">Choose an LGA</label>
+          <select id="explore-lga" value={exploreLga}
+            onChange={event => selectManualArea(event.target.value)}>
+            <option value="">All of Ekiti</option>
+            {lgas.map(lga => <option key={lga.id} value={lga.id}>{lga.name}</option>)}
+          </select>
+        </div>
+      </details>
     </section>
     {activeCategory && <button type="button" className="directory-back" onClick={allCategories}>
       <span aria-hidden="true">←</span> Browse all categories
@@ -212,7 +167,7 @@ export default function ExploreDirectory() {
 
     <section aria-label="Directory categories" className="directory-categories">
       {!activeCategory && <div className="directory-section-title">
-        <h2>Find what you need</h2><span>{visibleCategories.length} categories</span>
+        <h2>Explore services</h2><span>{visibleCategories.length} categories</span>
       </div>}
       {visibleCategories.length > 0 ? <div className={'directory-grid' + (activeCategory ? ' directory-grid-selected' : '')}>
         {visibleCategories.map(category => <button type="button"
