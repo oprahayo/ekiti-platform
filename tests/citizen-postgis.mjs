@@ -27,12 +27,10 @@ test('review and claim RPCs require Auth JWT, moderate publication, and hide acc
 
     await client.query('SET LOCAL ROLE authenticated');
     const denied = await client.query(`SELECT
-      has_table_privilege(current_user,'civic.reviews','SELECT') AS read_reviews,
-      has_table_privilege(current_user,'civic.reviews','INSERT') AS insert_reviews,
-      has_table_privilege(current_user,'civic.claim_intents','SELECT') AS read_claims,
+      has_schema_privilege(current_user,'civic','USAGE') AS can_use_private_schema,
       has_function_privilege(current_user,'public.civic_submit_review(uuid,integer,text)','EXECUTE') AS submit,
       has_function_privilege(current_user,'public.civic_request_claim(uuid,text)','EXECUTE') AS claim`);
-    assert.deepEqual(Object.values(denied.rows[0]),[false,false,false,true,true]);
+    assert.deepEqual(Object.values(denied.rows[0]),[false,true,true]);
 
     await assert.rejects(client.query(`SELECT public.civic_submit_review($1,5,$2)`,
       [placeId,'A real detailed experience longer than fifteen chars.']),/Sign in required/);
