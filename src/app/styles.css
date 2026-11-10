@@ -1026,3 +1026,164 @@ button { min-height: 44px; border-radius: var(--radius-input); font-size: 14px; 
 .directory-hero .directory-area select{color:var(--text-primary);background:var(--surface);border-color:var(--border)}
 .directory-quick-actions button,.directory-quick-actions a{background:var(--surface);border-color:var(--border);color:var(--text-primary);box-shadow:none}
 .directory-contact-actions a:first-child{background:var(--accent);color:var(--surface);border-color:var(--accent)}
+
+/* Sprint 01 refinement — task-first home, not a social forum. */
+.welcome-heading>.welcome-subtitle{margin-top:6px;line-height:1.45}
+.welcome-activities{margin-top:clamp(33px,6vw,46px)}
+.welcome-activities h2{margin-bottom:17px;font-size:15px}
+.welcome-dice-list{
+  display:grid;
+  grid-template-columns:repeat(6,minmax(0,1fr));
+  gap:9px;
+  max-width:370px;
+  margin-inline:auto;
+}
+.welcome-dice-list>.welcome-action{
+  grid-column:span 2;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  min-width:0;
+  min-height:87px;
+  padding:10px 4px 8px;
+  gap:8px;
+  border-radius:17px;
+  text-align:center;
+}
+.welcome-dice-list>.welcome-action:nth-child(4){grid-column:2/span 2}
+.welcome-dice-list>.welcome-action:nth-child(5){grid-column:4/span 2}
+.welcome-dice-list .welcome-action-icon{width:27px;height:27px;flex:0 0 27px}
+.welcome-dice-list .welcome-action strong{font-size:12px;line-height:1.25;text-wrap:balance}
+.welcome-location{
+  margin:clamp(28px,5vw,37px) auto 0;
+  max-width:460px;
+  padding:15px 16px;
+  background:var(--surface-muted);
+  border:1px solid var(--border);
+  border-radius:15px;
+}
+.welcome-location-copy strong{font-size:13px}
+.welcome-location-copy p{margin-top:5px;font-size:12px;line-height:1.55;color:var(--text-secondary)}
+.welcome-location-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.welcome-location-actions button{
+  min-height:44px;border-radius:10px;padding:9px 14px;font-weight:600;font-size:12px
+}
+.welcome-location-allow{background:var(--positive);color:var(--page-background);border:1px solid var(--positive)}
+.welcome-location-skip{background:var(--surface);color:var(--text-primary);border:1px solid var(--border)}
+.welcome-footer{margin-top:27px}
+@media(max-width:350px){
+  .welcome-dice-list{gap:7px}
+  .welcome-dice-list>.welcome-action{min-height:81px;gap:5px;padding:8px 2px}
+  .welcome-dice-list .welcome-action-icon{width:24px;height:24px;flex-basis:24px}
+  .welcome-dice-list .welcome-action strong{font-size:11px}
+}
+
+/* Explore: minimal browser, no oversized tiles or visible LGA controls
+   unless a resident explicitly opens the manual fallback. */
+.directory-page .directory-hero{
+  padding:11px 0 17px;
+  background:transparent;
+  border-bottom:1px solid var(--border);
+  color:var(--text-primary);
+}
+.directory-page .directory-header{padding:0 0 14px;gap:0}
+.directory-page .directory-header h1{font-size:clamp(24px,5.5vw,29px);font-weight:700}
+.directory-page .directory-header>p:last-child{font-size:12px;margin-top:5px;color:var(--text-secondary);opacity:1}
+.directory-search-row{display:flex;align-items:stretch;gap:8px;min-width:0}
+.directory-page .directory-search{
+  display:flex;
+  flex:1 1 auto;
+  min-width:0;
+  min-height:48px;
+  gap:8px;
+  margin:0;
+  padding:0 12px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  box-shadow:none;
+  background:var(--surface);
+}
+.directory-page .directory-search input[type="search"]{
+  font-size:14px;
+  min-height:45px;
+  padding:8px 0;
+}
+.directory-nearby{
+  flex:0 0 auto;
+  min-width:84px;
+  min-height:48px;
+  display:flex;align-items:center;justify-content:center;gap:5px;
+  padding:8px 9px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:12px;
+  color:var(--text-primary);
+  font-size:12px;font-weight:650;
+}
+.directory-nearby span:first-child{font-size:20px;line-height:1}
+.directory-location-summary{
+  margin:12px 0 0;
+  font-size:12px;
+  line-height:1.55;
+  color:var(--text-secondary);
+  overflow-wrap:anywhere;
+}
+.directory-location-outside{color:var(--warning)}
+.directory-manual-area{margin-top:6px}
+.directory-manual-area summary{
+  display:inline-flex;align-items:center;min-height:44px;
+  color:var(--text-secondary);font-size:12px;cursor:pointer;
+  text-decoration:underline;text-underline-offset:3px;
+}
+.directory-manual-area .directory-area{
+  margin:0 0 8px;
+  display:flex;gap:9px;align-items:center;flex-wrap:wrap;
+}
+.directory-manual-area label{font-size:12px}
+.directory-manual-area select{flex:1 1 130px;max-width:100%}
+.directory-page .directory-section-title{margin-bottom:11px}
+.directory-page .directory-section-title h2{font-size:14px}
+.directory-page .directory-grid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:8px;
+}
+.directory-page .directory-category-tile{
+  min-width:0;
+  min-height:81px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:10px 3px;
+  gap:5px;
+}
+.directory-page .directory-category-tile:hover,
+.directory-page .directory-category-tile[aria-pressed="true"]{
+  border-color:var(--positive);
+  background:color-mix(in srgb,var(--positive) 8%,var(--surface));
+}
+.directory-page .directory-category-tile .directory-tile-icon{
+  display:block;
+  width:28px;
+  height:28px;
+  max-width:100%;
+}
+.directory-page .directory-category-tile>span{
+  font-size:11px;
+  line-height:1.22;
+  font-weight:600;
+  overflow-wrap:anywhere;
+}
+.directory-page .directory-grid-selected{grid-template-columns:repeat(4,minmax(0,1fr))}
+.directory-page .directory-grid-selected .directory-category-tile{min-height:81px}
+@media(max-width:350px){
+  .directory-page .directory-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+  .directory-page .directory-grid-selected{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .directory-page .directory-category-tile{min-height:77px;padding:8px 2px}
+  .directory-page .directory-category-tile>span{font-size:10.5px}
+  .directory-nearby{min-width:75px;padding-inline:6px}
+}
+@media(min-width:560px){
+  .directory-page .directory-grid{grid-template-columns:repeat(6,minmax(0,1fr))}
+  .directory-page .directory-grid-selected{grid-template-columns:repeat(6,minmax(0,1fr))}
+}
