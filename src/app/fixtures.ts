@@ -71,7 +71,7 @@ export interface DemoEvent {
 
 /** Sample presentation only. Neither the IDs nor the events refer to real reports. */
 export const demoTimeline: DemoEvent[] = [
-  { title: 'Submitted', evidence: 'Demo event · not stored', state: 'recorded', detail: 'An illustrative receipt was created for UI testing only.' },
+  { title: 'Submitted', evidence: 'Demo event · not stored', state: 'waiting', detail: 'An illustrative receipt was created for UI testing only.' },
   { title: 'Routed', evidence: 'Demo rule-based suggestion', state: 'claimed', detail: 'An agency destination would require verification.' },
   { title: 'Sent', evidence: 'No dispatch record', state: 'waiting', detail: 'This demo has not contacted an organization.' },
   { title: 'Acknowledged', evidence: 'No acknowledgment', state: 'waiting', detail: 'No official acknowledgment has occurred.' },
