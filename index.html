@@ -110,7 +110,11 @@
           <textarea id="draft-description" rows="4" required maxlength="4000"
             aria-describedby="draft-help"></textarea>
           <p class="hint" id="draft-help">Include only details you want in the downloaded file.
-            The location selector’s exact coordinates are excluded.</p>
+            The location selector’s exact coordinates are excluded, but your own description may
+            still reveal personal information.</p>
+          <p class="hint" id="draft-privacy">Privacy: Downloading does not submit a report.
+            The saved text file stays on your device. Clearing the form will not delete that file;
+            remove it yourself if you use a shared device.</p>
           <button class="primary" type="submit">Download draft</button>
           <button type="reset">Clear report text and type</button>
           <p role="status" id="draft-status"></p>
