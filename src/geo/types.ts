@@ -8,6 +8,9 @@ export interface AreaMatch {
   name: string;
   parentId?: string;
   sourceId: string;
+  sourceIds?: string[];
+  sources?: { id: string; recordId: string | null }[];
+  onBoundary?: boolean;
 }
 
 export interface LevelResolution {
@@ -26,6 +29,7 @@ export interface Resolution {
 /** Server-provided spatial candidates from VERIFIED boundaries only. */
 export interface CandidateInput {
   stateBoundaryStatus: 'inside' | 'outside' | 'unknown';
+  stateOnBoundary?: boolean;
   lgas: AreaMatch[];
   wards: AreaMatch[];
 }

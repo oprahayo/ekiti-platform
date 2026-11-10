@@ -11,7 +11,7 @@ function level(matches: AreaMatch[], outside: boolean): LevelResolution {
 
 /**
  * Reconciles DB-provided candidates. Does NOT perform point-in-polygon and does not
- * infer a location from a place name. The PostGIS query must first be validated.
+ * infer a location from a place name.
  */
 export function reconcileCandidates(input: CandidateInput): Resolution {
   const outside = input.stateBoundaryStatus === 'outside';
@@ -20,11 +20,12 @@ export function reconcileCandidates(input: CandidateInput): Resolution {
   const conflict = Boolean(lga.match && ward.match && ward.match.parentId && ward.match.parentId !== lga.match.id);
   const consistent = Boolean(lga.match && ward.match && ward.match.parentId === lga.match.id);
 
+  const onBoundary = input.stateOnBoundary || lga.match?.onBoundary || ward.match?.onBoundary;
   return {
     lga,
     ward,
     consistency: conflict ? 'conflict' : consistent ? 'consistent' : 'unverified',
-    requiresConfirmation: outside || conflict || input.stateBoundaryStatus === 'unknown' || lga.status !== 'matched' || ward.status !== 'matched',
+    requiresConfirmation: !consistent || Boolean(onBoundary) || input.stateBoundaryStatus !== 'inside',
   };
 }
 

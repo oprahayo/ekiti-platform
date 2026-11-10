@@ -13,14 +13,15 @@ This is an engineering milestone, **not** a working civic report intake site.
 7. Automated unit tests, real PostGIS integration tests, and accessible browser checks.
 8. Document no-official-affiliation notice and privacy requirements before public intake.
 
-## Current starter status
+## Implementation status
 
 - [x] Domain resolution contract and deterministic reconciliation tests
 - [x] SQL migration for geo tables, verified geometry candidates, quarantine
 - [x] Provisional name checklist for 16 LGAs (not certified)
-- [ ] Authoritative ward reference list
-- [ ] Legal/geographic source inventory and license audit
-- [ ] Verified boundary imports and PostGIS integration tests
+- [x] Import 177 INEC registration-area names and their parent LGAs from a pinned official PDF
+- [x] Audit the GRID3 state, LGA and operational ward releases and record license terms
+- [x] Verified state and LGA imports, restricted server resolver and PostGIS integration tests
+- [ ] Verified electoral ward geometry and operational-to-electoral crosswalk
 - [ ] Full HTTP endpoint, rate limits and permissions
 - [ ] Location picker / optional map UI
 - [ ] Deployment / staging validation
