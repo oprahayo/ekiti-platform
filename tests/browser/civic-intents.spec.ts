@@ -65,6 +65,7 @@ test('a report microphone returns its transcript to the report composer, not Ask
   await page.goto('/report');
   await page.getByRole('button', { name: 'Reply using microphone' }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
+  await page.getByRole('button', { name: 'Start voice input' }).click();
   await expect(page.locator('#report-message')).toHaveValue('The damaged footbridge needs urgent attention in my area.', { timeout: 5000 });
   await expect(page).toHaveURL(/\/report/);
 });
