@@ -148,11 +148,16 @@ test('reviewed listing without vetted coordinates must not show map directions',
   await expect(page.getByText('Map directions are unavailable until exact coordinates are reviewed.')).toBeVisible();
 });
 
-test('light and dark themes keep category drawings and yellow accents', async ({ page }) => {
+test('light and dark themes keep category drawings and the shared civic accent', async ({ page }) => {
   await page.goto('/explore');
-  const color = await page.locator('.directory-page').evaluate(element =>
-    getComputedStyle(element).getPropertyValue('--directory-yellow').trim());
-  expect(color).toBe('#ffda39');
+  const theme = await page.locator('.directory-page').evaluate(element => {
+    const style = getComputedStyle(element);
+    return {
+      directory: style.getPropertyValue('--directory-yellow').trim(),
+      civic: style.getPropertyValue('--accent').trim(),
+    };
+  });
+  expect(theme.directory).toBe(theme.civic);
   await page.getByRole('button', { name: 'Switch to dark mode' }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   await expect(page.locator('.directory-category-tile')).toHaveCount(24);

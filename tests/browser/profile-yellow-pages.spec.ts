@@ -42,13 +42,13 @@ for (const width of [280, 320, 360, 375, 390, 428, 768]) {
   });
 }
 
-test('Yellow Pages has a warm-yellow hero and useful non-fabricated shortcuts', async ({ page }) => {
+test('Yellow Pages uses the shared theme and useful non-fabricated shortcuts', async ({ page }) => {
   await page.goto('/explore');
   await expect(page.locator('.directory-hero')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Browse Categories' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Near me' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Categories' })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Add listing' })).toHaveAttribute('href', '/profile');
+  await expect(page.getByRole('link', { name: 'Add listing' })).toHaveAttribute('href', '/listings/new');
   await expect(page.locator('.directory-category-tile')).toHaveCount(24);
   await expect(page.locator('.place-row')).toHaveCount(0);
 });

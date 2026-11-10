@@ -842,3 +842,83 @@ button { min-height: 44px; border-radius: var(--radius-input); font-size: 14px; 
 /* Small navigation is calmer than a floating Report button. */
 .bottom-nav .nav-report .nav-icon{transform:none;width:auto;height:28px;border:0;border-radius:0;background:transparent;color:var(--danger)}
 .bottom-nav .nav-report .nav-text{margin-top:0}
+
+/* Citizen gateway + guided task conversations. Shared civic palette for Yellow Pages. */
+.welcome-gateway{max-width:790px;margin:0 auto;padding-top:20px;padding-bottom:calc(var(--nav-height) + 50px)}
+.welcome-heading{padding:12px 1px 21px}
+.welcome-heading .eyebrow{color:var(--positive);font-size:11px;font-weight:700;letter-spacing:.06em;margin-bottom:10px;text-transform:uppercase}
+.welcome-heading h1{font-size:clamp(27px,6vw,35px);line-height:1.14;font-weight:750;letter-spacing:-.035em}
+.welcome-heading>p:not(.eyebrow){color:var(--text-secondary);line-height:1.5;margin:10px 0 0;font-size:15px}
+.welcome-heading>.welcome-helper{color:var(--text-primary)!important;font-weight:600;margin-top:20px!important;font-size:14px!important}
+.welcome-action-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.welcome-action{display:flex;align-items:flex-start;gap:11px;min-width:0;min-height:106px;padding:16px 13px;border:1px solid var(--border);border-radius:16px;background:var(--surface);text-decoration:none;color:var(--text-primary);box-shadow:0 2px 9px rgba(10,35,24,.035)}
+.welcome-action:hover,.welcome-action:focus-visible{border-color:var(--positive);background:var(--surface-muted);outline-offset:2px}
+.welcome-action-icon{display:grid;place-items:center;flex:0 0 37px;width:37px;height:37px;background:var(--surface-muted);border:1px solid var(--border);border-radius:11px;font-size:19px;font-weight:700;color:var(--positive)}
+.welcome-action-copy{display:flex;flex:1;min-width:0;flex-direction:column;gap:5px}
+.welcome-action strong{font-size:14px;line-height:1.3;font-weight:650}
+.welcome-action small{font-size:11px;line-height:1.45;color:var(--text-secondary);overflow-wrap:anywhere}
+.welcome-action-arrow{color:var(--text-tertiary);font-size:25px;line-height:1}
+.welcome-action-priority{border-color:color-mix(in srgb,var(--positive) 44%,var(--border))}
+.welcome-footer{margin-top:22px;padding:18px 0;border-top:1px solid var(--border)}
+.welcome-footer a{color:var(--accent);font-weight:600;font-size:13px}
+.welcome-footer p{font-size:12px;color:var(--text-secondary);line-height:1.5;margin-top:8px}
+@media(max-width:540px){.welcome-action-list{grid-template-columns:minmax(0,1fr);gap:9px}.welcome-action{min-height:78px;padding:12px}.welcome-action-copy{gap:4px}.welcome-heading{padding-top:0}.welcome-action small{font-size:12px}}
+@media(max-width:340px){.welcome-action{gap:9px}.welcome-action-icon{width:34px;flex-basis:34px;height:34px}}
+
+.guided-report-page{max-width:760px;margin:0 auto;padding-bottom:calc(var(--nav-height) + 55px)}
+.guided-progress{font-size:11px;color:var(--text-tertiary);text-align:center;padding:0 8px 15px}
+.guided-thread{display:flex;flex-direction:column;align-items:stretch;gap:10px;padding:2px 0 16px}
+.guided-bubble{width:fit-content;max-width:min(90%,570px);border-radius:17px;padding:11px 14px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:1.54}
+.guided-bubble p{margin:0}
+.guided-assistant{align-self:flex-start;background:var(--surface);border:1px solid var(--border);border-bottom-left-radius:5px}
+.guided-user{align-self:flex-end;background:var(--chat-own,#e0f3e6);color:var(--chat-own-text,#153c2b);border-bottom-right-radius:5px}
+.guided-choices{display:flex;flex-wrap:wrap;gap:9px;margin:7px 0 18px}
+.guided-choice{display:flex;flex:1 1 calc(50% - 9px);flex-direction:column;gap:6px;min-width:135px;min-height:60px;align-items:flex-start;justify-content:center;padding:12px 14px;border:1px solid var(--border);border-radius:13px;background:var(--surface);text-align:left;color:var(--text-primary);cursor:pointer}
+.guided-choice:hover,.guided-choice:focus-visible{border-color:var(--positive);background:var(--surface-muted)}
+.guided-choice strong{font-size:14px}.guided-choice small{color:var(--text-secondary);font-size:11px;line-height:1.4}
+.guided-choices>.guided-hint{flex-basis:100%}
+.guided-category-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+.guided-category-choices .guided-choice{min-width:0;min-height:49px;font-size:13px;padding:10px 11px;overflow-wrap:anywhere}
+.guided-hint{font-size:12px;line-height:1.55;color:var(--text-secondary);margin:8px 0}
+.guided-error{font-size:12px;color:var(--danger);margin:9px 0}
+.guided-input-form,.guided-review,.citizen-draft-form,.citizen-draft-confirmation{display:flex;flex-direction:column;gap:12px;margin:8px 0 20px;border:1px solid var(--border);background:var(--surface);padding:16px;border-radius:16px;min-width:0}
+.guided-input-form label,.citizen-draft-form label{font-size:13px;font-weight:650}
+.guided-input-form input:not([type=file]),.guided-input-form select,.guided-input-form textarea,
+.citizen-draft-form input,.citizen-draft-form select,.citizen-draft-form textarea{display:block;width:100%;min-width:0;min-height:46px;background:var(--surface);border:1px solid var(--border);color:var(--text-primary);border-radius:10px;padding:10px 12px;font-size:16px}
+.guided-input-form textarea,.citizen-draft-form textarea{resize:vertical;min-height:100px}
+.guided-input-form .primary-action,.guided-review .primary-action,.citizen-draft-form .primary-action{width:100%;margin-top:6px;min-height:48px;background:var(--positive);color:var(--surface);border:0;border-radius:11px}
+.guided-file-label{display:flex;flex-direction:column;gap:7px;min-height:46px;justify-content:center;align-items:flex-start;padding:11px 12px;background:var(--surface-muted);border:1px solid var(--border);border-radius:10px;cursor:pointer}
+.guided-file-label input{max-width:100%;font-size:12px}
+.guided-evidence-buttons{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.guided-evidence-preview{min-width:0;overflow:hidden;border:1px solid var(--border);padding:10px;border-radius:10px}
+.guided-evidence-preview p{font-size:12px;overflow-wrap:anywhere;margin-bottom:8px}
+.guided-evidence-preview img,.guided-evidence-preview video{display:block;max-width:100%;max-height:260px;object-fit:contain}
+.guided-evidence-preview audio{display:block;width:100%;max-width:100%}
+.guided-review h2{font-size:17px;font-weight:700}
+.guided-review .review-list{max-width:100%;overflow-wrap:anywhere}
+.guided-review .quiet-action{margin-top:2px}
+.guided-independent-note{border-top:1px solid var(--border);padding:14px 0 6px;margin-top:20px;font-size:11px;color:var(--text-tertiary);line-height:1.55}
+.citizen-draft-page{max-width:760px;margin:0 auto;padding-bottom:calc(var(--nav-height) + 55px)}
+.citizen-draft-page>.eyebrow{font-size:11px;color:var(--positive);letter-spacing:.08em;text-transform:uppercase}
+.citizen-draft-page h1{font-size:26px;letter-spacing:-.03em}
+.citizen-draft-page .help-text{margin:10px 0 20px}
+.citizen-draft-confirmation{gap:12px}
+.citizen-draft-confirmation h2{font-size:20px}
+.citizen-draft-confirmation>p{line-height:1.6;overflow-wrap:anywhere}
+@media(max-width:390px){.guided-evidence-buttons{grid-template-columns:1fr}.guided-choice{min-width:120px}.guided-report-page .chat-contact h1{font-size:17px}}
+@media(max-width:320px){.guided-choices{gap:7px}.guided-choice{flex-basis:100%}.guided-category-choices{grid-template-columns:1fr 1fr}.guided-category-choices .guided-choice{flex-basis:auto;min-height:48px;padding:8px}}
+
+.directory-page{
+  --directory-bg:var(--page-background);
+  --directory-tile:var(--surface);
+  --directory-ink:var(--text-primary);
+  --directory-outline:var(--border);
+  --directory-yellow:var(--accent);
+}
+.directory-hero{background:var(--surface-muted);color:var(--text-primary);border-bottom:1px solid var(--border)}
+:root[data-theme="dark"] .directory-hero{background:var(--surface-muted);color:var(--text-primary)}
+.directory-hero .directory-search{background:var(--surface);border-color:var(--border);box-shadow:none}
+.directory-hero .directory-search svg,.directory-hero .directory-search input[type="search"]{color:var(--text-primary)}
+.directory-hero .directory-area select{color:var(--text-primary);background:var(--surface);border-color:var(--border)}
+.directory-quick-actions button,.directory-quick-actions a{background:var(--surface);border-color:var(--border);color:var(--text-primary);box-shadow:none}
+.directory-contact-actions a:first-child{background:var(--accent);color:var(--surface);border-color:var(--accent)}

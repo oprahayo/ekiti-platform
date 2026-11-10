@@ -6,7 +6,7 @@ const efon = { latitude: 7.677235411135371, longitude: 4.943747799903621 };
 test('assistant prepares a report with no forms, no fake receipt and a downloadable text file', async ({ page }) => {
   const requests: string[] = [];
   page.on('request', req => requests.push(req.url()));
-  await page.goto('/report');
+  await page.goto('/report/text-draft');
   await expect(page.getByRole('heading', { name: 'Tell me what happened' })).toBeVisible();
   await expect(page.getByText(/I will help you prepare a private draft/)).toBeVisible();
   await expect(page.locator('.report-progress, #draft-form, #incident-description')).toHaveCount(0);
@@ -34,7 +34,7 @@ test('assistant prepares a report with no forms, no fake receipt and a downloada
 });
 
 test('conversation remains private on this device and can be cleared', async ({ page }) => {
-  await page.goto('/report');
+  await page.goto('/report/text-draft');
   await page.locator('#report-message').fill(description);
   await page.locator('.conversation-send').click();
   await expect(page.getByText('Saved on this device')).toBeVisible();
@@ -53,7 +53,7 @@ test('GPS is opt-in and server boundary check requires explicit confirmation', a
   await context.setGeolocation(efon);
   let coordinatesSent = 0;
   page.on('request', request => { if (request.url().endsWith('/api/resolve')) coordinatesSent++; });
-  await page.goto('/report');
+  await page.goto('/report/text-draft');
   await page.locator('#report-message').fill(description);
   await page.locator('.conversation-send').click();
   expect(coordinatesSent).toBe(0);
@@ -69,7 +69,7 @@ test('GPS is opt-in and server boundary check requires explicit confirmation', a
 
 test('denied GPS leaves the conversation usable', async ({ page, context }) => {
   await context.grantPermissions([]);
-  await page.goto('/report');
+  await page.goto('/report/text-draft');
   await page.locator('#report-message').fill(description);
   await page.locator('.conversation-send').click();
   await page.getByText('Optional: check a precise map location').click();
@@ -82,7 +82,7 @@ test('denied GPS leaves the conversation usable', async ({ page, context }) => {
 test('map remains a deliberate and lazy-loaded optional control', async ({ page }) => {
   const requests: string[] = [];
   page.on('request', req => requests.push(req.url()));
-  await page.goto('/report');
+  await page.goto('/report/text-draft');
   await page.locator('#report-message').fill(description);
   await page.locator('.conversation-send').click();
   expect(requests.some(url => /\/assets\/(map-|lga-)/.test(url))).toBe(false);
@@ -92,7 +92,7 @@ test('map remains a deliberate and lazy-loaded optional control', async ({ page 
 });
 
 test('offline refresh restores the private report conversation when service worker controls the page', async ({ page, context }) => {
-  await page.goto('/report');
+  await page.goto('/report/text-draft');
   await page.locator('#report-message').fill(description);
   await page.locator('.conversation-send').click();
   await expect(page.getByText('Saved on this device')).toBeVisible();
@@ -139,7 +139,7 @@ test('Track is conversational and never accepts a fabricated real case', async (
 test('Yoruba toggle changes report prompts without silently translating citizens text', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'YOR' }).click();
-  await page.goto('/report');
+  await page.goto('/report/text-draft');
   await expect(page.getByRole('heading', { name: 'Ṣàlàyé ohun tó ṣẹlẹ̀' })).toBeVisible();
   await expect(page.getByText(/Sọ ohun tó ṣẹlẹ̀ ní àdúgbò rẹ/)).toBeVisible();
   await page.locator('#report-message').fill(description);
@@ -151,7 +151,7 @@ test('Yoruba toggle changes report prompts without silently translating citizens
 for(const width of [280, 320, 360, 390, 428, 768]) {
   test('conversation UI does not overflow ' + width + 'px mobile or tablet', async ({ page }) => {
     await page.setViewportSize({ width, height: 800 });
-    await page.goto('/report');
+    await page.goto('/report/text-draft');
     await expect(page.locator('#report-message')).toBeVisible();
     const metrics = await page.evaluate(() => {
       const composer = document.querySelector('.conversation-composer')!.getBoundingClientRect();

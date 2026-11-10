@@ -8,8 +8,10 @@ test('a natural-language report request goes into private report chat and never 
   await page.locator('#ask-input').fill(narrative);
   await page.getByRole('button', { name: 'Send' }).click();
   await expect(page).toHaveURL(/\/report/);
-  await expect(page.getByText(narrative)).toBeVisible();
-  await expect(page.getByText(/Which local government area did this happen in/)).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Report an issue' })).toBeVisible();
+  await page.getByRole('button', { name: /Write text/ }).click();
+  await page.getByRole('button', { name: 'Roads' }).click();
+  await expect(page.locator('#guided-description')).toHaveValue(narrative);
   expect(asks).toHaveLength(0);
 });
 
@@ -49,9 +51,11 @@ test('reporting is typed chat even if speech recognition exists', async ({ page 
     (window as unknown as { webkitSpeechRecognition:unknown }).webkitSpeechRecognition=class {};
   });
   await page.goto('/report');
-  await expect(page.getByRole('button',{name:/voice|microphone|listen|audio|speak/i})).toHaveCount(0);
-  await page.locator('#report-message').fill('The damaged footbridge needs urgent attention in my area.');
-  await page.locator('.conversation-send').click();
-  await expect(page.getByText(/Which local government area did this happen in/)).toBeVisible();
+  await expect(page.getByRole('button',{name:/Open voice mode|microphone|speech recognition/i})).toHaveCount(0);
+  await page.getByRole('button', { name: /Write text/ }).click();
+  await page.getByRole('button', { name: 'Roads' }).click();
+  await page.locator('#guided-description').fill('The damaged footbridge needs urgent attention in my area.');
+  await page.getByRole('button', { name: 'Continue' }).click();
+  await expect(page.getByText(/Where in Ekiti did it happen/)).toBeVisible();
 });
 

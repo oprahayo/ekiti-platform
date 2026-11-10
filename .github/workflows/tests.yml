@@ -57,6 +57,15 @@ jobs:
           npx playwright install --with-deps chromium
           npm run test:browser
 
+      - name: Preserve guided civic journey mobile screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: civic-guided-journeys-review
+          path: test-results/citizen-journeys/
+          if-no-files-found: ignore
+          retention-days: 5
+
       - name: Preserve rendered citizen chat screenshots
         if: always()
         uses: actions/upload-artifact@v4

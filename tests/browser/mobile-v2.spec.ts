@@ -1,13 +1,13 @@
 import { test, expect } from '@playwright/test';
 
-test('Home is a three-action text chat with independent identity', async ({ page }) => {
+test('Home offers six clear civic actions instead of launching directly into chat', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Welcome to Ekiti Civic' })).toBeVisible();
-  await expect(page.locator('.chat-quick-replies > *')).toHaveCount(3);
-  await expect(page.getByRole('searchbox', { name: 'Ask about Ekiti' })).toBeVisible();
-  await expect(page.getByRole('link', { name: /Report a problem/ })).toBeVisible();
-  await expect(page.getByRole('link', { name: /Find a service/ })).toBeVisible();
-  await expect(page.getByText(/Not a government service/i)).toBeVisible();
+  await expect(page.locator('.welcome-action')).toHaveCount(6);
+  await expect(page.getByRole('link', { name: /Ask a question/ })).toBeVisible();
+  await expect(page.getByRole('link', { name: /Report an issue/ })).toBeVisible();
+  await expect(page.getByRole('link', { name: /Post a listing/ })).toBeVisible();
+  await expect(page.getByText(/Real reports.*not enabled yet/)).toBeVisible();
   await expect(page.locator('.feature-grid, .hero-art, .floating-card')).toHaveCount(0);
   await expect(page.locator('.bottom-nav .nav-item')).toHaveCount(5);
 });
@@ -22,16 +22,16 @@ for (const width of [280, 320, 360, 375, 390, 428, 768, 1024, 1440]) {
           const rect = element.getBoundingClientRect();
           return { width: rect.width, height: rect.height };
         });
-      const ask = document.querySelector('.ask-bar')!.getBoundingClientRect();
+      const action = document.querySelector('.welcome-action')!.getBoundingClientRect();
       return {
         scrollWidth: document.documentElement.scrollWidth,
         innerWidth: window.innerWidth,
         navItems,
-        askHeight: ask.height,
+        actionHeight: action.height,
       };
     });
     expect(result.scrollWidth, 'No horizontal scrolling').toBeLessThanOrEqual(result.innerWidth);
-    expect(result.askHeight).toBeGreaterThanOrEqual(44);
+    expect(result.actionHeight).toBeGreaterThanOrEqual(44);
     result.navItems.forEach(item => {
       expect(item.height).toBeGreaterThanOrEqual(44);
       expect(item.width).toBeGreaterThanOrEqual(44);
@@ -43,7 +43,7 @@ test('five-tab navigation supports direct deep links', async ({ page }) => {
   for (const [path, heading] of [
     ['/ask', 'Ask anything about Ekiti'],
     ['/explore', 'Browse Categories'],
-    ['/report', 'Tell me what happened'],
+    ['/report', 'Report an issue'],
     ['/track', 'Check a report'],
     ['/scores', 'Public response'],
     ['/profile', 'Citizen Profile'],
@@ -55,18 +55,16 @@ test('five-tab navigation supports direct deep links', async ({ page }) => {
   }
 });
 
-test('Home chat is editable and answers without leaving the conversation', async ({ page }) => {
+test('Welcome gateway opens a separate source-backed question conversation', async ({ page }) => {
   await page.goto('/');
-  await page.locator('#home-ask-input').focus();
-  await expect(page).toHaveURL(/\/$/);
-  const input = page.locator('#home-ask-input');
-  await expect(input).toBeFocused();
+  await page.getByRole('link', { name: /Ask a question/ }).click();
+  await expect(page).toHaveURL(/\/ask$/);
+  const input = page.locator('#ask-input');
   await input.fill('How many local government areas?');
   await input.press('Enter');
   await expect(page.getByText(/16 local government areas/)).toBeVisible();
   await expect(page.getByRole('link', { name: /Ekiti State — government overview/ })).toBeVisible();
-  await expect(page.getByText(/not a full generative AI conversation/)).toBeVisible();
-});
+})
 
 test('Explore filters survive tab changes; all data is identified as demo', async ({ page }) => {
   await page.goto('/explore');
@@ -128,7 +126,7 @@ test('theme toggle works, independent of system settings', async ({ page }) => {
 test('there are no voice or audio controls on citizen chat routes', async ({ page }) => {
   for(const path of ['/', '/ask', '/report', '/track']) {
     await page.goto(path);
-    await expect(page.getByRole('button',{name:/voice|microphone|listen|audio|speak/i})).toHaveCount(0);
+    await expect(page.getByRole('button',{name:/Open voice mode|microphone|listen to answer|speech recognition/i})).toHaveCount(0);
   }
 });
 
@@ -149,7 +147,8 @@ test('browser speech support never opens voice UI', async ({ page }) => {
   });
   await page.goto('/');
   await expect(page.getByRole('button',{name:'Open voice mode'})).toHaveCount(0);
-  await page.locator('#home-ask-input').fill('Hello from the text chat');
-  await expect(page.locator('#home-ask-input')).toHaveValue('Hello from the text chat');
+  await page.getByRole('link', { name: /Ask a question/ }).click();
+  await page.locator('#ask-input').fill('Hello from the text chat');
+  await expect(page.locator('#ask-input')).toHaveValue('Hello from the text chat');
 });
 
