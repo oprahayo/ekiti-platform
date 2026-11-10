@@ -15,6 +15,8 @@ test('downloads the latest private draft with the current location and no submis
   await page.getByRole('button', { name: 'Confirm incident position' }).click();
   await expect(page.locator('#evidence')).toContainText('Boundary lookup: Efon');
   await page.getByText('Prepare a report draft').click();
+  await expect(page.locator('#draft-privacy')).toContainText('Downloading does not submit');
+  await expect(page.locator('#draft-privacy')).toContainText('Clearing the form will not delete');
   const sent: string[] = [];
   page.on('request', (request) => sent.push(request.url()));
   await page.getByLabel('Report type').selectOption('Commendation');
