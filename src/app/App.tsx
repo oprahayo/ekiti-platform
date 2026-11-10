@@ -90,9 +90,10 @@ function Ask() {
   const location = useLocation();
   const { askDraft, setAskDraft } = useApp();
   const [messages, setMessages] = React.useState<Message[]>(() => inMemoryMessages);
-  const input = React.useRef<HTMLInputElement>(null);
   React.useEffect(() => {
-    if (new URLSearchParams(location.search).has('focus')) input.current?.focus();
+    if (new URLSearchParams(location.search).has('focus')) {
+      document.getElementById('ask-input')?.focus();
+    }
   }, [location.search]);
   const submit = (question = askDraft) => {
     const clean = question.trim().slice(0, 350);
@@ -137,7 +138,6 @@ function Ask() {
       <div className="ask-composer">
         <div className="ask-input-row">
           <AskBar />
-          <input type="text" className="visually-hidden" ref={input} aria-hidden="true" tabIndex={-1} />
           <button className="send-button" type="button" onClick={() => submit()} disabled={!askDraft.trim()}>Send</button>
         </div>
       </div>
