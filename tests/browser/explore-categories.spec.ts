@@ -6,12 +6,12 @@ const allTradeNames = [
   'Builders','Roofers',
 ];
 
-test('Explore shows the reference-inspired three-column yellow-accent category grid', async ({ page }) => {
+test('Explore shows compact categories without Yellow Pages branding', async ({ page }) => {
   const api: string[] = [];
   page.on('request', request => { if (request.url().includes('/api/places')) api.push(request.url()); });
   await page.goto('/explore');
   await expect(page.getByRole('heading', { name: 'Browse Categories' })).toBeVisible();
-  await expect(page.getByText('Find local businesses, services and places across Ekiti State.')).toBeVisible();
+  await expect(page.getByText('Find places and services in Ekiti.')).toBeVisible();
   await expect(page.locator('.directory-category-tile')).toHaveCount(24);
   await expect(page.locator('.directory-tile-icon')).toHaveCount(24);
   await expect(page.getByRole('searchbox', { name: 'Search services and places' })).toBeVisible();
@@ -27,7 +27,7 @@ test('Explore shows the reference-inspired three-column yellow-accent category g
     });
     return { columns, tiles, color: computed.backgroundColor };
   });
-  expect(grid.columns).toHaveLength(3);
+  expect(grid.columns).toHaveLength(6);
   expect(grid.tiles[0].y).toBe(grid.tiles[1].y);
   expect(grid.tiles[1].y).toBe(grid.tiles[2].y);
   expect(grid.tiles[0].x).toBeLessThan(grid.tiles[1].x);
@@ -36,7 +36,7 @@ test('Explore shows the reference-inspired three-column yellow-accent category g
 });
 
 for (const width of [280, 320, 360, 375, 390, 428, 768, 1024]) {
-  test('category grid fits a ' + width + 'px device in three columns without overflow', async ({ page }) => {
+  test('compact category grid fits a ' + width + 'px device without overflow', async ({ page }) => {
     await page.setViewportSize({ width, height: 800 });
     await page.goto('/explore');
     await expect(page.locator('.directory-category-tile')).toHaveCount(24);
@@ -54,10 +54,11 @@ for (const width of [280, 320, 360, 375, 390, 428, 768, 1024]) {
       };
     });
     expect(metrics.documentWidth).toBeLessThanOrEqual(metrics.viewportWidth);
-    expect(metrics.columns).toBe(3);
+    expect(metrics.columns).toBe(width <= 350 ? 3 : width < 560 ? 4 : 6);
     expect(Math.min(...metrics.tileWidths)).toBeGreaterThanOrEqual(65);
-    expect(Math.min(...metrics.tileHeights)).toBeGreaterThanOrEqual(100);
-    expect(metrics.iconWidth).toBeGreaterThanOrEqual(38);
+    expect(Math.min(...metrics.tileHeights)).toBeGreaterThanOrEqual(70);
+    expect(Math.max(...metrics.tileHeights)).toBeLessThanOrEqual(110);
+    expect(metrics.iconWidth).toBeGreaterThanOrEqual(24);
   });
 }
 
@@ -83,6 +84,7 @@ test('search and category navigation show sample fixtures only as unverified pre
   await expect(page.getByRole('heading', { name: 'Sample layout preview' })).toBeVisible();
   await expect(page.getByText('Not verified')).toBeVisible();
   await expect(page.getByText('Example neighborhood school')).toBeVisible();
+  await page.locator('.directory-manual-area summary').click();
   await page.locator('#explore-lga').selectOption('ado-ekiti');
   await expect(page.getByText('Nothing verified here yet')).toBeVisible();
   await page.getByRole('button', { name: 'Clear filters' }).click();
