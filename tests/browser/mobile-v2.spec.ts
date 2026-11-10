@@ -1,10 +1,10 @@
 import { test, expect } from '@playwright/test';
 
-test('Home offers six clear civic actions instead of launching directly into chat', async ({ page }) => {
+test('Home offers five task-first civic actions instead of launching directly into chat', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Welcome to Ekiti Civic' })).toBeVisible();
-  await expect(page.locator('.welcome-action')).toHaveCount(6);
-  await expect(page.getByRole('link', { name: /Ask a question/ })).toBeVisible();
+  await expect(page.locator('.welcome-action')).toHaveCount(5);
+  await expect(page.getByRole('link', { name: /Ask about Ekiti/ })).toBeVisible();
   await expect(page.getByRole('link', { name: /Report an issue/ })).toBeVisible();
   await expect(page.getByRole('link', { name: /Post a listing/ })).toBeVisible();
   await expect(page.getByText(/Real submissions, official receipts and public case publication are not enabled yet/)).toBeVisible();
@@ -51,13 +51,14 @@ test('five-tab navigation supports direct deep links', async ({ page }) => {
     ['/places/demo-health-1', 'Sample community health center'],
   ]) {
     await page.goto(path);
-    await expect(page.getByRole('heading', { name: heading })).toBeVisible();
+    if (path === '/report') await expect(page.getByText(/Welcome\. I will guide you through a report/)).toBeVisible();
+    else await expect(page.getByRole('heading', { name: heading })).toBeVisible();
   }
 });
 
 test('Welcome gateway opens a separate source-backed question conversation', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('link', { name: /Ask a question/ }).click();
+  await page.getByRole('link', { name: /Ask about Ekiti/ }).click();
   await expect(page).toHaveURL(/\/ask$/);
   const input = page.locator('#ask-input');
   await input.fill('How many local government areas?');
@@ -107,7 +108,7 @@ test('Scores show the denominator and a negative metric without implying real ou
 test('fictional tracking deep link never requires a fake token or claims official activity', async ({ page }) => {
   await page.goto('/track/DEMO-EKP-2026-00001');
   await expect(page.getByRole('heading', { name: 'Example timeline · not a real case' })).toBeVisible();
-  await expect(page.locator('.case-timeline li')).toHaveCount(6);
+  await expect(page.locator('.case-timeline li')).toHaveCount(5);
   await expect(page.locator('.case-timeline li.event-recorded')).toHaveCount(0);
   await expect(page.getByText('Not independently verified')).toBeVisible();
   await expect(page.locator('#tracking-token')).toHaveCount(0);
@@ -147,7 +148,7 @@ test('browser speech support never opens voice UI', async ({ page }) => {
   });
   await page.goto('/');
   await expect(page.getByRole('button',{name:'Open voice mode'})).toHaveCount(0);
-  await page.getByRole('link', { name: /Ask a question/ }).click();
+  await page.getByRole('link', { name: /Ask about Ekiti/ }).click();
   await page.locator('#ask-input').fill('Hello from the text chat');
   await expect(page.locator('#ask-input')).toHaveValue('Hello from the text chat');
 });
