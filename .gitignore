@@ -19,3 +19,6 @@ test-results/
 playwright-report/
 .dev.vars*
 wrangler.*.local.json
+
+# Locally collected, unreviewed public source candidates
+/data/review/

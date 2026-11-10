@@ -17,7 +17,8 @@ async function request(path, options) {
   assert.equal(response.status, 200, path + ' returned ' + response.status);
   return response;
 }
-assert.match(await (await request('/')).text(), /id="draft-form"/);
+assert.match(await (await request('/')).text(), /id="root"/);
+assert.match(await (await request('/explore')).text(), /id="root"/);
 const areas = await (await request('/api/areas')).json();
 const lgas = areas.filter((a) => a.kind === 'lga');
 const wards = areas.filter((a) => a.kind === 'ward');
