@@ -48,6 +48,22 @@ jobs:
       - run: npm run test:postgis
       - run: psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f scripts/coverage.sql
 
+      - name: Verify admin proposal refuses unapproved execution
+        run: |
+          ! psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f db/proposals/0006_admin_private.sql
+      - name: Apply private proposals to disposable CI database ONLY
+        run: psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f tests/install-admin-proposals.sql
+      - name: Verify private administrative RLS and denied roles
+        run: node --experimental-strip-types --test tests/admin-private-postgis.mjs
+
+      - name: Verify repository SQL refuses unauthorized installation
+        run: |
+          ! psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f db/proposals/0007_admin_repository.sql
+      - name: Install private repository RPCs in DISPOSABLE CI database ONLY
+        run: psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f tests/install-admin-repository.sql
+      - name: Test real PostgreSQL scoped admin queries and atomic audit/notes
+        run: node --experimental-strip-types --test tests/admin-repository-postgis.mjs
+
       - name: Build isolated administrative demo
         run: npm run build:admin
 
