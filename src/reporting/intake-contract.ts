@@ -21,8 +21,10 @@ export interface ValidatedReport {
 }
 
 export class ReportInputError extends Error {
-  constructor(readonly code: 'policy_unavailable' | 'invalid_request' | 'payload_too_large' | 'consent_required') {
+  readonly code: 'policy_unavailable' | 'invalid_request' | 'payload_too_large' | 'consent_required';
+  constructor(code: 'policy_unavailable' | 'invalid_request' | 'payload_too_large' | 'consent_required') {
     super(code); // Do not include user-authored narrative in errors or logs.
+    this.code = code;
     this.name = 'ReportInputError';
   }
 }
