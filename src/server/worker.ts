@@ -1,6 +1,10 @@
 import pg from 'pg';
 import { resolveIncidentLocation } from './location.ts';
 import { answerQuestion } from './ask.ts';
+import {
+  PublicQueryError, parseDirectoryFilters, parseKnowledgeFilters, parsePublicPlaceId,
+  searchKnowledge, searchPlaces, getPlace, type DirectoryFilters, type KnowledgeFilters,
+} from './public-data.ts';
 
 interface Env {
   HYPERDRIVE: { connectionString: string };
@@ -79,9 +83,14 @@ export default {
     const url = new URL(request.url);
     const directory = url.pathname === '/api/areas';
     const ask = url.pathname === '/api/ask';
-    if ((!directory && !ask && url.pathname !== '/api/resolve') || url.search)
+    const knowledge = url.pathname === '/api/knowledge';
+    const places = url.pathname === '/api/places';
+    const place = url.pathname.startsWith('/api/places/');
+    const isPublicData = knowledge || places || place;
+    if ((!directory && !ask && !isPublicData && url.pathname !== '/api/resolve') ||
+      (!isPublicData && url.search))
       return json({ error: 'Unknown route' }, 404);
-    const method = directory ? 'GET' : 'POST';
+    const method = (directory || isPublicData) ? 'GET' : 'POST';
     if (request.method !== method)
       return json({ error: 'Unsupported method' }, 405, { Allow: method });
     const origin = request.headers.get('Origin');
@@ -92,7 +101,21 @@ export default {
       if (!(await env.LOCATION_LIMIT.limit({ key })).success)
         return json({ error: 'Please try again in a minute' }, 429, { 'Retry-After': '60' });
       let point = null;
-      if (!directory) {
+      let filters: KnowledgeFilters | DirectoryFilters | null = null;
+      let placeId: string | null = null;
+      if (isPublicData) {
+        try {
+          if (knowledge) filters = parseKnowledgeFilters(url.searchParams);
+          else if (places) filters = parseDirectoryFilters(url.searchParams);
+          else {
+            if (url.search) throw new PublicQueryError();
+            placeId = parsePublicPlaceId(url.pathname);
+          }
+        } catch {
+          return json({ error: 'Invalid search filters' }, 400);
+        }
+      }
+      if (!directory && !isPublicData) {
         if (request.headers.get('Content-Type')?.split(';')[0]?.trim() !== 'application/json')
           return json({ error: 'Expected JSON' }, 415);
         if (ask) {
@@ -112,6 +135,17 @@ export default {
         await client.connect();
         if (point)
           return json(await resolveIncidentLocation(client, point.latitude, point.longitude));
+        if (knowledge)
+          return json({ items: await searchKnowledge(client, filters as KnowledgeFilters),
+            reviewedOnly: true });
+        if (places)
+          return json({ items: await searchPlaces(client, filters as DirectoryFilters),
+            reviewedOnly: true });
+        if (place) {
+          const record = await getPlace(client, placeId!);
+          return record ? json({ item: record, reviewedOnly: true }) :
+            json({ error: 'Published listing not found' }, 404);
+        }
         return json((await client.query('SELECT * FROM geo.location_directory()')).rows);
       } finally {
         await client.end();
