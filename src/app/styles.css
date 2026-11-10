@@ -838,3 +838,7 @@ button { min-height: 44px; border-radius: var(--radius-input); font-size: 14px; 
   .chat-bubble,.conversation-turn{max-width:94%}
 }
 @media(prefers-reduced-motion:reduce){.chat-bubble,.conversation-turn{transition:none}}
+
+/* Small navigation is calmer than a floating Report button. */
+.bottom-nav .nav-report .nav-icon{transform:none;width:auto;height:28px;border:0;border-radius:0;background:transparent;color:var(--danger)}
+.bottom-nav .nav-report .nav-text{margin-top:0}
