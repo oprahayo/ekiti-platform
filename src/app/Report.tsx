@@ -172,7 +172,7 @@ export default function Report() {
       <select id="report-area" value="" onChange={event => {
         const area = areas.find(item => item.id === event.target.value);
         if (area) {
-          setPoint(null); setPositionNote('');
+          setPosition(null); setPositionNote('');
           setState(current => chooseArea(current, area));
         }
       }}>
@@ -210,7 +210,7 @@ export default function Report() {
       <div className="review-edit-links" role="group" aria-label="Make corrections">
         <button type="button" className="text-link" onClick={() => setState(current => revise(current, 'description'))}>Edit description</button>
         <button type="button" className="text-link" onClick={() => {
-          setPoint(null); setPositionNote('');
+          setPosition(null); setPositionNote('');
           setState(current => revise(current, 'location'));
         }}>Change LGA</button>
         <button type="button" className="text-link" onClick={() => setState(current => revise(current, 'details'))}>Edit details</button>
