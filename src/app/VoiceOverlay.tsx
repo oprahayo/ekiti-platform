@@ -25,9 +25,11 @@ function constructorForSpeech(): RecognitionConstructor | undefined {
 
 export default function VoiceOverlay({
   onClose,
+  onType,
   onTranscript,
 }: {
   onClose: () => void;
+  onType: () => void;
   onTranscript: (transcript: string) => void;
 }) {
   const [state, setState] = React.useState<VoiceState>('idle');
@@ -117,7 +119,7 @@ export default function VoiceOverlay({
           <p key={exampleIndex}>{voiceExamples[exampleIndex]}</p>
         </div>
       </div>
-      <button className="voice-type" type="button" onClick={onClose}>Text always works — tap to type</button>
+      <button className="voice-type" type="button" onClick={onType}>Text always works — tap to type</button>
       <p className="voice-privacy">Speech processing is provided by your browser. No audio is stored by Ekiti Civic.</p>
     </div>
   );
