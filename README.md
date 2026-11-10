@@ -43,6 +43,14 @@ The Yellow Pages profile now supports real **moderated review feeds and rating s
 
 [See the implementation, privacy safeguards, configuration and explicit activation checklist](docs/citizen-reviews-claims.md).
 
+## Administrative operations console (isolated demonstration)
+
+The first administrative application milestone is available as a **separate local React/Vite console** with a three-pane inbox, internal case workflow, audit-style demo history, responsive navigation and sample-only analytics. All cases are visibly fictional and there is **no live reporting API, moderator login or database write access**. Agency delivery/view status remains unverified.
+
+Run `npm run dev:admin` locally (port 5174). The output of `npm run build:admin` is `dist-admin/` and is not part of the public citizen build. The next operational milestone is authenticated moderator access and a privacy-reviewed private reporting service, not public deployment of the demo.
+
+[Read admin operations design, test commands and activation gates](docs/admin-console.md).
+
 ## Development status
 
 The PostGIS resolver accepts citizen-confirmed incident coordinates. The audited GRID3 snapshot covers all 16 LGAs. The INEC reference import contains 177 electoral ward names. Electoral ward polygons await a verified crosswalk, so the current snapshot returns an unmapped ward for an in-state point. [Read the audit and measured coverage](docs/data-sources/2026-11-10-postgis-results.md).
