@@ -20,7 +20,18 @@ export function configuredAuth(): PublicAuthConfig | null {
     const parsed = new URL(url);
     if (parsed.protocol !== 'https:' || !/^[a-z0-9-]+\.supabase\.co$/i.test(parsed.hostname) ||
         parsed.username || parsed.password || parsed.pathname !== '/') return null;
-    if (!key || key.length < 15 || key.startsWith('sb_secret_') || /\s/.test(key)) return null;
+    if (!key || key.length < 15 || /\s/.test(key)) return null;
+    // Only Supabase publishable/legacy anon credentials are safe to bundle.
+    // Never bundle a service_role JWT even if an operator mislabels the env var.
+    let safeKey = key.startsWith('sb_publishable_');
+    if (!safeKey && key.split('.').length === 3) {
+      try {
+        const part = key.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');
+        const payload = JSON.parse(atob(part.padEnd(Math.ceil(part.length / 4) * 4,'='))) as { role?: unknown };
+        safeKey = payload.role === 'anon';
+      } catch { safeKey = false; }
+    }
+    if (!safeKey) return null;
     return { url: parsed.origin, key };
   } catch { return null; }
 }
