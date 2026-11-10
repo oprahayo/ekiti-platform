@@ -147,6 +147,7 @@ button { min-height: 44px; border-radius: var(--radius-input); font-size: 14px; 
 .nav-item.active { color: var(--text-primary); font-weight: 500; }
 .nav-active-dot { position: absolute; height: 4px; width: 4px; background: var(--text-primary); border-radius: 50%; bottom: 2px; opacity: 0; }
 .nav-item.active .nav-active-dot { opacity: 1; }
+.nav-item:active { transform: scale(.96); transition: transform var(--t-fast) var(--ease); }
 .nav-report .nav-icon { position: relative; width: 52px; height: 52px; border-radius: 17px; color: var(--danger); background: color-mix(in srgb,var(--danger) 13%,var(--surface-raised)); border: 1px solid color-mix(in srgb,var(--danger) 18%,var(--border)); transform: translateY(-25px); }
 .nav-report .nav-text { margin-top: -24px; }
 @media (max-width: 319px) { .nav-report .nav-icon { width: auto; height: auto; border: 0; border-radius: 0; transform: none; background: transparent; } .nav-report .nav-text { margin-top: 0; } }
@@ -214,7 +215,7 @@ button { min-height: 44px; border-radius: var(--radius-input); font-size: 14px; 
 .photo-preview { max-height: 230px; max-width: 100%; object-fit: contain; margin-top: var(--s-3); border: 1px solid var(--border); }
 .preview-success { text-align: center; align-items: center; gap: var(--s-4); }
 .preview-success > p { color: var(--text-secondary); }
-.success-mark { color: var(--positive); width: 44px; height: 44px; border-radius: 50%; border: 2px solid var(--positive); display: grid; place-items: center; }
+.preview-mark { color: var(--text-secondary); width: 44px; height: 44px; border-radius: 50%; border: 2px solid var(--border); display: grid; place-items: center; }
 .reference-text { font: 500 15px/1.5 ui-monospace,Menlo,monospace; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .token-line { display: flex; flex-wrap: wrap; gap: var(--s-3); align-items: center; justify-content: center; }
 .token-line code { font: 14px ui-monospace,Menlo,monospace; font-variant-numeric: tabular-nums; }
