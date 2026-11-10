@@ -46,3 +46,55 @@
 @media(max-width:760px){.admin-app{display:flex;flex-direction:column;min-height:0;height:100dvh;overflow:hidden}.sidebar{order:2;background:#17253b;padding:0;display:block;flex:none;height:58px}.brand,.sidebar-section-label,.sidebar-bottom,.sidebar-divider{display:none}.main-nav{flex-direction:row;overflow-x:auto;gap:1px;align-items:center;height:58px;padding:5px 7px}.nav-link{width:auto;flex:none;display:flex;flex-direction:column;gap:1px;align-items:center;justify-content:center;padding:4px 12px;min-width:66px;height:48px;font-size:9px}.nav-glyph{font-size:17px;height:19px}.nav-count{display:none}.workspace-shell{order:1;flex:1;min-height:0}.workspace-header{height:57px;padding:0 15px}.header-mobile-brand{display:inline;font-weight:800;color:#2c466d}.header-title{gap:5px;font-size:11px}.header-slash{display:none}.header-actions{gap:8px}.reset-button{font-size:10px}.avatar{display:none}.environment-pill{font-size:9px;padding:6px}.workspace-notice{padding:7px 15px;font-size:10px;line-height:1.45}.case-workspace{display:flex;flex:1;min-height:0}.case-panel{width:100%;border-right:0}.detail-panel{display:none}.case-workspace.mobile-detail-open .case-panel{display:none}.case-workspace.mobile-detail-open .detail-panel{display:flex;width:100%}.list-heading{padding:24px 20px 15px}.list-heading h1{font-size:23px}.search-box{margin-bottom:16px}.case-scroll{padding-bottom:8px}.back-button{display:inline-block;border:0;background:transparent;color:#426797;font-size:12px;font-weight:700;padding:8px 6px 8px 0;margin-right:auto}.detail-topbar{height:48px;padding:0 18px}.detail-scroll{padding:19px 20px 3px}.detail-header h2{font-size:22px}.detail-section{padding:21px 0}.action-footer{max-height:45vh;padding:12px 16px}.analytics{padding:22px 16px}.analytics-metrics{gap:9px;margin:21px 0}.analytics-metrics>div{padding:15px}.analytics-metrics strong{font-size:29px}.analytics-card{padding:16px}.chart-row{grid-template-columns:85px 1fr 20px;gap:10px}.type-grid{gap:6px}.type-grid>div{padding:12px}.type-grid strong{font-size:20px}}
 @media(max-width:370px){.header-title{font-size:10px}.header-title strong{display:none}.environment-pill{font-size:8px}.info-grid{column-gap:10px}.verification-grid{gap:7px}.verification-grid>div{padding:11px}.detail-badges{gap:5px}.priority-label{margin:0}.action-buttons{gap:5px}.action-button{font-size:10px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;transition:none!important}}
+
+
+/* Additional civic admin workspaces: moderation and responsibility triage. */
+.operations-section{flex:1;overflow:auto;min-height:0;padding:30px 32px 42px;width:100%;max-width:1200px;align-self:center}
+.operations-intro{max-width:760px;margin-bottom:24px}
+.operations-intro h1{font-size:27px;color:#203148;letter-spacing:-.8px;margin:0 0 10px}
+.operations-intro>p:last-child{font-size:12px;line-height:1.8;color:#748398}
+.moderation-categories{display:flex;gap:7px;flex-wrap:wrap;margin:23px 0 19px}
+.moderation-categories button{border:1px solid #e0e6ee;background:#fff;color:#566880;font-size:11px;font-weight:700;padding:10px 12px;border-radius:7px}
+.moderation-categories button.active{background:#283f61;color:#fff;border-color:#283f61}
+.moderation-categories small{display:inline-flex;justify-content:center;align-items:center;margin-left:6px;background:#e8edf4;color:#687c96;width:19px;height:19px;border-radius:50%;font-size:10px}
+.moderation-categories button.active small{background:#466287;color:#fff}
+.moderation-layout,.routing-layout{display:grid;grid-template-columns:minmax(225px,34%) minmax(0,1fr);gap:0;background:#fff;border:1px solid #e4e9f0;border-radius:10px;overflow:hidden;min-height:490px;box-shadow:0 2px 5px #17253b05}
+.moderation-list,.routing-list{border-right:1px solid #e7ebf0;min-width:0}
+.moderation-list-item,.routing-list-item{display:flex;flex-direction:column;align-items:flex-start;text-align:left;width:100%;padding:17px 18px;border:0;border-bottom:1px solid #eef1f4;background:#fff;gap:8px}
+.moderation-list-item.selected,.routing-list-item.selected{background:#f1f6fc;box-shadow:inset 3px 0 #567bad}
+.moderation-list-item:hover,.routing-list-item:hover{background:#f9fbff}
+.moderation-list-item>span,.routing-list-item>span{font-size:10px;font-weight:750;color:#91a0b2}
+.moderation-list-item>strong,.routing-list-item>strong{font-size:12px;font-weight:750;line-height:1.5;color:#31445d}
+.moderation-list-item>small,.routing-list-item>small{font-size:10px;color:#8393a6}
+.moderation-inspector,.routing-detail{min-width:0;padding:25px 29px 33px}
+.inspector-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}
+.inspector-head>span:first-child{font-size:10px;letter-spacing:.55px;color:#96a3b3;font-weight:800}
+.inspector-status{font-size:10px;background:#eef3fa;color:#57729c;padding:7px 9px;border-radius:5px;font-weight:750}
+.moderation-inspector h2,.routing-detail h2{color:#273a53;font-size:20px;line-height:1.4;margin:0 0 12px}
+.moderation-inspector>p,.routing-detail>p{font-size:12px;color:#6b7c91;line-height:1.75}
+.moderation-data{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 23px;padding:20px 0;margin:20px 0;border-top:1px solid #e8edf3;border-bottom:1px solid #e8edf3}
+.moderation-data dt{font-size:10px;color:#8c9aab;margin-bottom:6px}
+.moderation-data dd{font-size:12px;font-weight:700;line-height:1.5;color:#40536d}
+.moderation-inspector h3,.routing-advice h3{font-size:12px;color:#3a4e68;margin:18px 0 12px}
+.warning-note{font-size:11px!important;line-height:1.7!important;color:#805c2b!important;background:#fff9ed;border-left:3px solid #e3bc63;padding:11px 12px;border-radius:4px;margin:15px 0}
+.moderation-history{list-style:none;padding:0;margin:0}
+.moderation-history li{padding:12px 0;border-bottom:1px solid #edf1f4}
+.moderation-history li strong{display:inline-block;font-size:11px;color:#3d526f}
+.moderation-history li span{float:right;font-size:10px;color:#99a6b7}
+.moderation-history li p{clear:both;font-size:11px;color:#738298;line-height:1.6;margin-top:8px}
+.moderation-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:21px}
+.moderation-actions button{background:#fff;border:1px solid #d9e2ed;color:#4f6481;border-radius:6px;padding:10px 12px;font-size:11px;font-weight:700}
+.moderation-actions button.chosen,.moderation-actions button:hover{background:#ecf3fc;border-color:#92add0}
+.moderation-decision{background:#f6f8fc;border:1px solid #e4eaf2;border-radius:8px;margin-top:14px;padding:15px}
+.moderation-decision label{display:block;font-size:11px;font-weight:750;color:#425773;margin-bottom:8px}
+.moderation-decision textarea{display:block;width:100%;border:1px solid #d9e3ee;padding:10px;border-radius:6px;resize:vertical;font-size:12px;line-height:1.5}
+.moderation-decision>p{font-size:11px;color:#af413b;margin-top:8px}
+.moderation-decision>div{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+.moderation-decision button{font-size:11px;font-weight:700;padding:9px 12px;border-radius:5px;background:#fff;border:1px solid #dae2ed;color:#526681}
+.moderation-decision button.decision-submit{background:#395e91;border-color:#395e91;color:#fff}
+.routing-list h2{font-size:11px;letter-spacing:.5px;color:#8291a4;margin:21px 18px}
+.routing-advice{background:#f5f7fa;border:1px solid #e6ebf2;padding:14px 18px;border-radius:8px;margin:8px 0 16px}
+.routing-advice h3{margin:0 0 6px}
+.routing-advice p{font-size:12px;line-height:1.7;color:#64768e}
+@media(max-width:1000px){.operations-section{padding:24px 20px}.moderation-inspector,.routing-detail{padding:22px 18px}}
+@media(max-width:760px){.operations-section{padding:22px 13px 26px}.operations-intro h1{font-size:23px}.moderation-categories{flex-wrap:nowrap;overflow-x:auto;padding:3px 1px 10px;margin-bottom:8px}.moderation-categories button{flex:none;white-space:nowrap;font-size:10px;padding:9px}.moderation-layout,.routing-layout{display:flex;flex-direction:column;min-height:0}.moderation-list,.routing-list{border-right:0;border-bottom:1px solid #e7ebf0;max-height:195px;overflow-y:auto}.moderation-list-item,.routing-list-item{padding:11px 13px;gap:4px}.moderation-inspector,.routing-detail{padding:20px 16px}.routing-list h2{margin:13px}.moderation-data{gap:14px}.moderation-history li span{float:none;display:block;margin-top:5px}.moderation-categories{scrollbar-width:thin}}
