@@ -7,7 +7,7 @@ test('Home is a three-action text chat with independent identity', async ({ page
   await expect(page.getByRole('searchbox', { name: 'Ask about Ekiti' })).toBeVisible();
   await expect(page.getByRole('link', { name: /Report a problem/ })).toBeVisible();
   await expect(page.getByRole('link', { name: /Find a service/ })).toBeVisible();
-  await expect(page.getByText(/not a government service/)).toBeVisible();
+  await expect(page.getByText(/Not a government service/i)).toBeVisible();
   await expect(page.locator('.feature-grid, .hero-art, .floating-card')).toHaveCount(0);
   await expect(page.locator('.bottom-nav .nav-item')).toHaveCount(4);
 });

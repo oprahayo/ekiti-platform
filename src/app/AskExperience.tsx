@@ -139,7 +139,7 @@ export function Ask({ home = false }: { home?: boolean }) {
           : 'Hi! What would you like to do in Ekiti? Type a message or choose below.'}</p>
         <small>{language === 'yo'
           ? 'Àwọn ìdáhùn láti orísun tí a ti ṣàyẹ̀wò. Kì í ṣe iṣẹ́ ìjọba.'
-          : 'Answers use reviewed sources. This is not a government service.'}</small>
+          : 'Independent civic project · Not a government service'}</small>
       </div>
       {messages.length === 0 && <div className="chat-quick-replies" aria-label="Start a conversation">
         <Link to="/report">{language === 'yo' ? 'Jábọ̀ ìṣòro kan' : 'Report a problem'}</Link>
