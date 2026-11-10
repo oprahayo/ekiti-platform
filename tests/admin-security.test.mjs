@@ -44,12 +44,12 @@ test('admin verifier accepts only a correctly signed, scoped short-lived MFA tok
   const [part0, part1, part2] = legitimateToken.split('.');
   const tamperedToken = part0 + '.' + part1 + '.' + (part2[0] === 'A' ? 'B' : 'A') + part2.slice(1);
   await assert.rejects(() => verifyAdminJwt(tamperedToken, config), AdminAuthError);
-  await assert.rejects(() => verifyAdminJwt(await signedJwt({ iss: 'https://evil.test' }), config), AdminAuthError);
-  await assert.rejects(() => verifyAdminJwt(await signedJwt({ aud: 'anon' }), config), AdminAuthError);
-  await assert.rejects(() => verifyAdminJwt(await signedJwt({ role: 'service_role' }), config), AdminAuthError);
-  await assert.rejects(() => verifyAdminJwt(await signedJwt({ aal: 'aal1' }), config), AdminAuthError);
-  await assert.rejects(() => verifyAdminJwt(await signedJwt({ exp: now - 1 }), config), AdminAuthError);
-  await assert.rejects(() => verifyAdminJwt(await signedJwt({ exp: now + 7200 }), config), AdminAuthError);
+  await assert.rejects(async () => verifyAdminJwt(await signedJwt({ iss: 'https://evil.test' }), config), AdminAuthError);
+  await assert.rejects(async () => verifyAdminJwt(await signedJwt({ aud: 'anon' }), config), AdminAuthError);
+  await assert.rejects(async () => verifyAdminJwt(await signedJwt({ role: 'service_role' }), config), AdminAuthError);
+  await assert.rejects(async () => verifyAdminJwt(await signedJwt({ aal: 'aal1' }), config), AdminAuthError);
+  await assert.rejects(async () => verifyAdminJwt(await signedJwt({ exp: now - 1 }), config), AdminAuthError);
+  await assert.rejects(async () => verifyAdminJwt(await signedJwt({ exp: now + 7200 }), config), AdminAuthError);
   await assert.rejects(() => verifyAdminJwt('e30.e30.invalid', config), AdminAuthError);
 });
 
