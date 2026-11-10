@@ -1,13 +1,14 @@
 import * as React from 'react';
-import { BrowserRouter, Link, NavLink, Route, Routes, useLocation, useNavigate, useParams } from 'react-router';
-import { categories, demoMetrics, demoPlaces, lgas } from './fixtures.ts';
+import { BrowserRouter, Link, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router';
+import { demoMetrics, lgas } from './fixtures.ts';
 import { Home, Ask } from './AskExperience.tsx';
 import { AppProvider, speechSupported, useApp } from './state.tsx';
 
 const Report = React.lazy(() => import('./Report.tsx'));
 const Track = React.lazy(() => import('./TrackConversation.tsx'));
 const VoiceOverlay = React.lazy(() => import('./VoiceOverlay.tsx'));
-const MapLocation = React.lazy(() => import('./MapLocation.tsx'));
+const Explore = React.lazy(() => import('./ExploreDirectory.tsx'));
+const PlaceDetails = React.lazy(() => import('./PlaceDetails.tsx'));
 
 function Icon({ name }: { name: 'home' | 'explore' | 'report' | 'track' | 'scores' | 'mic' | 'settings' | 'search' }) {
   const shapes: Record<typeof name, React.ReactNode> = {
@@ -43,82 +44,6 @@ function HeaderControls() {
       </svg>}
     </button>
   </div>;
-}
-
-function Explore() {
-  const { exploreCategory, setExploreCategory, exploreQuery, setExploreQuery, exploreLga, setExploreLga, setAskDraft } = useApp();
-  const [mapOpen, setMapOpen] = React.useState(false);
-  const filtered = demoPlaces.filter(place => (
-    (exploreCategory === 'All' || place.category === exploreCategory) &&
-    (!exploreLga || place.lgaId === exploreLga) &&
-    (place.name.toLowerCase().includes(exploreQuery.toLowerCase()) || place.description.toLowerCase().includes(exploreQuery.toLowerCase()))
-  ));
-  return (
-    <main className="page explore-page" id="main">
-      <header className="page-heading">
-        <p className="eyebrow">Explore</p>
-        <h1>Explore Ekiti</h1>
-        <p className="help-text">Sample listings only. No place below is verified or accepting claims yet.</p>
-      </header>
-      <label htmlFor="place-search" className="visually-hidden">Search places</label>
-      <input id="place-search" type="search" placeholder="Search places" value={exploreQuery} onChange={event => setExploreQuery(event.target.value)} />
-      <div className="directory-filters" role="group" aria-label="Filter category">
-        {categories.map(category => <button type="button" className="directory-filter" aria-pressed={exploreCategory === category} key={category} onClick={() => setExploreCategory(category)}>{category}</button>)}
-      </div>
-      <label htmlFor="explore-lga" className="select-label">Local government area</label>
-      <select id="explore-lga" value={exploreLga} onChange={event => setExploreLga(event.target.value)}>
-        <option value="">All LGAs</option>
-        {lgas.map(area => <option key={area.id} value={area.id}>{area.name}</option>)}
-      </select>
-      <div className="section-meta"><span>{filtered.length} sample listings</span><span>Demo · not verified</span></div>
-      {filtered.length ? <ul className="plain-list">
-        {filtered.map((place) => {
-          const area = lgas.find(lga => lga.id === place.lgaId)?.name || 'Ekiti';
-          const colors = { Health: 1, Schools: 2, Offices: 3, Hotels: 4 };
-          return <li key={place.id}>
-            <Link className="place-row" to={'/places/' + place.id}>
-              <span className={'category-dot dot-' + colors[place.category]} aria-hidden="true" />
-              <span><strong>{place.name}</strong><small>{place.category} · {area} · Distance unavailable</small></span>
-              <span aria-hidden="true">›</span>
-            </Link>
-          </li>;
-        })}
-      </ul> : <div className="empty-state" role="status">
-        <h2>Nothing verified here yet</h2>
-        <p>No example listings match this selection. The future directory will be moderated.</p>
-        <button className="text-link" type="button" onClick={() => { setExploreQuery(''); setExploreCategory('All'); setExploreLga(''); }}>Clear filters</button>
-      </div>}
-      <button type="button" className="quiet-action map-toggle" onClick={() => setMapOpen(value => !value)}>
-        {mapOpen ? 'Hide map' : 'Map · more data'}
-      </button>
-      {mapOpen && <React.Suspense fallback={<p role="status">Loading boundaries only now…</p>}>
-        <MapLocation onPoint={() => { /* Demo places have no verified geocoded points. */ }} />
-        <p className="note">The map shows verified LGA boundaries. Illustrative places are not geocoded or pinned.</p>
-      </React.Suspense>}
-      <p className="directory-footer">Looking for a place not shown here?</p>
-      <Link to="/ask?focus=1" className="text-link" onClick={() => setAskDraft('Find a business in Ekiti')}>Ask Ekiti Civic to help</Link>
-      <p className="directory-footer">Own a business? Claim or submit a listing.</p>
-      <p className="note">Moderated listing submissions are not available in this demo.</p>
-    </main>
-  );
-}
-
-function PlaceDetails() {
-  const { id } = useParams();
-  const place = demoPlaces.find(item => item.id === id);
-  if (!place) return <main className="page"><h1>Listing not found</h1><Link to="/explore">Back to Explore</Link></main>;
-  return <main className="page detail-page">
-    <Link to="/explore" className="back-link">← Explore</Link>
-    <p className="eyebrow">Illustrative listing · not verified</p>
-    <h1>{place.name}</h1>
-    <dl className="detail-list">
-      <dt>Category</dt><dd>{place.category}</dd>
-      <dt>Local government</dt><dd>{lgas.find(item => item.id === place.lgaId)?.name}</dd>
-      <dt>About</dt><dd>{place.description}</dd>
-    </dl>
-    <p className="warning-note">Do not use this demo listing to find real services or contact a business. Directions, contact details and owner claims require a verified location and moderation.</p>
-    <Link to="/explore" className="text-link">Explore more examples</Link>
-  </main>;
 }
 
 function Scores() {
