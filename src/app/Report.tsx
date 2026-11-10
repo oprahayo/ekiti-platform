@@ -151,6 +151,8 @@ export default function Report() {
         <h1>{language === 'yo' ? 'Ṣàlàyé ohun tó ṣẹlẹ̀' : 'Tell me what happened'}</h1>
         <p>Private chat draft · Not submitted</p>
       </div>
+      <button type="button" className="chat-clear" aria-label="Clear private draft and conversation"
+        onClick={clear}>Clear</button>
     </header>
     <div className="conversation-history" role="log" aria-live="polite" aria-label="Report preparation conversation" aria-relevant="additions text">
       {state.lines.map(line => <div key={line.id} className={'conversation-turn turn-' + line.role}>
@@ -241,8 +243,5 @@ export default function Report() {
       </div>
       <span className="metadata chat-save-status" role="status">{savedNote}</span>
     </form>}
-    <div className="conversation-foot">
-      <button type="button" className="text-link clear-conversation" onClick={clear}>Clear private draft and conversation</button>
-    </div>
   </main>;
 }
