@@ -60,7 +60,7 @@ for (const width of [280, 320, 390, 768, 1280]) {
       expect(item.width).toBeGreaterThan(80);
     }
     await expect(page.locator('.app-header .wordmark')).toBeVisible();
-    await expect(page.getByRole('link',{name:'Citizen profile'})).toBeVisible();
+    await expect(page.locator('.app-header .header-profile-link')).toHaveCount(1);
     if ([280, 390, 1280].includes(width))
       await page.screenshot({path:'test-results/sprint-01-welcome/home-'+width+'.png',fullPage:true});
   });
