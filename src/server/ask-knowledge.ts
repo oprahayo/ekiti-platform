@@ -4,7 +4,7 @@
  * Sources describe their own claims and are NOT endorsements by Ekiti Civic.
  */
 export type Language = 'en' | 'yo';
-export type Topic = 'lga' | 'news' | 'budget' | 'ministries' | 'health' | 'education' | 'tourism' | 'government' | 'unknown';
+export type Topic = 'capital' | 'history' | 'governor' | 'lga' | 'news' | 'budget' | 'ministries' | 'health' | 'education' | 'tourism' | 'government' | 'unknown';
 
 export interface AskSource {
   title: string;
@@ -24,6 +24,21 @@ export interface AskResult {
 
 const official = 'Ekiti State Government';
 export const KNOWLEDGE: Record<Exclude<Topic, 'news' | 'unknown'>, { en: string; yo: string; sources: AskSource[] }> = {
+  capital: {
+    en: 'Ado-Ekiti is the capital of Ekiti State. The state government’s About Ekiti page confirms that Ekiti was created on 1 October 1996 with Ado-Ekiti as its capital.',
+    yo: 'Ado-Ekiti ni olú ìlú Ìpínlẹ̀ Èkìtì. A dá Ìpínlẹ̀ Èkìtì sílẹ̀ ní ọjọ́ kìíní oṣù kẹwàá ọdún 1996.',
+    sources: [{ title: 'About Ekiti — state capital and creation', url: 'https://www.ekitistate.gov.ng/about-ekiti', publisher: official }],
+  },
+  history: {
+    en: 'Ekiti State was created on 1 October 1996 from the former Ondo State. Its capital is Ado-Ekiti. The official state history and budget publications describe its creation and administrative geography.',
+    yo: 'A dá Ìpínlẹ̀ Èkìtì sílẹ̀ ní ọjọ́ kìíní oṣù kẹwàá ọdún 1996 láti ara Ìpínlẹ̀ Ondo tẹ́lẹ̀. Ado-Ekiti ni olú ìlú rẹ̀.',
+    sources: [{ title: 'About Ekiti — official overview', url: 'https://www.ekitistate.gov.ng/about-ekiti', publisher: official }],
+  },
+  governor: {
+    en: 'As documented by Ekiti State Government releases dated 16 October 2026, Biodun Oyebanji was inaugurated for a second term as Governor of Ekiti State. For a later change in office, check the current official government site.',
+    yo: 'Gẹ́gẹ́ bí ìròyìn ìjọba tí wọ́n tẹ̀ jáde ní ọjọ́ 16 oṣù kẹwàá ọdún 2026, Biodun Oyebanji bẹ̀rẹ̀ sáà kejì rẹ̀ gẹ́gẹ́ bí Gómìnà Èkìtì. Ṣàyẹ̀wò ojúlé ìjọba fún ìyípadà tuntun.',
+    sources: [{ title: 'Gov. Oyebanji’s second-term inauguration — 16 October 2026', url: 'https://www.ekitistate.gov.ng/archives/33870', published: '2026-10-16', publisher: official }],
+  },
   lga: {
     en: 'Ekiti State has 16 local government areas. The project’s verified geographic directory also records 177 electoral ward names, but ward polygons are not yet independently verified. You can browse the areas in Explore.',
     yo: 'Ìpínlẹ̀ Èkìtì ní ìjọba ìbílẹ̀ mẹ́rìndínlógún (16). Àtòjọ ilẹ̀ wa tún ní orúkọ wọdù ìdìbò 177, ṣùgbọ́n a kò tíì fìdí ààlà àwọn wọdù náà múlẹ̀.',
@@ -84,6 +99,9 @@ export function normalize(text: string): string {
 export function topicFor(question: string): Topic {
   const q = normalize(question);
   const matches: [Topic, RegExp][] = [
+    ['capital', /\\b(capital|olu ilu|olu- ilu|headquarters of ekiti)\\b/],
+    ['history', /\\b(history|created|creation|founded|origin|itan|idasile)\\b/],
+    ['governor', /\\b(governor|governorship|oyebanji|gomina|gomina ekiti)\\b/],
     ['lga', /\b(lga|lgas|local government|wards?|ijoba ibile|ijoba ibile melo|meloo ni|melo ni|iye ijoba)\b/],
     ['news', /\b(news|latest|today|happening|happen|recent|updates?|iroyin|kini n sele|ki lo n sele|loni|lowolowo)\b/],
     ['budget', /\b(budget|finance|expenditure|appropriation|revenue|isuna|owo ijoba)\b/],
