@@ -48,3 +48,10 @@ node --experimental-strip-types --test tests/admin-gateway.test.mjs
 ```
 
 All persistence in current gateway tests is in an ephemeral in-memory repository and never enters Supabase.
+
+
+## Database proposal (not a migration)
+
+`db/proposals/0006_admin_private.sql` documents disabled-by-default staff memberships, role/approval constraints, private read-audit metadata, UUID-backed internal event IDs, revision-controlled notes and idempotency markers. It refuses to run without an explicit review gate, **grants nothing to the public or current location-reader roles**, and is not loaded by any production deployment. In CI only, `tests/install-admin-proposals.sql` deliberately applies both private proposals to the disposable PostGIS database to check forced RLS and default-deny privileges; all test staff data is rolled back.
+
+The proposal does **not** yet create a privileged repository RPC or grant an admin login access. Server-side SQL must independently verify staff identity, membership status and authorized LGAs for every read/write; a separate database authorization and retention review is a hard launch gate.
