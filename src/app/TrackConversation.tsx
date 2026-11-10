@@ -21,11 +21,20 @@ export default function TrackConversation() {
   const editor = React.useRef<HTMLTextAreaElement>(null);
   const end = React.useRef<HTMLDivElement>(null);
   React.useEffect(() => {
-    try { setHasDraft(Boolean(localStorage.getItem(DRAFT_STORAGE_KEY))); }
-    catch { setHasDraft(false); }
+    try {
+      const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
+      const stored: unknown = raw ? JSON.parse(raw) : null;
+      const candidate = stored as { draft?: { description?: unknown } } | null;
+      setHasDraft(typeof candidate?.draft?.description === 'string' && candidate.draft.description.trim().length >= 20);
+    } catch { setHasDraft(false); }
   }, []);
   React.useEffect(() => {
-    if (publicId && publicId === DEMO) showDemo();
+    if (publicId === DEMO) {
+      setDemo(true);
+      setMessages(current => current.some(item => item.text.startsWith('Here is a fictional case timeline'))
+        ? current : [...current, { id: current.length + 1, role: 'assistant',
+          text: 'Here is a fictional case timeline to show the future experience. It is NOT evidence of a report being sent, acknowledged, or resolved.' }]);
+    }
   }, [publicId]);
   React.useEffect(() => {
     if (!trackSpeech) return;
