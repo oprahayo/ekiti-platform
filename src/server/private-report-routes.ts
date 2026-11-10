@@ -41,7 +41,7 @@ async function openPostgres(connectionString: string): ReturnType<ReportDatabase
 }
 
 const privateHeaders: Record<string, string> = {
-  'Cache-Control': 'no-store, private, max-age=0',
+  'Cache-Control': 'no-store',
   'Pragma': 'no-cache',
   'X-Content-Type-Options': 'nosniff',
   'Referrer-Policy': 'no-referrer',
