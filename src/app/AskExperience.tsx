@@ -2,6 +2,7 @@ import * as React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { useApp, speechSupported } from './state.tsx';
 import { playAnswer, stopSpeech } from './speech.ts';
+import { detectIntent } from './intents.ts';
 import type { AskResult, Language } from '../server/ask-knowledge.ts';
 
 type ChatMessage = {
@@ -133,7 +134,8 @@ export function Home() {
 export function Ask() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { language, askDraft, setAskDraft } = useApp();
+  const { language, askDraft, setAskDraft, setPendingReportText,
+    setExploreCategory, setExploreLga, setExploreQuery } = useApp();
   const [messages, setMessages] = React.useState<ChatMessage[]>(() => inMemoryMessages);
   const [sending, setSending] = React.useState(false);
   const [audioStatus, setAudioStatus] = React.useState<Record<number, string>>({});
@@ -148,6 +150,27 @@ export function Ask() {
   const send = async (question = askDraft) => {
     const clean = question.trim().slice(0, 400);
     if (!clean || sending) return;
+    const intent = detectIntent(clean);
+    if (intent.kind === 'report') {
+      // Never send a potential personal report narrative to the knowledge endpoint.
+      setPendingReportText(clean.length >= 20 ? clean : '');
+      setAskDraft('');
+      navigate('/report');
+      return;
+    }
+    if (intent.kind === 'track') {
+      setAskDraft('');
+      navigate('/track');
+      return;
+    }
+    if (intent.kind === 'directory') {
+      setExploreCategory(intent.category);
+      setExploreLga(intent.lgaId);
+      setExploreQuery('');
+      setAskDraft('');
+      navigate('/explore');
+      return;
+    }
     const id = Date.now();
     const message: ChatMessage = { id, question: clean, language };
     inMemoryMessages = [...inMemoryMessages, message].slice(-40);
