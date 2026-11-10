@@ -43,7 +43,7 @@ function Settings() {
   );
 }
 
-function AskBar({ home = false }: { home?: boolean }) {
+function AskBar({ home = false, onSubmit }: { home?: boolean; onSubmit?: () => void }) {
   const navigate = useNavigate();
   const { askDraft, setAskDraft, openVoice } = useApp();
   const [hasSpeech, setHasSpeech] = React.useState(false);
@@ -57,7 +57,7 @@ function AskBar({ home = false }: { home?: boolean }) {
         value={home ? '' : askDraft}
         onFocus={focusAsk}
         onChange={event => setAskDraft(event.target.value)}
-        onKeyDown={event => { if (event.key === 'Enter' && home) focusAsk(); }} />
+        onKeyDown={event => { if (event.key === 'Enter') { if (home) focusAsk(); else onSubmit?.(); } }} />
       {hasSpeech && <button className="icon-control mic-trigger" aria-label="Open voice mode" type="button" onClick={openVoice}><Icon name="mic" /></button>}
     </div>
   );
@@ -137,7 +137,7 @@ function Ask() {
       </div>}
       <div className="ask-composer">
         <div className="ask-input-row">
-          <AskBar />
+          <AskBar onSubmit={() => submit()} />
           <button className="send-button" type="button" onClick={() => submit()} disabled={!askDraft.trim()}>Send</button>
         </div>
       </div>
@@ -305,7 +305,7 @@ function BottomNav() {
   ] as const;
   return <nav className="bottom-nav" aria-label="Primary navigation">
     {navItems.map(item => <NavLink key={item.label} to={item.to}
-      end={item.to === '/'} className={({ isActive }) =>
+      end={item.to === '/'} onPointerDown={() => { if (typeof navigator.vibrate === 'function' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) navigator.vibrate(8); }} className={({ isActive }) =>
         'nav-item ' + (item.label === 'Report' ? 'nav-report ' : '') + (isActive ? 'active' : '')
       }>
       <span className="nav-icon"><Icon name={item.icon} /></span>
