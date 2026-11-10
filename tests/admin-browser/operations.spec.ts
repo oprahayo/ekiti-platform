@@ -7,7 +7,7 @@ test('isolated admin demo opens with explicit safeguards and verified-only agenc
   await expect(page.getByText('No confirmed external receipt')).toBeVisible();
   await expect(page.getByText('No authenticated view event')).toBeVisible();
   await expect(page.getByText('DEMO-1001').first()).toBeVisible();
-  await expect(page.getByRole('button', { name: /Analytics/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Overview/ })).toBeVisible();
 });
 
 test('a platform assignment appends only an internal event', async ({ page }) => {
