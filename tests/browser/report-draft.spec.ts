@@ -10,6 +10,7 @@ test('downloads the latest private draft with the current location and no submis
   await page.locator('#lga').selectOption('efon');
   await page.locator('#ward').selectOption({ label: 'EFON IX' });
   // Reviewed Efon polygon interior. A confirmed lookup must not leak its coordinates into the file.
+  await page.locator('#position-tools summary').click();
   await page.locator('#lat').fill('7.677235411135371');
   await page.locator('#lon').fill('4.943747799903621');
   await page.getByRole('button', { name: 'Confirm incident position' }).click();
