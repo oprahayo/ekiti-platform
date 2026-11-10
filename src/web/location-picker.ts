@@ -20,44 +20,28 @@ const longitude = el<HTMLInputElement>('lon');
 const place = el<HTMLInputElement>('place');
 const pointStatus = el('point-status');
 
+// Native selects provide keyboard type-ahead without asking citizens to
+// filter a second field. Each LGA has a manageable number of verified wards.
 function searchable(label: string, id: string, placeholder: string, onChange: () => void) {
   const heading = document.createElement('label');
   heading.htmlFor = id;
   heading.textContent = label;
-  const search = document.createElement('input');
-  search.type = 'search';
-  search.placeholder = 'Filter names…';
-  search.setAttribute('aria-label', 'Filter ' + label);
   const select = document.createElement('select');
   select.id = id;
   if (id === 'ward') select.setAttribute('aria-describedby', 'ward-help');
-  const row = document.createElement('div');
-  row.className = 'filter-row';
-  row.append(search, select);
-  el('fields').append(heading, row);
-  let options: Area[] = [];
-  function render(value: string) {
-    const term = search.value.trim().toLocaleLowerCase();
-    const visible = options.filter(
-      (a) => a.id === value || a.name.toLocaleLowerCase().includes(term),
-    );
-    select.replaceChildren(
-      new Option(term && !visible.length ? 'No matching names' : placeholder, ''),
-      ...visible.map((a) => new Option(a.name, a.id)),
-    );
-    select.value = value;
-  }
-  search.oninput = () => render(select.value);
+  el('fields').append(heading, select);
   select.onchange = onChange;
   return {
     get value() {
       return select.value;
     },
     set(rows: Area[], value = '') {
-      options = rows;
-      search.value = '';
-      search.disabled = select.disabled = !rows.length;
-      render(value);
+      select.disabled = !rows.length;
+      select.replaceChildren(
+        new Option(placeholder, ''),
+        ...rows.map((area) => new Option(area.name, area.id)),
+      );
+      select.value = value;
     },
   };
 }
