@@ -33,6 +33,7 @@ export default function VoiceOverlay({
   const [state, setState] = React.useState<VoiceState>('idle');
   const [exampleIndex, setExampleIndex] = React.useState(0);
   const recognition = React.useRef<BrowserRecognition | null>(null);
+  const finishTimeout = React.useRef<number | null>(null);
   const completed = React.useRef(false);
   const closeRef = React.useRef<HTMLButtonElement>(null);
 
@@ -47,6 +48,7 @@ export default function VoiceOverlay({
       clearInterval(id);
       window.removeEventListener('keydown', keydown);
       recognition.current?.abort();
+      if (finishTimeout.current !== null) clearTimeout(finishTimeout.current);
     };
   }, [onClose]);
 
@@ -72,7 +74,7 @@ export default function VoiceOverlay({
       completed.current = true;
       setState('thinking');
       // This only prepares an editable transcript; it never submits a question.
-      onTranscript(text);
+      finishTimeout.current = window.setTimeout(() => onTranscript(text), 550);
     };
     instance.onerror = () => { if (!completed.current) setState('no-speech'); };
     instance.onend = () => { if (!completed.current) setState('no-speech'); };
