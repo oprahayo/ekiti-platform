@@ -1,39 +1,37 @@
 import { test, expect } from '@playwright/test';
 
-test('text-only chat homepage has three simple actions and an editable input', async ({ page }) => {
+test('home is a welcome gateway and reporting opens a separate conversational journey', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Welcome to Ekiti Civic' })).toBeVisible();
-  await expect(page.locator('.chat-intro-bubble')).toBeVisible();
-  await expect(page.locator('.chat-quick-replies > *')).toHaveCount(3);
-  await expect(page.locator('#home-ask-input')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Send' })).toBeDisabled();
-  await expect(page.locator('.voice-screen, .voice-mic, .audio-play')).toHaveCount(0);
-  await page.locator('#home-ask-input').fill('How many local government areas?');
-  await page.locator('#home-ask-input').press('Enter');
-  await expect(page.locator('.chat-question')).toContainText('How many local government areas?');
-  await expect(page.getByText(/16 local government areas/)).toBeVisible();
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByText('Your mobile gateway to Ekiti State.')).toBeVisible();
+  await expect(page.locator('.welcome-action')).toHaveCount(6);
+  await expect(page.locator('#home-ask-input')).toHaveCount(0);
+  await page.getByRole('link', { name: /Report an issue/ }).click();
+  await expect(page).toHaveURL(/\/report$/);
+  await expect(page.getByRole('heading', { name: 'Report an issue' })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Photo \/ camera/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Audio note/ })).toBeVisible();
 });
 
-test('reporting is a bubble conversation with a Send button instead of audio', async ({ page }) => {
-  await page.setViewportSize({ width: 320, height: 700 });
+test('the guided journey asks category, description and location in sequence', async ({ page }) => {
   await page.goto('/report');
-  await expect(page.locator('.conversation-turn.turn-assistant')).toBeVisible();
-  await expect(page.locator('.conversation-composer textarea')).toBeVisible();
-  await expect(page.locator('.conversation-send')).toHaveText('Send');
-  await page.locator('#report-message').fill('My community bridge has collapsed near the main road.');
-  await page.locator('#report-message').press('Enter');
-  await expect(page.locator('.conversation-turn.turn-user')).toContainText('My community bridge has collapsed');
-  await expect(page.getByText(/Which local government area did this happen in/)).toBeVisible();
-  await expect(page.getByRole('button', { name: /voice|microphone|listen|audio|speak/i })).toHaveCount(0);
+  await page.getByRole('button', { name: /Write text/ }).click();
+  await page.getByRole('button', { name: 'Roads' }).click();
+  await page.locator('#guided-description').fill('My community bridge has collapsed near the main road.');
+  await page.getByRole('button', { name: 'Continue' }).click();
+  await expect(page.getByText(/Where in Ekiti did it happen/)).toBeVisible();
+  await page.locator('#guided-lga').selectOption('ado-ekiti');
+  await page.getByRole('button', { name: 'Continue' }).click();
+  await expect(page.getByText(/Would you like to attach evidence now/)).toBeVisible();
+  await expect(page.getByRole('button', { name: /Open voice mode/ })).toHaveCount(0);
 });
 
-test('capture actual rendered mobile and desktop chat screens', async ({ page }) => {
+test('capture mobile and desktop welcome and report journey screens', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
   await page.screenshot({ path:'test-results/citizen-chat/home-mobile.png', fullPage:true });
-  await page.getByRole('link', { name:'Report a problem' }).click();
+  await page.getByRole('link', { name:/Report an issue/ }).click();
   await page.screenshot({ path:'test-results/citizen-chat/report-mobile.png', fullPage:true });
   await page.goto('/track');
   await expect(page.getByRole('heading', { name: 'Check a report' })).toBeVisible();
@@ -46,9 +44,9 @@ test('capture actual rendered mobile and desktop chat screens', async ({ page })
   const metrics=await page.evaluate(() => ({
     pageWidth: document.documentElement.scrollWidth,
     viewportWidth: window.innerWidth,
-    composerWidth: document.querySelector('.ask-composer')?.getBoundingClientRect().width,
+    actionWidth: document.querySelector('.welcome-action')?.getBoundingClientRect().width,
   }));
   expect(metrics.pageWidth).toBeLessThanOrEqual(metrics.viewportWidth);
-  expect(metrics.composerWidth).toBeGreaterThan(220);
+  expect(metrics.actionWidth).toBeGreaterThan(210);
   await page.screenshot({ path:'test-results/citizen-chat/home-280px.png', fullPage:true });
 });

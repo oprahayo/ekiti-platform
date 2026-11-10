@@ -3,11 +3,11 @@ import { test, expect } from '@playwright/test';
 test('English/Yoruba toggle updates centered welcome and persists across reload', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Welcome to Ekiti Civic' })).toBeVisible();
-  await expect(page.getByText('Community help · Text chat')).toBeVisible();
-  await expect(page.locator('.chat-quick-replies > *')).toHaveCount(3);
+  await expect(page.getByText('Your mobile gateway to Ekiti State.')).toBeVisible();
+  await expect(page.locator('.welcome-action')).toHaveCount(6);
   await page.getByRole('button', { name: 'YOR' }).click();
   await expect(page.getByRole('heading', { name: 'Káàbọ̀ sí Ekiti Civic' })).toBeVisible();
-  await expect(page.getByText('Ìjíròrò àkọsílẹ̀ · Ìrànlọ́wọ́ Èkìtì')).toBeVisible();
+  await expect(page.getByText(/Ẹnu ọ̀nà rẹ sí ìwífún/)).toBeVisible();
   await expect(page.getByRole('button', { name: 'YOR' })).toHaveAttribute('aria-pressed', 'true');
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Káàbọ̀ sí Ekiti Civic' })).toBeVisible();
@@ -27,11 +27,11 @@ test('theme icon switches instantly without opening a settings panel', async ({ 
 
 test('home chat uses a static editable message prompt', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.goto('/');
+  await page.goto('/ask');
   await expect(page.getByRole('searchbox', { name: 'Ask about Ekiti' }))
     .toHaveAttribute('placeholder', 'Type a message…');
   await page.getByRole('searchbox', { name: 'Ask about Ekiti' }).fill('Hello');
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\/ask$/);
 });
 
 test('English chat returns citations and text without audio', async ({ page }) => {
@@ -72,10 +72,10 @@ for (const width of [280, 320, 360, 390, 428]) {
       document: document.documentElement.scrollWidth,
       viewport: window.innerWidth,
       theme: document.querySelector('.theme-switch')?.getBoundingClientRect().height,
-      ask: document.querySelector('.ask-bar')?.getBoundingClientRect().height,
+      action: document.querySelector('.welcome-action')?.getBoundingClientRect().height,
     }));
     expect(measure.document).toBeLessThanOrEqual(measure.viewport);
     expect(measure.theme).toBeGreaterThanOrEqual(44);
-    expect(measure.ask).toBeGreaterThanOrEqual(44);
+    expect(measure.action).toBeGreaterThanOrEqual(44);
   });
 }
