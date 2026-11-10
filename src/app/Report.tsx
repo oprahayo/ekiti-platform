@@ -166,6 +166,7 @@ export default function Report() {
       </div>)}
       <div ref={end} />
     </div>
+    {state.stage !== 'location' && positionNote.startsWith('Boundary match:') && <p className="boundary-evidence" role="status">{positionNote}</p>}
     {state.stage === 'location' && <section className="conversation-support" aria-label="Optional location tools">
       <label htmlFor="report-area">Or choose the local government area</label>
       <select id="report-area" value="" onChange={event => {
