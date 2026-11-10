@@ -43,6 +43,6 @@ jobs:
           CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE: postgres://location_browser:ci@127.0.0.1:5432/ekiti_test
         run: |
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "CREATE ROLE location_browser LOGIN PASSWORD 'ci'; GRANT ekiti_location_reader TO location_browser"
-          npm run build
+          npm run staging:check
           npx playwright install --with-deps chromium
           npm run test:browser

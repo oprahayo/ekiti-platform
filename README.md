@@ -49,6 +49,10 @@ Grant ekiti_location_reader to a dedicated backend login with no existing table 
 
 The mobile-first selector reads the verified area directory through the Worker. Citizens can select an LGA and ward, describe a town or landmark, and optionally confirm a GPS or map position for a PostGIS lookup. [Run the interface and browser checks](docs/citizen-location.md).
 
+## Private report drafts and staging
+
+Open **Prepare a report draft** below the location selector to download a complaint, commendation or issue as a text file. Drafts use the current area labels and boundary evidence. Downloading sends no report to the platform. [Next milestone](docs/MILESTONE-02.md) · [Module and routing decision](docs/adr/0003-platform-modules.md) · [Staging preparation and smoke checks](docs/staging.md)
+
 ## Milestone 01 completion criteria
 
 1. Verified 16-LGA and 177-ward names and source metadata imported.
