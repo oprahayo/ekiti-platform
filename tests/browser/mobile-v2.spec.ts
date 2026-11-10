@@ -81,7 +81,7 @@ test('Explore filters survive tab changes; all data is identified as demo', asyn
   await expect(page.getByRole('heading', { name: 'Sample layout preview' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Schools' })).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('link', { name: /Example neighborhood school/ }).click();
-  await expect(page.getByText(/Do not use this demo listing to find real services/)).toBeVisible();
+  await expect(page.getByText(/This is a fictional directory example/)).toBeVisible();
 });
 
 test('Explore does not load map assets unless explicitly requested', async ({ page }) => {
