@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Link, useSearchParams } from 'react-router';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 import { lgas } from './fixtures.ts';
 
 const MapLocation = React.lazy(() => import('./MapLocation.tsx'));
@@ -64,6 +64,7 @@ async function preparePhoto(file: File): Promise<{ url: string; size: number }> 
 
 export default function Report() {
   const [params, setParams] = useSearchParams();
+  const navigate = useNavigate();
   const step = stepFromParams(params);
   const [maxReached, setMaxReached] = React.useState(1);
   const [draft, setDraft] = React.useState<ReportDraft>(restoreDraft);
@@ -95,6 +96,19 @@ export default function Report() {
   React.useEffect(() => {
     if (step > maxReached) setParams({ step: '1' }, { replace: true });
   }, [step, maxReached, setParams]);
+
+  // Once this lazily loaded screen has arrived, keep its public code available
+  // in the offline shell even if the service worker activated after page load.
+  React.useEffect(() => {
+    if (!('serviceWorker' in navigator)) return;
+    void navigator.serviceWorker.ready.then(ready => {
+      const assets = performance.getEntriesByType('resource')
+        .map(entry => new URL(entry.name, location.href))
+        .filter(url => url.origin === location.origin && url.pathname.startsWith('/assets/'))
+        .map(url => url.pathname);
+      ready.active?.postMessage({ type: 'CACHE_LOADED_ASSETS', assets });
+    }).catch(() => {});
+  }, []);
 
   React.useEffect(() => {
     if (step !== 2 || areas.length) return;
@@ -140,7 +154,7 @@ export default function Report() {
   const back = () => {
     if (step > 1) {
       setError('');
-      setParams({ step: String(step - 1) }, { replace: true });
+      navigate(-1);
     }
   };
   const clear = () => {
@@ -328,7 +342,7 @@ export default function Report() {
 
         {step === 4 && (
           <section className="preview-success" aria-label="Illustrative completion">
-            <div className="success-mark" aria-hidden="true">✓</div>
+            <div className="preview-mark" aria-hidden="true">◌</div>
             <h2>Demo complete</h2>
             <p>No report was stored, transmitted, or sent to an agency.</p>
             <p className="field-legend">Example reference · not valid</p>
