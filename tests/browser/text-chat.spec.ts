@@ -36,6 +36,7 @@ test('capture actual rendered mobile and desktop chat screens', async ({ page })
   await page.getByRole('link', { name:'Report a problem' }).click();
   await page.screenshot({ path:'test-results/citizen-chat/report-mobile.png', fullPage:true });
   await page.goto('/track');
+  await expect(page.getByRole('heading', { name: 'Check a report' })).toBeVisible();
   await page.screenshot({ path:'test-results/citizen-chat/track-mobile.png', fullPage:true });
   await page.setViewportSize({ width:1280, height:820 });
   await page.goto('/');
