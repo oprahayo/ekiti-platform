@@ -54,6 +54,7 @@ export function findArea(text: string, areas: readonly AreaName[]): AreaName | u
     'ado': 'ado-ekiti',
   };
   if (aliases[cleaned]) return areas.find(area => area.id === aliases[cleaned]);
+  if (/(?:^| )ido ekiti(?:$| )/.test(cleaned)) return areas.find(area => area.id === 'ido-osi');
   const found = areas.filter(area => {
     const name = plain(area.name);
     const id = plain(area.id);
@@ -77,7 +78,7 @@ export function submitLine(state: Conversation, raw: string, areas: readonly Are
   if (state.stage === 'location') {
     const area = findArea(text, areas);
     if (!area) return assistant(next, 'I could not confidently match that LGA. Please choose one from the list so I do not guess your location.');
-    return chooseArea(next, area);
+    return chooseArea(state, area, text);
   }
   if (state.stage === 'details') {
     const skip = /^(no|none|skip|nothing|no more|ko si|kosi|rara)$/i.test(plain(text));
@@ -89,9 +90,9 @@ export function submitLine(state: Conversation, raw: string, areas: readonly Are
   return next;
 }
 
-export function chooseArea(state: Conversation, area: AreaName): Conversation {
+export function chooseArea(state: Conversation, area: AreaName, utterance = area.name): Conversation {
   if (state.stage !== 'location') return state;
-  const withUser = add(state, 'user', area.name);
+  const withUser = add(state, 'user', utterance);
   return assistant({
     ...withUser, stage: 'details',
     draft: { ...withUser.draft, lgaId: area.id, lgaName: area.name },
