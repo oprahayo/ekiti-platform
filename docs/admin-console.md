@@ -12,6 +12,7 @@ The Ekiti Civic administrative operations console is a separate React/Vite app, 
 - Append-only in-memory activity history; queue state is derived from events, not an editable status flag.
 - Internal assignment, awaiting clarification, supervisor escalation, platform resolution, reopening and notes. A reason is required for every action except assignment.
 - Sample-only analytics and a reset control.
+- Navigation audit: four first-level destinations (Cases, Moderation, Routing, Overview), status filtering within Cases, URL-safe view deep links and dedicated mobile detail screens. See [rendered UI audit](admin-ux-audit.md).
 - Five separate moderation work queues: **listing submissions, citizen reviews, business ownership claims, civic knowledge and corrections**, with an evidence check and reasoned decisions retained in demo memory.
 - Ownership claim requests cannot be marked approved/verified from self-declarations or email OTP; human proof review is a separate restricted backend process.
 - A case-based **office-routing review** which proposes only a general triage scope by category, keeps ward boundaries unmapped, and explicitly refuses to invent receiving offices, dispatch, delivery or read receipts.

@@ -6,8 +6,9 @@ import {
 } from './case-model.ts';
 import { makeDemoCases } from './demo-cases.ts';
 import { ModerationWorkspace, RoutingWorkspace } from './OperationsModules.tsx';
+import { adminViewUrl, isCaseView, readAdminView, type AdminView } from './navigation.ts';
 
-type View = Queue | 'all' | 'analytics' | 'moderation' | 'routing';
+type View = AdminView;
 
 const ACTION_LABELS: Record<Action, string> = {
   assign: 'Assign to me',
@@ -31,47 +32,50 @@ function Dot({ priority }: { priority: 'normal' | 'high' }) {
   return <span className={'priority-dot ' + priority} aria-label={priority + ' priority'} />;
 }
 
-function Sidebar({
-  view, onViewChange, counts,
-}: {
+function NavigationIcon({ name }: { name: 'cases' | 'moderation' | 'routing' | 'analytics' }) {
+  const shapes: Record<typeof name, React.ReactNode> = {
+    cases: <><rect x="4" y="4" width="16" height="16" rx="2" />
+      <path d="M8 9h8M8 13h8M8 17h5" /></>,
+    moderation: <><path d="M12 3 20 7v5c0 5-3 8-8 10-5-2-8-5-8-10V7l8-4Z" />
+      <path d="m9 12 2 2 4-4" /></>,
+    routing: <><circle cx="6" cy="6" r="2"/><circle cx="18" cy="18" r="2" />
+      <path d="M6 8v6c0 2 2 4 4 4h6M12 4h6v8m0-8-4 4" /></>,
+    analytics: <><path d="M4 20V11M9 20V6M14 20V14M19 20V3" /></>,
+  };
+  return <svg viewBox="0 0 24 24" width="21" height="21" fill="none"
+    stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"
+    aria-hidden="true">{shapes[name]}</svg>;
+}
+
+function Sidebar({ view, onViewChange, counts }: {
   view: View;
   onViewChange: (view: View) => void;
   counts: Record<Queue, number>;
 }) {
-  const items: { key: View; icon: string; label: string; count?: number }[] = [
-    { key: 'all', icon: '◫', label: 'All cases', count: Object.values(counts).reduce((a, b) => a + b, 0) },
-    ...QUEUES.map((queue, index) => ({
-      key: queue, icon: ['▤', '◉', '◷', '↗', '✓'][index]!, label: QUEUE_LABELS[queue],
-      count: counts[queue],
-    })),
-  ];
+  const total = Object.values(counts).reduce((a, b) => a + b, 0);
+  const items = [
+    { key: 'all', icon: 'cases', label: 'Cases', count: total },
+    { key: 'moderation', icon: 'moderation', label: 'Moderation' },
+    { key: 'routing', icon: 'routing', label: 'Routing' },
+    { key: 'analytics', icon: 'analytics', label: 'Overview' },
+  ] as const;
   return <aside className="sidebar">
     <div className="brand">
       <span className="brand-mark">e<span>•</span></span>
       <div><strong>Ekiti Civic</strong><small>Operations workspace</small></div>
     </div>
     <div className="sidebar-section-label">WORKSPACE</div>
-    <nav className="main-nav" aria-label="Operations views">
-      {items.map(item => <button type="button" key={item.key}
-        className={'nav-link ' + (view === item.key ? 'active' : '')}
-        onClick={() => onViewChange(item.key)} aria-current={view === item.key ? 'page' : undefined}>
-        <span className="nav-glyph" aria-hidden="true">{item.icon}</span>
-        <span>{item.label}</span>
-        <span className="nav-count">{item.count}</span>
-      </button>)}
-      <div className="sidebar-divider" />
-      <button type="button" className={'nav-link ' + (view === 'moderation' ? 'active' : '')}
-        onClick={() => onViewChange('moderation')} aria-current={view === 'moderation' ? 'page' : undefined}>
-        <span className="nav-glyph" aria-hidden="true">◇</span><span>Moderation</span>
-      </button>
-      <button type="button" className={'nav-link ' + (view === 'routing' ? 'active' : '')}
-        onClick={() => onViewChange('routing')} aria-current={view === 'routing' ? 'page' : undefined}>
-        <span className="nav-glyph" aria-hidden="true">↪</span><span>Office routing</span>
-      </button>
-      <button type="button" className={'nav-link ' + (view === 'analytics' ? 'active' : '')}
-        onClick={() => onViewChange('analytics')} aria-current={view === 'analytics' ? 'page' : undefined}>
-        <span className="nav-glyph" aria-hidden="true">▥</span><span>Analytics</span>
-      </button>
+    <nav className="main-nav" aria-label="Primary admin navigation">
+      {items.map(item => {
+        const active = item.key === 'all' ? isCaseView(view) : view === item.key;
+        return <button type="button" key={item.key}
+          className={'nav-link ' + (active ? 'active' : '')}
+          onClick={() => onViewChange(item.key)} aria-current={active ? 'page' : undefined}>
+          <span className="nav-glyph"><NavigationIcon name={item.icon} /></span>
+          <span className="nav-label">{item.label}</span>
+          {'count' in item && <span className="nav-count">{item.count}</span>}
+        </button>;
+      })}
     </nav>
     <div className="sidebar-bottom">
       <span className="workspace-indicator" aria-hidden="true" />
@@ -81,10 +85,12 @@ function Sidebar({
 }
 
 function CaseList({
-  view, cases, query, onQuery, selectedId, onSelect,
+  view, cases, query, onQuery, onQueueChange, counts, selectedId, onSelect,
 }: {
   view: Queue | 'all';
   cases: AdminCase[];
+  onQueueChange: (next: Queue | 'all') => void;
+  counts: Record<Queue, number>;
   query: string;
   onQuery: (query: string) => void;
   selectedId: string | null;
@@ -93,9 +99,20 @@ function CaseList({
   return <section className="case-panel" aria-label="Case list">
     <div className="list-heading">
       <div><p className="eyebrow">CASE MANAGEMENT</p>
-        <h1>{view === 'all' ? 'All cases' : QUEUE_LABELS[view]}</h1>
+        <h1>Cases</h1>
         <p className="subdued">{cases.length} sample {cases.length === 1 ? 'case' : 'cases'}</p>
       </div>
+    </div>
+    <div className="case-queue-picker">
+      <label htmlFor="case-queue-filter">Filter by status</label>
+      <select id="case-queue-filter" value={view}
+        onChange={event => onQueueChange(event.target.value as Queue | 'all')}
+        aria-label="Filter cases by status">
+        <option value="all">All statuses · {Object.values(counts).reduce((a, b) => a + b, 0)}</option>
+        {QUEUES.map(queue => <option value={queue} key={queue}>
+          {QUEUE_LABELS[queue]} · {counts[queue]}
+        </option>)}
+      </select>
     </div>
     <label className="search-box">
       <span aria-hidden="true">⌕</span>
@@ -114,10 +131,10 @@ function CaseList({
         className={'case-list-item ' + (selectedId === item.id ? 'selected' : '')}
         onClick={() => onSelect(item.id)} aria-pressed={selectedId === item.id}>
         <div className="case-row-top"><span className="case-id">{item.id}</span>
-          <span className="case-kind">{item.kind}</span></div>
+          <span className={'case-mini-status ' + caseQueue(item)}>{QUEUE_LABELS[caseQueue(item)]}</span></div>
         <div className="case-title-line"><h2>{item.title}</h2><Dot priority={item.priority} /></div>
         <p className="case-preview">{item.summary}</p>
-        <div className="case-row-bottom"><span className="location-label">⌁ {item.lga}</span>
+        <div className="case-row-bottom"><span className="location-label">{item.lga} · {item.kind}</span>
           <time dateTime={item.events[item.events.length - 1]!.at}>
             {formatDate(item.events[item.events.length - 1]!.at).split(',')[0]}
           </time>
@@ -141,7 +158,8 @@ function CaseDetails({
   const [action, setAction] = React.useState<Action | null>(null);
   const [note, setNote] = React.useState('');
   const [error, setError] = React.useState('');
-  React.useEffect(() => { setAction(null); setNote(''); setError(''); }, [item?.id]);
+  const [feedback, setFeedback] = React.useState('');
+  React.useEffect(() => { setAction(null); setNote(''); setError(''); setFeedback(''); }, [item?.id]);
   if (!item) return <section className="detail-panel detail-empty" aria-label="Case details">
     <div><strong>Select a sample case</strong><p>Choose a record from the list to see its activity.</p></div>
   </section>;
@@ -155,6 +173,7 @@ function CaseDetails({
     try {
       onApply(item.id, action, note);
       setAction(null); setNote(''); setError('');
+      setFeedback('Demo action recorded in this browser session. No agency was contacted.');
     } catch (cause) {
       setError(cause instanceof InvalidCaseAction
         ? 'Enter a reason between 8 and 500 characters.'
@@ -211,6 +230,7 @@ function CaseDetails({
     </div>
     <div className="action-footer">
       <div className="action-caption"><strong>Platform actions</strong><span>In-memory demo only</span></div>
+      {feedback && <p className="action-feedback" role="status">{feedback}</p>}
       <div className="action-buttons">
         {actions.map(value => <button key={value} type="button"
           className={'action-button ' + (value === 'resolve' ? 'action-primary ' : '') + (action === value ? 'chosen' : '')}
@@ -263,7 +283,7 @@ function Analytics({ cases }: { cases: AdminCase[] }) {
 
 export function AdminApp() {
   const [cases, setCases] = React.useState<AdminCase[]>(makeDemoCases);
-  const [view, setView] = React.useState<View>('all');
+  const [view, setView] = React.useState<View>(() => readAdminView(window.location.search));
   const [query, setQuery] = React.useState('');
   const [selectedId, setSelectedId] = React.useState<string | null>('DEMO-1001');
   const [mobileDetail, setMobileDetail] = React.useState(false);
@@ -271,35 +291,55 @@ export function AdminApp() {
   const shown = React.useMemo(() =>
     view === 'analytics' || view === 'moderation' || view === 'routing' ? [] : filterCases(cases, view, query), [cases, view, query]);
   const selected = shown.find(item => item.id === selectedId) ?? shown[0] ?? null;
-  const changeView = (next: View) => { setView(next); setSelectedId(null); setMobileDetail(false); };
+  React.useEffect(() => {
+    const onPopState = () => {
+      setView(readAdminView(window.location.search));
+      setSelectedId(null);
+      setMobileDetail(false);
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+  const changeView = (next: View) => {
+    if (next !== view) window.history.pushState(null, '', adminViewUrl(next, window.location.pathname));
+    setView(next); setSelectedId(null); setMobileDetail(false);
+  };
   const apply = (id: string, action: Action, note: string) => {
     const current = cases.find(item => item.id === id);
     if (!current) throw new InvalidCaseAction();
     const updated = applyDemoAction(current, action, note, new Date().toISOString());
     setCases(previous => previous.map(item => item.id === id ? updated : item));
     // Stay on the case even when it moves to another queue.
-    if (QUEUES.includes(view as Queue) && caseQueue(updated) !== view) setView('all');
+    if (isCaseView(view) && view !== 'all' && caseQueue(updated) !== view) {
+      setView('all');
+      window.history.replaceState(null, '', adminViewUrl('all', window.location.pathname));
+    }
     setSelectedId(id);
   };
   const reset = () => {
     setCases(makeDemoCases()); setView('all'); setQuery(''); setSelectedId('DEMO-1001'); setMobileDetail(false);
+    window.history.replaceState(null, '', adminViewUrl('all', window.location.pathname));
   };
   return <div className="admin-app">
     <a href="#workspace" className="skip-link">Skip to workspace</a>
     <Sidebar view={view} onViewChange={changeView} counts={counts} />
     <div className="workspace-shell" id="workspace">
       <header className="workspace-header">
-        <div className="header-title"><span className="header-mobile-brand">ekiti civic / </span><span>Operations</span><span className="header-slash">/</span><strong>{view === 'analytics' ? 'Analytics' : view === 'moderation' ? 'Moderation' : view === 'routing' ? 'Office routing' : view === 'all' ? 'All cases' : QUEUE_LABELS[view]}</strong></div>
+        <div className="header-title"><span className="header-mobile-brand">ekiti civic / </span><span>Operations</span><span className="header-slash">/</span><strong>{isCaseView(view) ? 'Cases' : view === 'analytics' ? 'Overview' : view === 'moderation' ? 'Moderation' : 'Routing'}</strong></div>
         <div className="header-actions"><span className="environment-pill"><span aria-hidden="true" /> DEMO MODE</span>
           <button type="button" onClick={reset} title="Restore sample cases" className="reset-button">Reset demo</button>
           <div className="avatar" aria-label="Demo moderator">DM</div></div>
       </header>
-      <div className="workspace-notice" role="note"><strong>Demonstration workspace.</strong> All cases and updates are fictional and stay in memory. Real case intake, authorized staff login, notifications and agency integrations are not connected.</div>
+      <div className="workspace-notice" role="note"><strong>Demo only.</strong>
+        <span className="notice-wide"> All cases and updates are fictional and stay in memory. Live intake, staff login, notifications and government connections are not enabled.</span>
+        <span className="notice-mobile"> Sample records; no live reports or government access.</span>
+      </div>
       {view === 'analytics' ? <Analytics cases={cases} /> :
         view === 'moderation' ? <ModerationWorkspace /> :
         view === 'routing' ? <RoutingWorkspace cases={cases} /> :
         <div className={'case-workspace ' + (mobileDetail ? 'mobile-detail-open' : '')}>
           <CaseList view={view} cases={shown} query={query} onQuery={setQuery}
+            onQueueChange={changeView} counts={counts}
             selectedId={selected?.id || null}
             onSelect={id => { setSelectedId(id); setMobileDetail(true); }} />
           <CaseDetails item={selected} onBack={() => setMobileDetail(false)} onApply={apply} />

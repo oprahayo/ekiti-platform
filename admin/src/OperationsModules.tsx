@@ -23,10 +23,13 @@ export function ModerationWorkspace() {
   const [action, setAction] = React.useState<ModerationAction | null>(null);
   const [reason, setReason] = React.useState('');
   const [error, setError] = React.useState('');
+  const [mobileReviewOpen, setMobileReviewOpen] = React.useState(false);
+  const [feedback, setFeedback] = React.useState('');
   const filtered = items.filter(item => item.kind === kind);
   const selected = filtered.find(item => item.id === selectedId) ?? filtered[0]!;
   const switchKind = (next: ModerationKind) => {
     setKind(next); setSelectedId(''); setAction(null); setReason(''); setError('');
+    setMobileReviewOpen(false); setFeedback('');
   };
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
@@ -35,6 +38,7 @@ export function ModerationWorkspace() {
       const next = moderateDemoItem(selected, action, reason, new Date().toISOString());
       setItems(previous => previous.map(item => item.id === next.id ? next : item));
       setAction(null); setReason(''); setError('');
+      setFeedback('Decision saved in demo memory only. No public record was changed.');
     } catch (cause) {
       setError(cause instanceof InvalidModerationDecision
         ? 'Provide a reason of 8–500 characters and use an available decision.'
@@ -52,17 +56,18 @@ export function ModerationWorkspace() {
         {MODERATION_LABELS[key]} <small>{items.filter(item => item.kind === key && item.status === 'pending').length}</small>
       </button>)}
     </div>
-    <div className="moderation-layout">
+    <div className={'moderation-layout ' + (mobileReviewOpen ? 'mobile-review-open' : '')}>
       <section className="moderation-list" aria-label="Moderation items">
         {filtered.map(item => <button type="button" className={'moderation-list-item ' +
           (selected.id === item.id ? 'selected' : '')} key={item.id}
           aria-pressed={selected.id === item.id}
-          onClick={() => { setSelectedId(item.id); setAction(null); setReason(''); }}>
+          onClick={() => { setSelectedId(item.id); setAction(null); setReason(''); setFeedback(''); setMobileReviewOpen(true); }}>
           <span>{item.id}</span><strong>{item.title}</strong>
           <small>{MODERATION_STATES[item.status]}</small>
         </button>)}
       </section>
       <section className="moderation-inspector" aria-label="Moderation review">
+        <button type="button" className="panel-back" onClick={() => setMobileReviewOpen(false)}>← Moderation queue</button>
         <div className="inspector-head"><span>{selected.id}</span>
           <span className="inspector-status">{MODERATION_STATES[selected.status]}</span></div>
         <h2>{selected.title}</h2><p>{selected.detail}</p>
@@ -80,6 +85,7 @@ export function ModerationWorkspace() {
             <span>{formatDate(event.at)}</span><p>{event.reason}</p>
           </li>)}
         </ol>
+        {feedback && <p role="status" className="action-feedback">{feedback}</p>}
         <div className="moderation-actions">
           {moderationActions(selected).map(value => <button type="button" key={value}
             aria-pressed={action === value} onClick={() => { setAction(action === value ? null : value); setError(''); }}
@@ -101,6 +107,7 @@ export function ModerationWorkspace() {
 
 export function RoutingWorkspace({ cases }: { cases: AdminCase[] }) {
   const [selectedId, setSelectedId] = React.useState(cases[0]?.id ?? '');
+  const [mobileRouteOpen, setMobileRouteOpen] = React.useState(false);
   const selected = cases.find(item => item.id === selectedId) ?? cases[0];
   const assessment = selected && assessDemoRoute(selected);
   return <main className="operations-section">
@@ -108,16 +115,17 @@ export function RoutingWorkspace({ cases }: { cases: AdminCase[] }) {
       <p className="eyebrow">TRIAGE & RESPONSIBILITY</p><h1>Office routing</h1>
       <p>Prepare an internal routing assessment using category and LGA. A suggested level of government is not a verified office, assignment, delivery or official acknowledgement.</p>
     </header>
-    <div className="routing-layout">
+    <div className={'routing-layout ' + (mobileRouteOpen ? 'mobile-route-open' : '')}>
       <section className="routing-list" aria-label="Cases requiring routing review">
         <h2>Case routing queue</h2>
         {cases.map(item => <button type="button" key={item.id}
           aria-pressed={selected?.id === item.id}
-          onClick={() => setSelectedId(item.id)}
+          onClick={() => { setSelectedId(item.id); setMobileRouteOpen(true); }}
           className={'routing-list-item ' + (selected?.id === item.id ? 'selected' : '')}>
           <span>{item.id}</span><strong>{item.title}</strong><small>{item.lga}</small></button>)}
       </section>
       <section className="routing-detail" aria-label="Routing assessment">
+        <button type="button" className="panel-back" onClick={() => setMobileRouteOpen(false)}>← Routing queue</button>
         {assessment && <>
           <div className="inspector-head"><span>{assessment.caseId}</span><span className="inspector-status">Manual verification</span></div>
           <h2>Responsibility assessment</h2>
