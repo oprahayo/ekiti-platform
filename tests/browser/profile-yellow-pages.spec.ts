@@ -137,8 +137,70 @@ test('owner claim opens a disclosure, not an unprotected KYC upload', async ({ p
   await page.goto('/places/' + id);
   await page.getByRole('button', { name: 'Claim this listing' }).click();
   await expect(page.getByRole('dialog', { name: 'Claim this listing' })).toBeVisible();
-  await expect(page.getByText(/No ownership documents or personal details/)).toBeVisible();
+  await expect(page.getByText(/Claims are not accepting data on this deployment/)).toBeVisible();
   await expect(page.locator('input[type="file"]')).toHaveCount(0);
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toHaveCount(0);
+});
+
+test('only a published moderated review produces public star ratings and counts', async ({ page }) => {
+  await page.route('**/api/places/' + id, route =>
+    route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ reviewedOnly: true, item: listing }) }));
+  await page.route('**/api/places/' + id + '/reviews?**', route =>
+    route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({
+        moderatedOnly: true, ratingCount: 2, averageRating: 4.5,
+        items: [
+          { id: '11111111-1111-4111-8111-111111111111',
+            stars: 5, body: 'A genuinely positive moderated customer experience.',
+            published_at: '2026-11-10T12:00:00Z' },
+          { id: '22222222-2222-4222-8222-222222222222',
+            stars: 4, body: 'A useful reviewed business experience with room to improve.',
+            published_at: '2026-11-09T12:00:00Z' },
+        ],
+      }) }));
+  await page.goto('/places/' + id);
+  await page.getByRole('tab', { name: 'Reviews' }).click();
+  await expect(page.getByText('4.5 / 5')).toBeVisible();
+  await expect(page.getByText('2 published reviews')).toBeVisible();
+  await expect(page.getByText('A genuinely positive moderated customer experience.')).toBeVisible();
+  await expect(page.locator('.published-review')).toHaveCount(2);
+  await expect(page.getByText(/Reviewer identities are not displayed/)).toBeVisible();
+});
+
+test('review feed absence does not invent a rating and guest review remains private', async ({ page }) => {
+  await page.route('**/api/places/' + id, route =>
+    route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ reviewedOnly: true, item: listing }) }));
+  await page.route('**/api/places/' + id + '/reviews?**', route =>
+    route.fulfill({ status: 503, contentType: 'application/json',
+      body: JSON.stringify({ error: 'Feature not activated' }) }));
+  await page.goto('/places/' + id);
+  await page.getByRole('tab', { name: 'Reviews' }).click();
+  await expect(page.getByText(/No public review feed or aggregate rating is connected yet/)).toBeVisible();
+  await expect(page.locator('.published-rating-summary')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Write a review' }).click();
+  await page.getByRole('button', { name: '5 stars' }).click();
+  await page.locator('#directory-review-text').fill('An actual guest draft is not a public review.');
+  await page.getByRole('button', { name: 'Save private review draft' }).click();
+  await expect(page.getByText(/Saved on this browser only/)).toBeVisible();
+  await expect(page.locator('.published-rating-summary')).toHaveCount(0);
+});
+
+test('sign-in and ownership requests stay disabled until an approved Auth configuration exists', async ({ page }) => {
+  await page.goto('/profile');
+  await page.getByRole('button', { name: 'Sign in or create an account' }).click();
+  await expect(page.getByRole('dialog', { name: 'Sign in & Citizen Profile' })).toBeVisible();
+  await expect(page.getByText(/Verified citizen sign-in is not active/)).toBeVisible();
+  await expect(page.locator('#citizen-email')).toHaveCount(0);
+  await expect(page.locator('#citizen-otp')).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  await page.route('**/api/places/' + id, route =>
+    route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ reviewedOnly: true, item: listing }) }));
+  await page.goto('/places/' + id);
+  await page.getByRole('button', { name: 'Claim this listing' }).click();
+  await expect(page.getByText(/Claims are not accepting data on this deployment/)).toBeVisible();
+  await expect(page.locator('#claim-explanation')).toHaveCount(0);
 });
