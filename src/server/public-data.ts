@@ -19,7 +19,8 @@ function onlyKeys(params: URLSearchParams, allowed: string[]) {
 function cap(raw: string | null, fallback = 10) {
   if (!raw) return fallback;
   if (!/^[1-9][0-9]{0,1}$/.test(raw)) throw new PublicQueryError();
-  return Math.min(Number(raw), 20);
+  if (Number(raw) > 20) throw new PublicQueryError();
+  return Number(raw);
 }
 export function parseKnowledgeFilters(params: URLSearchParams): KnowledgeFilters {
   if (!onlyKeys(params,['q','limit'])) throw new PublicQueryError();
