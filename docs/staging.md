@@ -1,6 +1,6 @@
 # Cloudflare staging
 
-Run `npm ci && npm run staging:check` to build assets and bundle the Worker using Wrangler dry-run. It uses an isolated staging Worker name, rate-limit namespace and a local placeholder binding. It writes local files only. The base Wrangler config uses JSON syntax so the staging generator can reuse the same runtime flags, routes, headers, asset path and limits without duplicating them.
+Run `npm ci && npm run test:all && npm run staging:check` to type-check, test staging config safety, build assets and bundle the Worker using Wrangler dry-run. It uses an isolated staging Worker name, rate-limit namespace and a local placeholder binding. It writes local files only. The base Wrangler config uses JSON syntax so the staging generator can reuse the same runtime flags, routes, headers, asset path and limits without duplicating them.
 
 ## Verify the origin locally
 
@@ -15,3 +15,7 @@ Follow the README migrations and pinned imports on a test database. Run the type
 5. Open that origin on a mobile browser. Try list selection, map selection and confirmation, then download and inspect a draft. Check that no report text or coordinates appear in URLs or telemetry. Record the version, time and results. If verification fails, withhold rollout and restore the previous verified staging version when available.
 
 The repository carries no live binding or staging origin. Browser downloads and local Wrangler tests exercise the code path, while live staging verifies account configuration, TLS and connectivity.
+
+## Draft privacy during staging
+
+The report editor never submits or stores narrative text on our servers. The download creates a text file on the citizen's device, and clearing the form does not remove previously downloaded copies. Test the warning and downloaded filename on mobile, particularly on shared devices. The export excludes selector-provided latitude/longitude, but citizens can still enter identifying information into the free-text description.
