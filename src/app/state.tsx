@@ -10,7 +10,7 @@ export type EkitiLocationStatus =
 export interface EkitiLocation {
   status: EkitiLocationStatus;
   lgaName?: string;
-  wardName?: string;
+  wardName?: string | undefined;
   message: string;
 }
 
