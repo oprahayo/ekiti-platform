@@ -77,6 +77,7 @@ function BottomNav() {
     { to: '/explore', label: 'Explore', icon: 'explore' },
     { to: '/report', label: 'Report', icon: 'report' },
     { to: '/track', label: 'Track', icon: 'track' },
+    { to: '/profile', label: 'Profile', icon: 'profile' },
   ] as const;
   return <nav className="bottom-nav" aria-label="Primary navigation">
     {navItems.map(item => <NavLink key={item.label} to={item.to}
