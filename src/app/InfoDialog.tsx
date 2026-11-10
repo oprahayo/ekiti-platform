@@ -38,11 +38,11 @@ export function AboutContent() {
       <li>Source-linked answers and carefully reviewed information</li>
       <li>Business listings with clear source and owner-claim status</li>
       <li>Private report drafting without a government-affiliation claim</li>
-      <li>Ratings and reviews planned with moderation and genuine identity safeguards</li>
+      <li>Ratings and reviews available as private drafts; moderated publication requires an activated, email-verified account</li>
     </ul>
     <p className="privacy-notice"><strong>Independent civic project · Not a government service.</strong> We do not submit a report to an agency unless a real secure reporting integration is launched.</p>
     <h3>Contact & support</h3>
-    <p>Use <a href="mailto:inekitikete@gmail.com">inekitikete@gmail.com</a> to contact the project. This address is taken from the supplied design reference and requires owner confirmation before public launch.</p>
-    <p className="metadata">UI preview · Authentication, submissions and listing claims are not yet active.</p>
+    <p>Public support contact details will be shown after the project owner verifies a working address. Please do not send personal reports or identity documents to unverified contacts.</p>
+    <p className="metadata">Guest mode is available now. Account sign-in, real review submission and ownership claims require approved configuration.</p>
   </div>;
 }
