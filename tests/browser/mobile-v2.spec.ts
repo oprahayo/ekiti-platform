@@ -153,3 +153,31 @@ test('initial Home requests are first-party only and skip map/speech bundles', a
   }
   expect(resources.some(url => /\/assets\/(map-|lga-|VoiceOverlay)/.test(url))).toBe(false);
 });
+
+test('voice closes to originating Home screen and falls back to typing after no speech', async ({ page }) => {
+  await page.addInitScript(() => {
+    class FakeRecognition {
+      lang = 'en-NG';
+      interimResults = false;
+      continuous = false;
+      onresult: unknown = null;
+      onerror: ((event: { error: string }) => void) | null = null;
+      onend: (() => void) | null = null;
+      start() { window.setTimeout(() => this.onerror?.({ error: 'no-speech' }), 50); }
+      abort() {}
+    }
+    (window as unknown as { webkitSpeechRecognition: unknown }).webkitSpeechRecognition = FakeRecognition;
+  });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Open voice mode' }).click();
+  await expect(page.getByRole('dialog', { name: 'Speak now' })).toBeVisible();
+  await page.getByRole('button', { name: 'Close voice mode' }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole('heading', { name: 'Welcome to Ekiti' })).toBeVisible();
+  await page.getByRole('button', { name: 'Open voice mode' }).click();
+  await page.getByRole('button', { name: 'Start voice input' }).click();
+  await expect(page.getByText("Didn't catch that")).toBeVisible();
+  await page.getByRole('button', { name: 'Text always works — tap to type' }).click();
+  await expect(page).toHaveURL(/\/ask/);
+  await expect(page.locator('#ask-input')).toBeFocused();
+});
