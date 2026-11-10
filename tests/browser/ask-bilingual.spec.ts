@@ -4,7 +4,7 @@ test('English/Yoruba toggle updates centered welcome and persists across reload'
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Welcome to Ekiti Civic' })).toBeVisible();
   await expect(page.getByText('Your mobile gateway to Ekiti State.')).toBeVisible();
-  await expect(page.locator('.welcome-action')).toHaveCount(6);
+  await expect(page.locator('.welcome-action')).toHaveCount(5);
   await page.getByRole('button', { name: 'YOR' }).click();
   await expect(page.getByRole('heading', { name: 'Káàbọ̀ sí Ekiti Civic' })).toBeVisible();
   await expect(page.getByText(/Ẹnu ọ̀nà rẹ sí ìwífún/)).toBeVisible();
