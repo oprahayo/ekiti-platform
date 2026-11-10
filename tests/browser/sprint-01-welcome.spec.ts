@@ -32,7 +32,7 @@ for (const width of [280, 320, 390, 768, 1280]) {
       const prompt=rect('#welcome-task-heading');
       const grid=rect('.welcome-action-list');
       const items=[...document.querySelectorAll('.welcome-action')].map(item => item.getBoundingClientRect());
-      const columns=getComputedStyle(document.querySelector('.welcome-action-list')!).gridTemplateColumns.trim().split(/\\s+/).length;
+      const columns=getComputedStyle(document.querySelector('.welcome-action-list')!).gridTemplateColumns.trim().split(/\s+/).length;
       return {
         viewport:window.innerWidth,documentWidth:document.documentElement.scrollWidth,
         headerToHero:heading.top-header.bottom,
@@ -74,11 +74,11 @@ test('Sprint 01: all six compact actions launch their existing workflows', async
     await expect(link).toContainText(title);
   }
   await page.getByRole('link',{name:/Report an issue/}).click();
-  await expect(page).toHaveURL(/\\/report$/);
+  await expect(page).toHaveURL(/\/report$/);
   await expect(page.getByRole('heading',{name:'Report an issue'})).toBeVisible();
   await page.goto('/');
   await page.getByRole('link',{name:/Explore Ekiti/}).click();
-  await expect(page).toHaveURL(/\\/explore$/);
+  await expect(page).toHaveURL(/\/explore$/);
   await expect(page.getByRole('heading',{name:'Browse Categories'})).toBeVisible();
 });
 
