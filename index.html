@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#193e36" />
+    <title>Choose a location · Ekiti civic platform</title>
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to location selector</a>
+    <header>
+      <div class="wrap brand">
+        <span class="emblem" aria-hidden="true">⌖</span
+        ><span>Ekiti <small>Civic platform</small></span>
+      </div>
+    </header>
+    <main id="main" class="wrap">
+      <h1>Choose an incident location</h1>
+      <p class="intro">
+        Select the area where the incident happened. A ward or precise position is optional.
+      </p>
+      <div class="layout">
+        <section class="panel" aria-labelledby="area-title">
+          <h2 id="area-title">Administrative area</h2>
+          <div id="directory-status" role="status">Loading the area directory…</div>
+          <button id="retry" hidden>Retry directory</button>
+          <div id="fields"></div>
+          <p id="ward-help" class="hint"></p>
+          <label for="place">Town or landmark <small>Optional</small></label
+          ><input
+            id="place"
+            aria-describedby="place-hint"
+            maxlength="160"
+            list="settlements"
+            placeholder="Enter a local place name"
+          /><datalist id="settlements"></datalist>
+          <p class="hint" id="place-hint">Your own description of the location.</p>
+        </section>
+        <aside class="panel summary" aria-labelledby="summary-title">
+          <h2 id="summary-title">Your selection</h2>
+          <dl>
+            <dt>Local government area</dt>
+            <dd id="summary-lga">None selected</dd>
+            <dt>Electoral ward · manual</dt>
+            <dd id="summary-ward">Unspecified</dd>
+            <dt>Town or landmark</dt>
+            <dd id="summary-place">Unspecified</dd>
+          </dl>
+          <div id="evidence" role="status">No incident position confirmed.</div>
+        </aside>
+        <section class="panel position" aria-labelledby="position-title">
+          <h2 id="position-title">Incident position <small>Optional</small></h2>
+          <p>
+            Check a position against verified LGA boundaries. Confirm the point before sending it
+            for lookup.
+          </p>
+          <div class="actions">
+            <button id="gps">Use device GPS</button
+            ><button id="open-map" aria-expanded="false" aria-controls="map-box">
+              Open Ekiti map
+            </button>
+          </div>
+          <div id="map-box" hidden>
+            <div id="map" aria-label="Ekiti LGA boundary map"></div>
+            <p class="hint">
+              Select a point on the map, or enter its coordinates below. Boundaries © eHealth Africa
+              and Proxy Logics / GRID3 (2020),
+              <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.
+            </p>
+          </div>
+          <form id="coords">
+            <div class="pair">
+              <label
+                >Latitude<input
+                  id="lat"
+                  type="number"
+                  inputmode="decimal"
+                  min="-90"
+                  max="90"
+                  step="any"
+                  required /></label
+              ><label
+                >Longitude<input
+                  id="lon"
+                  type="number"
+                  inputmode="decimal"
+                  min="-180"
+                  max="180"
+                  step="any"
+                  required
+              /></label>
+            </div>
+            <button class="primary">Confirm incident position</button
+            ><button id="clear" type="button" hidden>Clear position</button>
+          </form>
+          <p id="point-status" role="status"></p>
+        </section>
+      </div>
+      <footer>Independent civic project · No reports are submitted from this page.</footer>
+    </main>
+    <script type="module" src="/src/web/main.ts"></script>
+  </body>
+</html>

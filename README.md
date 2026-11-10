@@ -27,12 +27,12 @@ The PostGIS resolver accepts citizen-confirmed incident coordinates. The audited
 
 ## Local development
 
-Use Node.js 22.16+, npm, Python 3, psql, PostgreSQL 16 and PostGIS. For the optional INEC name import, install Poppler (pdftotext). Set DATABASE_URL to a blank development database created from template0. Run migrations as its owner with permission to install PostGIS and create the NOLOGIN reader role. On an existing starter database, apply only migration 0002 if 0001 and its seed have already run.
+Use Node.js 22.16+, npm, Python 3, psql, PostgreSQL 16 and PostGIS. For the optional INEC name import, install Poppler (pdftotext). Set DATABASE_URL to a blank development database created from template0. Run migrations as its owner with permission to install PostGIS and create the NOLOGIN reader role. On an existing database, apply the missing migrations in numeric order.
 
 ```sh
 npm ci
 npm run test:all
-psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f db/migrations/0001_geography.sql -f db/migrations/0002_location.sql -f db/seeds/0001_ekiti_lgas.sql
+psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f db/migrations/0001_geography.sql -f db/migrations/0002_location.sql -f db/migrations/0003_location_directory.sql -f db/seeds/0001_ekiti_lgas.sql
 python3 scripts/import_geo.py
 curl -fLsS https://inecnigeria.org/documents/resources/rac/EKITI.pdf -o /tmp/ekiti-rac.pdf
 python3 scripts/import_geo.py --inec-pdf /tmp/ekiti-rac.pdf
@@ -44,6 +44,10 @@ python3 tests/import_checks.py
 Imports check the exact reviewed input hashes and run in one transaction. Tests use the imported state/LGA snapshot and roll back their writes. CI downloads the official PDF into runner temporary storage, checks its pinned SHA-256, imports it twice, then checks a fingerprint of all 177 stored serial/name/parent mappings and all 16 parents. A missing or changed source fails CI. The PDF is not redistributed.
 
 Grant ekiti_location_reader to a dedicated backend login with no existing table or schema-write privileges. Use its connection pool with the server entry point resolveIncidentLocation(db, latitude, longitude) in src/server/location.ts. Its database call accepts coordinates in latitude, longitude order. The RPC returns verified candidates, source IDs and edge flags. The server reports per-level status, hierarchy consistency and whether confirmation is required. Exact borders and overlapping matches require confirmation. Keep DATABASE_URL in the server environment. The planned Worker transport uses [Hyperdrive and a restricted origin login](docs/adr/0002-worker-postgres-transport.md).
+
+## Citizen location interface
+
+The mobile-first selector reads the verified area directory through the Worker. Citizens can select an LGA and ward, describe a town or landmark, and optionally confirm a GPS or map position for a PostGIS lookup. [Run the interface and browser checks](docs/citizen-location.md).
 
 ## Milestone 01 completion criteria
 
