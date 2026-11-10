@@ -171,7 +171,10 @@ export default function Report() {
       <label htmlFor="report-area">Or choose the local government area</label>
       <select id="report-area" value="" onChange={event => {
         const area = areas.find(item => item.id === event.target.value);
-        if (area) setState(current => chooseArea(current, area));
+        if (area) {
+          setPoint(null); setPositionNote('');
+          setState(current => chooseArea(current, area));
+        }
       }}>
         <option value="">Choose an LGA</option>
         {areas.map(area => <option key={area.id} value={area.id}>{area.name}</option>)}
@@ -206,7 +209,10 @@ export default function Report() {
       </dl>
       <div className="review-edit-links" role="group" aria-label="Make corrections">
         <button type="button" className="text-link" onClick={() => setState(current => revise(current, 'description'))}>Edit description</button>
-        <button type="button" className="text-link" onClick={() => setState(current => revise(current, 'location'))}>Change LGA</button>
+        <button type="button" className="text-link" onClick={() => {
+          setPoint(null); setPositionNote('');
+          setState(current => revise(current, 'location'));
+        }}>Change LGA</button>
         <button type="button" className="text-link" onClick={() => setState(current => revise(current, 'details'))}>Edit details</button>
       </div>
       <details className="conversation-disclosure">
