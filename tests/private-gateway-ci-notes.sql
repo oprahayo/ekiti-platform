@@ -1,0 +1,4 @@
+-- CI ONLY: disposable PostgreSQL/PostGIS database, no Supabase connection.
+-- The earlier proposal contains its own BEGIN/COMMIT. Set SESSION variables
+-- in the same psql process before running both proposals.
+-- This intentionally does not execute in staging:prepare or on main.

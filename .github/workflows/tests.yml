@@ -45,6 +45,17 @@ jobs:
         run: psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f tests/install-citizen-proposal.sql
       - name: Verify signed-in reviews, claims and privacy gates
         run: node --experimental-strip-types --test tests/citizen-postgis.mjs
+      - name: Apply private reporting proposals in disposable CI database only
+        run: |
+          psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 \
+            -c "SET SESSION ekiti.report_policy_approved='yes'; SET SESSION ekiti.private_gateway_reviewed='yes';" \
+            -f db/proposals/0004_reporting_private.sql \
+            -c 'BEGIN' \
+            -f db/proposals/0006_private_gateway.sql \
+            -c 'COMMIT'
+          psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -c "CREATE ROLE report_ci LOGIN PASSWORD 'ci'; GRANT ekiti_report_api TO report_ci"
+      - name: Test the real private gateway transaction and RLS on disposable PostGIS
+        run: node --experimental-strip-types --test tests/private-report-postgis.mjs
       - run: npm run test:postgis
       - run: psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f scripts/coverage.sql
 
