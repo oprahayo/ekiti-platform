@@ -46,31 +46,19 @@ class FakePrivateDb {
       return { rows: [], rowCount: null };
     }
     if (statement === 'ROLLBACK') { this.staged = null; this.committed = false; return { rows: [], rowCount: null }; }
-    if (statement.includes('FROM geo.areas')) {
-      if (statement.includes("area_kind = 'lga'") && this.invalidLga)
-        return { rows: [], rowCount: 0 };
-      if (statement.includes("area_kind = 'ward'") && this.invalidWard)
-        return { rows: [], rowCount: 0 };
-      return { rows: [{ id: parameters[0] }], rowCount: 1 };
-    }
-    if (statement.includes('INSERT INTO civic_private.reports')) {
+    if (statement.includes('civic_private.accept_private_report(')) {
+      if (this.invalidLga || this.invalidWard) {
+        const e = new Error('Invalid area'); e.code = '22023'; throw e;
+      }
       this.staged = { reference, digestHex: parameters[2], narrative: parameters[4] };
-      return { rows: [{ id: caseId, public_reference: reference, received_at: '2026-11-10T00:00:00.000Z' }], rowCount: 1 };
-    }
-    if (statement.includes('INSERT INTO civic_private.case_events')) {
-      assert.equal(parameters[0],caseId);
       this.log.push({ kind:'intake_accepted', at:'2026-11-10T00:00:00.000Z' });
-      return { rows: [], rowCount: 1 };
+      return { rows: [{ public_reference: reference, received_at: '2026-11-10T00:00:00.000Z' }], rowCount: 1 };
     }
-    if (statement.includes('FROM civic_private.reports WHERE')) {
+    if (statement.includes('civic_private.track_private_report(')) {
       const authorized = this.stored &&
         parameters[0] === this.stored.reference &&
         parameters[1] === this.stored.digestHex;
-      return { rows: authorized ? [{ id: caseId }] : [], rowCount: authorized ? 1 : 0 };
-    }
-    if (statement.includes('FROM civic_private.case_events')) {
-      assert.equal(parameters[0],caseId);
-      return { rows: [...this.log], rowCount:this.log.length };
+      return { rows: authorized ? [...this.log] : [], rowCount: authorized ? this.log.length : 0 };
     }
     throw new Error('Unexpected SQL statement: ' + statement);
   }
@@ -139,7 +127,7 @@ test('failure, invalid geography or duplicate request rolls back and cannot prod
     const input = {...valid,wardId:'inec-rac-ekiti-12'};
     if(mode==='invalidLga') db.invalidLga = true;
     if(mode==='invalidWard') db.invalidWard = true;
-    if(mode==='databaseFailure'||mode==='duplicate') db.fail='INSERT INTO civic_private.reports';
+    if(mode==='databaseFailure'||mode==='duplicate') db.fail='civic_private.accept_private_report(';
     if(mode==='duplicate') db.duplicate=true;
     if(mode==='commitFailure') db.fail='COMMIT';
     await assert.rejects(
