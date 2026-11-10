@@ -8,16 +8,23 @@
     "test": "node --experimental-strip-types --test tests/*.test.mjs",
     "check": "tsc --noEmit",
     "test:all": "npm run check && npm test",
-    "test:postgis": "node --experimental-strip-types --test tests/postgis.mjs"
+    "test:postgis": "node --experimental-strip-types --test tests/postgis.mjs",
+    "build": "vite build",
+    "dev": "wrangler dev",
+    "test:browser": "playwright test"
   },
   "engines": {
     "node": ">=22.16.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.65.0",
     "@types/pg": "^8.23.1",
-    "typescript": "^5.9.0"
+    "typescript": "^5.9.0",
+    "vite": "^8.3.7",
+    "wrangler": "^4.159.0"
   },
   "dependencies": {
+    "maplibre-gl": "^6.17.0",
     "pg": "^8.23.1"
   }
 }

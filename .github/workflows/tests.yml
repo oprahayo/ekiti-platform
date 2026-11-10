@@ -26,7 +26,7 @@ jobs:
       - name: Create isolated geographic database
         run: |
           psql postgres://postgres:ci@localhost:5432/postgres -c 'CREATE DATABASE ekiti_test TEMPLATE template0'
-          psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f db/migrations/0001_geography.sql -f db/migrations/0002_location.sql -f db/seeds/0001_ekiti_lgas.sql
+          psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f db/migrations/0001_geography.sql -f db/migrations/0002_location.sql -f db/migrations/0003_location_directory.sql -f db/seeds/0001_ekiti_lgas.sql
       - name: Import and verify the pinned INEC directory
         run: |
           command -v pdftotext || (sudo apt-get update && sudo apt-get install -y poppler-utils)
@@ -37,3 +37,12 @@ jobs:
           python3 tests/import_checks.py
       - run: npm run test:postgis
       - run: psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f scripts/coverage.sql
+
+      - name: Test the browser against the Worker and PostGIS reader
+        env:
+          CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE: postgres://location_browser:ci@127.0.0.1:5432/ekiti_test
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "CREATE ROLE location_browser LOGIN PASSWORD 'ci'; GRANT ekiti_location_reader TO location_browser"
+          npm run build
+          npx playwright install --with-deps chromium
+          npm run test:browser

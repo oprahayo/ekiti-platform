@@ -15,3 +15,6 @@ build/
 *.key
 service-account*.json
 __pycache__/
+test-results/
+playwright-report/
+.dev.vars*

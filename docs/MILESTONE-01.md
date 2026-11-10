@@ -22,10 +22,10 @@ This is an engineering milestone, **not** a working civic report intake site.
 - [x] Audit the GRID3 state, LGA and operational ward releases and record license terms
 - [x] Verified state and LGA imports, restricted server resolver and PostGIS integration tests
 - [ ] Verified electoral ward geometry and operational-to-electoral crosswalk
-- [ ] Full HTTP endpoint, rate limits and permissions
-- [ ] Location picker / optional map UI
+- [x] Read-only Worker area and resolution endpoints, rate limits and reader permissions
+- [x] Mobile-first location picker, optional GPS and MapLibre boundary map with browser checks
 - [ ] Deployment / staging validation
 
-The picker is a separate UI phase because a citizen must be able to self-declare an incident location when ward geometry is unavailable or a border match is ambiguous. Device GPS requires separate confirmation.
+The picker keeps a manual selection visible when ward geometry is unavailable or a border match is ambiguous. Device GPS requires separate incident confirmation.
 
 No application should claim geographic coverage is complete until the boundary audit proves it.
