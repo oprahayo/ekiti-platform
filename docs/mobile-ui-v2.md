@@ -12,7 +12,7 @@ Routes: `/` (Home), `/ask`, `/explore`, `/report`, `/track`, `/track/:publicId`,
 
 **This is an interface prototype, not a live civic reporting service.** Report categories, local draft storage, optional GPS and boundary lookup use real client logic. The 16-LGA/177-ward reference directory and LGA boundary resolver can still be read through the existing API. The prototype does **not** call `POST /api/reports`, write to Supabase, assign an official case, send reports to agencies, or notify anyone.
 
-Explore business/place records and Scores metrics are visibly labeled **illustrative**. The example case `DEMO-EKP-2026-00001` and token `DEMO-ONLY-NOT-VALID` cannot access real reports. Track events are fiction with explicit evidence-status labels. No actual event is displayed as a recorded achievement. A live reporting product requires [intake governance and privacy approval](reporting-governance.md).
+Ask is now backed by a live `/api/ask` deterministic, source-backed answer service for supported English and Yorùbá topics; press-release RSS is fetched on demand with a dated fallback and explicit limitations. The app has **no unrestricted generative AI model or paid API key**. See [Ask Ekiti data provenance](ask-ekiti-sources.md). Explore business/place records and Scores metrics are visibly labeled **illustrative**. The example case `DEMO-EKP-2026-00001` and token `DEMO-ONLY-NOT-VALID` cannot access real reports. Track events are fiction with explicit evidence-status labels. No actual event is displayed as a recorded achievement. A live reporting product requires [intake governance and privacy approval](reporting-governance.md).
 
 ## Why this interface differs from the previous version
 
@@ -21,7 +21,7 @@ Explore business/place records and Scores metrics are visibly labeled **illustra
 - Rich features belong to their own screens, not the home screen. Search/map and voice are opt-in.
 - Phone-first tokens are used for light and dark themes, at least 44px targets, system fonts, visible focus, motion limits and reduced-motion.
 - A single source of illustrative place fixtures powers Explore list filtering. **No false map pins are shown**; the optional map contains actual reference LGA geometry and explicitly says demo places are not geocoded.
-- Voice uses the browser's optional SpeechRecognition API when supported. Voice audio is handled by the browser's speech implementation; no audio is uploaded to Ekiti Civic. The transcript is editable before a user chooses Send.
+- Voice uses the browser's optional SpeechRecognition API in en-NG or yo-NG when supported, and replies can be played via the browser's speech synthesis voices. Voice audio is handled by the browser's speech implementation; no audio is uploaded to Ekiti Civic. The transcript is editable before a user chooses Send.
 - Local report drafts autosave after 500ms under `ekiti-report-preview-v2`. This may expose sensitive text on a shared device: clear the draft after use. No draft narrative is written to the Worker or service worker cache.
 - The static service worker caches the public HTML/JS/CSS app shell and already-loaded chunks for offline refresh, but **never** `/api/*`, report bodies or tracking secrets.
 - Mock report completion displays no green recorded check or apparent official acknowledgement. Example tokens are intentionally unusable.
