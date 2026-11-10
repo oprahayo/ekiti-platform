@@ -21,7 +21,8 @@ function expectCode(input, code, approved = policy) {
 }
 
 test('intake fails closed until a reviewed consent policy is explicitly available', () => {
-  expectCode(example, 'policy_unavailable', undefined);
+  assert.throws(() => parseReportInput(JSON.stringify(example)),
+    (error) => error instanceof ReportInputError && error.code === 'policy_unavailable');
   expectCode(example, 'policy_unavailable', '');
   expectCode(example, 'policy_unavailable', '   ');
   expectCode({ ...example, consent: false }, 'consent_required');
