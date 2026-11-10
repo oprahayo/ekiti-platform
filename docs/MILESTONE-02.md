@@ -1,6 +1,6 @@
 # Milestone 02 — Citizen reporting
 
-**First feature.** A citizen can prepare a complaint, commendation or issue, edit its description, and download a plain-text draft with the current area selection. A download includes the manual ward label and boundary evidence. Text stays in the page until the user chooses a file download. Reloading normally discards the in-memory draft. Files the citizen downloads remain under their control. No new server write permission or public record is created.
+**Status as of 10 November 2026:** Private draft tool shipped. The anonymous intake input contract and proposed restricted schema are implemented but not wired to an HTTP endpoint or applied to any database. Policy and retention decisions are required first. See [reporting governance](reporting-governance.md).\n\n**First feature.** A citizen can prepare a complaint, commendation or issue, edit its description, and download a plain-text draft with the current area selection. A download includes the manual ward label and boundary evidence. Text stays in the page until the user chooses a file download. Reloading normally discards the in-memory draft. Files the citizen downloads remain under their control. No new server write permission or public record is created.
 
 | Sequence | Integration and acceptance |
 | --- | --- |
