@@ -43,7 +43,7 @@ button { cursor: pointer; }
 .hero h1 em { font-style: normal; color: var(--forest); }
 .hero-lede { color: #3b5047; max-width: 540px; font-size: .99rem; margin: 0 0 18px; }
 .hero-actions { display: flex; flex-direction: column; align-items: stretch; gap: 9px; }
-.action-primary { min-height: 48px; display: inline-flex; justify-content: space-between; align-items: center; gap: 25px; background: var(--forest); color: #fff; padding: 11px 18px; text-decoration: none; font-weight: 700; }
+.action-primary { min-height: 48px; display: inline-flex; justify-content: space-between; align-items: center; gap: 25px; background: var(--forest); color: #ffffff; padding: 11px 18px; text-decoration: none; font-weight: 700; }
 .action-primary:hover { background: #104b31; }
 .action-text { min-height: 44px; display: inline-flex; align-items: center; gap: 11px; width: fit-content; font-weight: 700; color: var(--water); }
 .hero-context { border-top: 1px solid #c7c8ba; margin-top: 27px; padding-top: 14px; }
@@ -66,7 +66,7 @@ label small { font-size: .81rem; font-weight: 400; color: var(--muted); }
 input,select,textarea { width: 100%; min-height: 48px; padding: 10px 12px; color: var(--ink); background: #fff; border: 1px solid #82998b; border-radius: 2px; }
 input::placeholder,textarea::placeholder { color: #677b6e; }
 input:disabled,select:disabled { color: #646b67; background: #edf0eb; }
-select { background-color: #fff; }
+select { background-color: #ffffff; }
 textarea { resize: vertical; }
 .hint,#directory-status { color: var(--muted); font-size: .81rem; margin: 7px 0 0; line-height: 1.6; }
 #ward-help { margin-top: 8px; }
