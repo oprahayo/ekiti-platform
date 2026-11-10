@@ -23,6 +23,9 @@ test('English and Yoruba questions resolve to known topics without inventing ans
   assert.equal(topicFor('Where can I go to club in Ekiti?'), 'tourism');
   assert.equal(topicFor('2026 Citizens budget in Yoruba'), 'budget');
   assert.equal(topicFor('What is the Works ministry number?'), 'ministries');
+  assert.equal(topicFor('Who is the current governor of Ekiti?'), 'governor');
+  assert.equal(topicFor('What is the capital of Ekiti?'), 'capital');
+  assert.equal(topicFor('When was Ekiti created?'), 'history');
   assert.equal(topicFor('Who will win the election?'), 'unknown');
 });
 
@@ -100,4 +103,15 @@ test('Ask API is same-origin, rate-limited, input-bounded and avoids database ac
     LOCATION_LIMIT: { limit: async () => ({ success: false }) },
   });
   assert.equal(limited.status, 429);
+});
+
+test('state capital and 2026 governor reference have dated official evidence', async () => {
+  const governor = await answerQuestion('Who is the governor of Ekiti?', 'en', fetcher, now);
+  assert.equal(governor.topic, 'governor');
+  assert.match(governor.answer, /Biodun Oyebanji/);
+  assert.equal(governor.sources[0].published, '2026-10-16');
+  const capital = await answerQuestion('What is the capital of Ekiti?', 'en', fetcher, now);
+  assert.equal(capital.topic, 'capital');
+  assert.match(capital.answer, /Ado-Ekiti/);
+  assert.ok(capital.sources[0].url.startsWith('https://www.ekitistate.gov.ng/'));
 });
