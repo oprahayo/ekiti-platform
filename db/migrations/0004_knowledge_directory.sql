@@ -95,16 +95,15 @@ CREATE TABLE civic.claim_requests (
   reviewed_at timestamptz
 );
 ALTER TABLE civic.sources ENABLE ROW LEVEL SECURITY;
-ALTER TABLE civic.sources FORCE ROW LEVEL SECURITY;
 ALTER TABLE civic.knowledge ENABLE ROW LEVEL SECURITY;
-ALTER TABLE civic.knowledge FORCE ROW LEVEL SECURITY;
 ALTER TABLE civic.places ENABLE ROW LEVEL SECURITY;
-ALTER TABLE civic.places FORCE ROW LEVEL SECURITY;
 ALTER TABLE civic.review_queue ENABLE ROW LEVEL SECURITY;
 ALTER TABLE civic.review_queue FORCE ROW LEVEL SECURITY;
 ALTER TABLE civic.claim_requests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE civic.claim_requests FORCE ROW LEVEL SECURITY;
 
+-- Table-owner SECURITY DEFINER functions bypass RLS, but reader roles do not.
+-- The two private queues use FORCE RLS because they have no public gateway.
 -- Explicit, bounded, status-filtered read gateway to the existing location role.
 CREATE FUNCTION civic.public_knowledge(_query text, _limit int DEFAULT 10)
 RETURNS TABLE (
@@ -158,7 +157,16 @@ RETURNS TABLE (
   latitude double precision,longitude double precision,
   owner_claim_state text,source_url text,publisher text,reviewed_at timestamptz
 ) LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $$
-  SELECT * FROM civic.public_places(NULL,NULL,NULL,30) WHERE id=_id;
+  SELECT p.id,p.name,p.category,p.lga_id,p.description,p.address_text,
+         p.contact_phone,p.website_url,
+         CASE WHEN p.photo_license IS NOT NULL THEN p.photo_url ELSE NULL END,
+         CASE WHEN p.coordinates_reviewed_at IS NOT NULL THEN p.latitude ELSE NULL END,
+         CASE WHEN p.coordinates_reviewed_at IS NOT NULL THEN p.longitude ELSE NULL END,
+         p.owner_claim_state,p.source_url,s.publisher,p.reviewed_at
+  FROM civic.places p JOIN civic.sources s ON s.id=p.source_id
+  JOIN geo.areas a ON a.id=p.lga_id
+  WHERE p.id=_id AND p.review_state='published' AND s.review_state='approved'
+    AND a.area_kind='lga' AND a.verification_state='verified';
 $$;
 
 REVOKE ALL ON ALL TABLES IN SCHEMA civic FROM PUBLIC;
