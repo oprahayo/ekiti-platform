@@ -7,7 +7,7 @@ Design target: the simplicity of an ordinary messaging conversation.
 - Citizen and assistant turns use familiar left/right message bubbles with no audio, microphone, speech recognition, text-to-speech or voice overlays. Browser speech APIs are not accessed.
 - Reporting and tracking remain conversational; their existing safeguards stay in place. Reports are still **private on-device drafts**, not submitted. Tracking still explicitly says there are no live cases.
 - Asking a factual question uses the existing source-backed endpoint; natural language reporting, tracking and service-search requests route to those respective workflows without sending private report narratives to the knowledge API.
-- The bottom navigation has four destinations; **Profile** remains in the header.
+- Five compact bottom navigation destinations remain so Profile stays discoverable on narrow screens. The oversized floating Report tab was removed.
 - Input uses regular typing and Enter-to-send, with Shift+Enter for multiline report or tracking replies. The composer stays visible above the mobile bottom bar.
 - Dark theme, English/Yoruba support, independently verified source links and opt-in location checking remain.
 
