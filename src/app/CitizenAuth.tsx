@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {
   authenticateSession, authorizedRpc, configuredAuth, readTabSession, refreshSession,
-  requestEmailCode, requestSmsCode, verifySmsCode, phoneOtpEnabled, privateHistoryEnabled,
+  requestEmailCode, requestSmsCode, verifySmsCode, phoneOtpEnabled, privateHistoryEnabled, caseLinkEnabled,
   saveTabSession, signOutSession, verifyEmailCode,
   type CitizenSession,
 } from './auth-api.ts';
@@ -12,13 +12,15 @@ interface AuthState {
   account: { id: string; email: string; phone?:string } | null;
   phoneAvailable:boolean;
   reportHistoryAvailable:boolean;
+  caseLinksAvailable:boolean;
   requestCode(email: string): Promise<void>;
   verifyCode(email: string, code: string): Promise<void>;
   requestPhoneCode(phone:string):Promise<void>;
   verifyPhoneCode(phone:string,code:string):Promise<void>;
   signOut(): Promise<void>;
   rpc<T>(name: 'civic_submit_review'|'civic_request_claim'|'civic_my_reviews'|'civic_my_claims' |
-    'civic_link_private_report'|'civic_my_private_reports'|'civic_unlink_private_report',
+    'civic_link_private_report'|'civic_my_private_reports'|'civic_unlink_private_report'|
+    'civic_request_case_link'|'civic_redeem_case_link',
     body: Record<string,unknown>): Promise<T>;
 }
 const AuthContext = React.createContext<AuthState | null>(null);
@@ -71,6 +73,8 @@ export function CitizenAuthProvider({ children }: { children: React.ReactNode })
     if (!config || !session) throw new Error('Sign in to send this request.');
     if(name.startsWith('civic_')&&name.includes('private_report')&&!privateHistoryEnabled())
       throw new Error('Linked private reports have not been activated.');
+    if((name==='civic_request_case_link'||name==='civic_redeem_case_link')&&!caseLinkEnabled())
+      throw new Error('Private case message links are not active.');
     try {
       // The direct, authenticated PostgREST RPC verifies its own JWT and role.
       const result = await authorizedRpc<unknown>(config,session,name,body);
@@ -88,6 +92,7 @@ export function CitizenAuthProvider({ children }: { children: React.ReactNode })
   const value: AuthState = {
     available: Boolean(config),restoring,account: session?.identity ?? null,
     phoneAvailable:phoneOtpEnabled(),reportHistoryAvailable:privateHistoryEnabled(),
+    caseLinksAvailable:caseLinkEnabled(),
     requestCode,verifyCode,requestPhoneCode,verifyPhoneCode,signOut,rpc,
   };
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
