@@ -106,8 +106,12 @@ test('Sprint 13 scoped private intake proposal is opt-in, default-off, audited a
       assert.deepEqual(await list(actor,'ikere'),[]);
       assert.deepEqual(await list(auditor),[]);
       assert.equal((await list(admin)).length,3);
+      await db.query('SAVEPOINT bad_intake_kind');
       await assert.rejects(list(actor,null,'Anything'),/Invalid intake filters/);
+      await db.query('ROLLBACK TO SAVEPOINT bad_intake_kind');
+      await db.query('SAVEPOINT bad_intake_limit');
       await assert.rejects(list(actor,null,null,null,1000),/Invalid intake filters/);
+      await db.query('ROLLBACK TO SAVEPOINT bad_intake_limit');
     });
 
     await t.test('moderators propose safeguarding and duplicate review only, no assignment',async()=>{
