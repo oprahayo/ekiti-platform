@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test('capture honest desktop and mobile admin visual audit', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
-  await page.goto('/');
+  await page.goto('/?view=all');
   await expect(page.getByText('Demo only.')).toBeVisible();
   await page.screenshot({ path: 'test-results/admin-review/desktop-cases.png', fullPage: true });
   await page.getByRole('button', { name: /Moderation/ }).click();

@@ -1,0 +1,220 @@
+/* Ekiti Civic operations — map-led adaptation of the owner's Precision Authority reference.
+ * No external fonts, mock Chicago raster basemap, fabricated live GPS or fake agency KPI.
+ */
+.admin-app {
+  --precision-ink:#0b1c30;
+  --precision-subtle:#647181;
+  --precision-paper:#f8f9ff;
+  --precision-side:#eff4ff;
+  --precision-green:#006d35;
+  --precision-red:#bd282b;
+  background:var(--precision-paper);
+  color:var(--precision-ink);
+}
+.admin-app .sidebar{
+  background:var(--precision-side);
+  color:#273341;
+  padding:26px 13px 19px;
+}
+.admin-app .brand{color:#101820;padding:0 11px 39px;gap:10px}
+.admin-app .brand-mark{
+  border-radius:3px;background:#071627;color:#fff;height:37px;width:37px;font-size:29px;
+}
+.admin-app .brand-mark span{color:#e44843}
+.admin-app .brand strong{font-size:17px;color:#071627;font-weight:800;letter-spacing:-.5px}
+.admin-app .brand small{font-size:10px;color:#4c5865;text-transform:uppercase;letter-spacing:.75px}
+.admin-app .sidebar-section-label{color:#536070;font-size:10px}
+.admin-app .nav-link{color:#222e3c;border-radius:2px;font-size:13px;padding:14px 12px;gap:11px}
+.admin-app .nav-glyph{color:#46525d}
+.admin-app .nav-link:hover{background:#dce9ff;color:#071627}
+.admin-app .nav-link.active{background:#080b11;color:#fff}
+.admin-app .nav-link.active .nav-glyph{color:#fff}
+.admin-app .nav-count{color:inherit}
+.admin-app .sidebar-bottom{border-top:1px solid #d9e2ef;background:transparent}
+.admin-app .sidebar-bottom strong{color:#243343}
+.admin-app .sidebar-bottom small{color:#617183}
+.admin-app .workspace-indicator{background:#006d35;box-shadow:0 0 0 4px #d3f2df}
+.admin-app .workspace-header{background:#fff;min-height:66px;height:auto;padding:10px clamp(16px,2.4vw,36px);gap:16px}
+.admin-app .header-title{color:#778291;font-size:13px;flex:none}
+.admin-app .header-title strong{font-size:16px;color:#101820}
+.admin-app .precision-top-search{display:flex;align-items:center;gap:10px;background:#eff4ff;
+  height:40px;padding:0 15px;max-width:430px;flex:1;min-width:130px}
+.admin-app .precision-top-search span[aria-hidden]{font-size:24px;line-height:1;color:#4e5a68}
+.admin-app .precision-top-search input{width:100%;height:100%;border:0;background:transparent;
+  outline:none;color:#071627;font-size:13px;min-width:0}
+.admin-app .precision-top-search:focus-within{outline:2px solid #164b85;outline-offset:2px}
+.admin-app .precision-top-search input::placeholder{color:#8390a1}
+.admin-app .header-actions{gap:11px}
+.admin-app .ops-alert-shortcut{border:0;background:#eff4ff;color:#132138;border-radius:2px;
+  min-height:35px;font-size:12px}
+.admin-app .ops-alert-shortcut strong{background:#dce9ff;color:#9e1b27}
+.admin-app .environment-pill{background:#fff7e9;color:#64431c;border-color:#f1e6cf;border-radius:2px}
+.admin-app .avatar{border-radius:2px;background:#0b1c30;color:#fff}
+.admin-app .workspace-notice{background:#f2f4f9;color:#586575;border-color:#e5e9f1;
+  padding:7px clamp(16px,2.4vw,36px)}
+.admin-app .workspace-notice strong{color:#17283a}
+.admin-app .workspace-shell{background:var(--precision-paper)}
+
+.admin-app .precision-dashboard{max-width:none;padding:clamp(16px,2.5vw,35px);
+  width:100%;align-self:stretch;overflow-y:auto}
+.precision-kicker{display:block;font-size:10px;line-height:1.4;font-weight:800;
+  letter-spacing:1.3px;text-transform:uppercase;color:#4d5968}
+.precision-intro{display:flex;justify-content:space-between;align-items:center;
+  gap:14px;margin-bottom:21px}
+.precision-intro h1{font-size:clamp(22px,2vw,29px);line-height:1.18;letter-spacing:-.75px;
+  color:#101d31;margin:4px 0 7px}
+.precision-intro p{font-size:12px;line-height:1.55;color:#718093}
+.precision-status{font-size:11px;font-weight:650;color:#6c4b1d;background:#fff6e5;
+  padding:9px 11px;text-align:right;max-width:230px}
+.precision-map-grid{display:grid;grid-template-columns:minmax(0,2.06fr) minmax(235px,.98fr);
+  gap:22px;align-items:stretch;min-width:0}
+.precision-map-grid>.ekiti-ops-map{min-width:0;background:#fff;padding:17px 18px 15px;
+  border:0;border-radius:2px;box-shadow:0 1px 2px #0b1c3008}
+.precision-map-grid .ekiti-ops-map h2{color:#0b1c30;font-size:16px}
+.precision-map-grid .ops-eyebrow{color:#5a6573}
+.precision-map-grid .ops-map-heading p{color:#7d8996}
+.precision-map-grid .ops-map-demo{border:0;border-radius:2px;background:#f0f4f9;color:#4c5c6d}
+.precision-map-grid .ekiti-map-canvas{height:clamp(300px,30vw,430px);
+  border-radius:2px;background:#596470}
+.precision-map-grid .ops-map-legend{margin:9px 0;color:#596676;font-size:10px}
+.precision-map-grid .ops-legend-none{background:#718090}
+.precision-map-grid .ops-legend-one{background:#48a37c}
+.precision-map-grid .ops-legend-many{background:#006d35}
+.precision-map-grid .ops-map-areas{grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:3px;max-height:94px;overflow:auto;padding:1px}
+.precision-map-grid .ops-map-areas button{border:0;border-radius:0;background:#f2f5fa;color:#455466;
+  min-height:29px;padding:5px 6px;font-size:10px}
+.precision-map-grid .ops-map-areas button:hover,
+.precision-map-grid .ops-map-areas button:focus-visible{background:#dce9ff}
+.precision-map-grid .ops-map-areas button strong{color:#006d35}
+.precision-map-grid .ops-map-source{font-size:10px;color:#7c8994;margin:9px 0 0;line-height:1.45}
+.precision-signals{min-width:0;display:flex;flex-direction:column;gap:18px}
+.precision-metric{background:#fff;padding:22px 23px 17px;position:relative;
+  border-left:4px solid var(--precision-green);min-height:168px;display:flex;flex-direction:column}
+.precision-metric-red{border-left-color:var(--precision-red)}
+.precision-metric-heading{font-size:10px;text-transform:uppercase;letter-spacing:1px;
+  font-weight:750;color:#394654}
+.precision-metric-number{font-size:clamp(32px,3.3vw,47px);letter-spacing:-1.8px;
+  font-weight:800;line-height:1.22;margin:8px 0 4px;color:#0b1c30}
+.precision-metric p{font-size:11px;line-height:1.5;color:#728092;max-width:280px}
+.precision-metric-bars{display:flex;gap:5px;align-items:end;margin-top:auto;padding-top:16px;height:46px}
+.precision-metric-bars span{width:15%;background:#e5ecf7;display:block;min-height:8px}
+.precision-metric-bars span:last-child{background:var(--precision-green)}
+.precision-metric-red .precision-metric-bars span:last-child{background:var(--precision-red)}
+.precision-proof{padding:14px 17px;background:#eff4ff;flex:1;min-height:93px}
+.precision-proof strong{display:block;font-size:15px;margin:6px 0;color:#15273b}
+.precision-proof p{font-size:11px;line-height:1.5;color:#687589}
+
+.precision-table-section{margin-top:24px;background:#fff;min-width:0}
+.precision-table-head{display:flex;justify-content:space-between;align-items:end;
+  gap:18px;padding:19px 24px;flex-wrap:wrap}
+.precision-table-head h2{font-size:19px;line-height:1.25;letter-spacing:-.35px;
+  margin-top:5px;color:#111f31}
+.precision-table-head p{font-size:11px;color:#778596;margin-top:5px}
+.precision-table-filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.precision-table-filters label{display:flex;gap:7px;align-items:center;font-size:11px;
+  font-weight:700;color:#435269}
+.precision-table-filters select{min-width:100px;max-width:155px;border:0;border-radius:0;
+  background:#eff4ff;color:#22344a;padding:9px 11px;font-size:11px}
+.precision-table-scroll{width:100%;overflow-x:auto}
+.precision-table-section table{width:100%;border-collapse:collapse;text-align:left;
+  font-size:12px;min-width:750px}
+.precision-table-section th{background:#f5f7fb;color:#5c6978;text-transform:uppercase;
+  font-size:10px;font-weight:800;letter-spacing:.7px;padding:14px 18px;white-space:nowrap;text-align:left}
+.precision-table-section td{padding:14px 18px;vertical-align:middle;color:#2b3949}
+.precision-table-section tbody tr:nth-child(even){background:#fcfdff}
+.precision-table-section tbody tr:hover{background:#f1f6ff}
+.precision-table-section td strong{display:block;color:#122033;font-size:12px;line-height:1.45}
+.precision-table-section td small{display:block;color:#778494;font-size:10px;
+  margin-top:4px;line-height:1.4}
+.precision-priority{display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+.precision-priority i{height:8px;width:8px;border-radius:50%;background:#b7c2c9}
+.precision-priority.high i{background:#cf4f3e}
+.precision-queue{font-weight:650;white-space:nowrap;color:#2d4e46}
+.precision-queue.escalated{color:#a22b2b}
+.precision-unverified{background:#f3f5f9;color:#647487;padding:6px 8px;
+  font-size:10px;white-space:nowrap}
+.precision-open-case{border:0;background:#090b10;color:#fff;font-weight:800;font-size:10px;
+  letter-spacing:.3px;text-transform:uppercase;min-height:34px;padding:8px 12px;white-space:nowrap}
+.precision-open-case:hover,.precision-open-case:focus-visible{background:#164e37}
+.precision-empty{padding:22px;color:#657589}
+.precision-empty button{margin-left:12px;background:#eff4ff;border:0;padding:7px 10px;color:#19334d}
+.precision-table-footer{background:#f9faff;padding:13px 20px;display:flex;
+  justify-content:space-between;align-items:center;gap:10px;font-size:11px;color:#607187}
+.precision-table-footer button{border:0;background:transparent;color:#1c4738;font-size:11px;
+  font-weight:750;text-align:right}
+.precision-alerts-panel{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,.7fr);
+  align-items:start;gap:22px;margin-top:24px}
+.precision-alerts-panel>.ops-alerts,.precision-agency-panel{background:#fff;padding:22px;
+  min-width:0;border:0;border-radius:2px}
+.precision-alerts-panel .ops-alerts h2{color:#112135}
+.precision-alerts-panel .ops-alert-items li{padding:10px 0}
+.precision-agency-panel h2{font-size:18px;line-height:1.3;margin:9px 0;color:#1b2b3e}
+.precision-agency-panel p{font-size:12px;line-height:1.75;color:#657589}
+.precision-next-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:17px}
+.precision-next-actions button{border:0;background:#eff4ff;color:#1e3d35;padding:9px 12px;
+  font-size:11px;font-weight:800}
+
+@media(max-width:1240px){
+  .precision-map-grid{grid-template-columns:minmax(0,1.65fr) minmax(205px,.75fr);gap:14px}
+  .precision-metric{padding:18px}
+  .precision-signals{gap:12px}
+}
+@media(max-width:1020px){
+  .admin-app{grid-template-columns:206px minmax(0,1fr)}
+  .precision-map-grid{grid-template-columns:1fr}
+  .precision-signals{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+  .precision-proof{grid-column:1 / -1}
+  .precision-alerts-panel{grid-template-columns:1fr}
+  .precision-map-grid .ekiti-map-canvas{height:380px}
+}
+@media(max-width:760px){
+  .admin-app .sidebar{padding:0;background:#eff4ff;height:calc(64px + env(safe-area-inset-bottom))}
+  .admin-app .main-nav{height:64px}
+  .admin-app .nav-link{font-size:10px;padding:4px 0}
+  .admin-app .nav-link.active{background:#111a28;color:#fff}
+  .admin-app .workspace-header{display:flex;min-height:58px;padding:8px 12px;gap:8px}
+  .admin-app .header-title strong{font-size:13px}
+  .admin-app .header-title>span:not(.header-mobile-brand){display:none}
+  .admin-app .precision-top-search{height:35px;max-width:none;min-width:60px;
+    padding:0 8px;gap:4px}
+  .admin-app .precision-top-search input{font-size:11px}
+  .admin-app .environment-pill{padding:5px;font-size:8px}
+  .admin-app .ops-alert-shortcut{padding:5px;font-size:11px}
+  .admin-app .ops-alert-shortcut span{display:none}
+  .admin-app .header-actions{gap:5px}
+  .admin-app .avatar,.admin-app .reset-button{display:none}
+  .admin-app .precision-dashboard{padding:13px 12px 25px}
+  .precision-intro{align-items:flex-start;gap:7px;flex-wrap:wrap}
+  .precision-intro h1{font-size:22px}
+  .precision-status{padding:5px 8px;font-size:10px;text-align:left}
+  .precision-map-grid{gap:12px}
+  .precision-map-grid>.ekiti-ops-map{padding:13px}
+  .precision-map-grid .ekiti-map-canvas{height:315px}
+  .precision-map-grid .ops-map-areas{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .precision-signals{gap:10px}
+  .precision-metric{min-height:145px;padding:13px}
+  .precision-metric-number{font-size:29px}
+  .precision-metric p{font-size:10px}
+  .precision-metric-bars{height:36px}
+  .precision-table-section{margin-top:15px}
+  .precision-table-head{padding:15px;gap:12px}
+  .precision-table-filters{width:100%}
+  .precision-table-filters select{min-width:105px}
+  .precision-table-footer{flex-direction:column;align-items:flex-start;padding:12px}
+  .precision-alerts-panel{gap:12px;margin-top:15px}
+  .precision-alerts-panel>.ops-alerts,.precision-agency-panel{padding:14px}
+}
+@media(max-width:360px){
+  .admin-app .header-mobile-brand{display:none}
+  .admin-app .workspace-header{gap:5px;padding:6px 7px}
+  .admin-app .header-title strong{font-size:12px}
+  .admin-app .precision-top-search input::placeholder{color:transparent}
+  .admin-app .precision-top-search{min-width:42px}
+  .admin-app .header-actions{gap:3px}
+  .admin-app .ops-alert-shortcut{min-width:30px;padding:4px}
+  .precision-signals{grid-template-columns:1fr}
+  .precision-proof{grid-column:auto}
+  .precision-metric{min-height:115px}
+  .precision-map-grid .ops-map-areas{grid-template-columns:repeat(2,minmax(0,1fr))}
+}

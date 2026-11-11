@@ -49,15 +49,15 @@ export default function EkitiOpsMap({cases,onSelectArea}:{
          version:8,
          sources:{lgas:{type:'geojson',data:boundariesUrl}},
          layers:[
-           {id:'map-paper',type:'background',paint:{'background-color':'#f6f8f6'}},
+           {id:'map-paper',type:'background',paint:{'background-color':'#56616f'}},
            {id:'ekiti-areas',type:'fill',source:'lgas',
-             paint:{'fill-color':'#e7efe9','fill-opacity':0.95}},
+             paint:{'fill-color':'#718090','fill-opacity':0.95}},
            {id:'ekiti-edges',type:'line',source:'lgas',
-             paint:{'line-color':'#a6b9ac','line-width':1.25}},
+             paint:{'line-color':'#d1dbe4','line-width':1.25}},
            {id:'ekiti-names',type:'symbol',source:'lgas',
              layout:{'text-field':['get','lganame'],'text-size':11,
                'text-allow-overlap':false},
-             paint:{'text-color':'#274237','text-halo-color':'#fff',
+             paint:{'text-color':'#ffffff','text-halo-color':'#3e4b59',
                'text-halo-width':1.5}},
          ],
        },
@@ -81,10 +81,10 @@ export default function EkitiOpsMap({cases,onSelectArea}:{
    if(!map||!ready)return;
    const expression:unknown[]=['match',['get','lganame']];
    for(const area of areas){
-     expression.push(area,counts[area]===0?'#e7efe9':
-       counts[area]>1?'#3d8a73':'#a0c9b5');
+     expression.push(area,counts[area]===0?'#718090':
+       counts[area]>1?'#006d35':'#48a37c');
    }
-   expression.push('#e7efe9');
+   expression.push('#718090');
    map.setPaintProperty('ekiti-areas','fill-color',expression as maplibregl.ExpressionSpecification);
  },[counts,ready]);
  return <section className="ekiti-ops-map" aria-label="Ekiti LGA map and sample report counts">
