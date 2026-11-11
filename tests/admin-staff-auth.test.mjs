@@ -117,3 +117,50 @@ test('invalid code, unapproved membership and malicious API responses fail close
   }});
   await assert.rejects(unknownRole.client.me(aal2),StaffRequestError);
 });
+
+test('Sprint 13 client sends bounded filters, verifies platform-only payload and proposes without office claims',async()=>{
+  const reviewId='92345678-1234-4234-8234-123456789012';
+  const result=mock({
+    '/admin/api/intake':{items:[{...caseRow,evidenceAccess:'blocked_pending_safeguarding',
+      description:'MUST BE REMOVED'}],paginationAvailable:false,
+      scope:'independent_platform_only'},
+    ['/admin/api/intake/'+caseId+'/proposals']:{
+      result:'queued',proposalId:reviewId,reviewOnly:true,
+      officeNotified:false,caseChanged:false,
+    },
+  });
+  const rows=await result.client.listIntake(aal2,{
+    lgaId:'ado-ekiti',kind:'Issue',state:'intake_accepted',
+  });
+  assert.equal(rows.length,1);
+  assert.equal(rows[0].description,undefined);
+  assert.equal(rows[0].evidenceAccess,'blocked_pending_safeguarding');
+  const q=result.calls[0];
+  assert.equal(q.url,admin+'/admin/api/intake?limit=20&lga=ado-ekiti&kind=Issue&state=intake_accepted');
+  const proposal=await result.client.proposeIntake(aal2,caseId,'safeguarding_review',null,1);
+  assert.deepEqual(proposal,{result:'queued',proposalId:reviewId,reviewOnly:true,
+    officeNotified:false,caseChanged:false});
+  const call=result.calls[1];
+  assert.equal(call.options.method,'POST');
+  assert.equal(call.options.cache,'no-store');
+  assert.equal(call.options.credentials,'omit');
+  assert.deepEqual(JSON.parse(call.options.body),
+    {kind:'safeguarding_review',targetLgaId:null,expectedRevision:1});
+  assert.ok(!call.url.includes(aal2));
+  for(const filters of [
+    {lgaId:'../ikere',kind:null,state:null},
+    {lgaId:null,kind:'Emergency',state:null},
+    {lgaId:null,kind:null,state:'government_received'},
+  ])await assert.rejects(result.client.listIntake(aal2,filters),StaffRequestError);
+  await assert.rejects(result.client.proposeIntake(
+    aal2,caseId,'assignment_review','',1),StaffRequestError);
+  await assert.rejects(result.client.proposeIntake(
+    aal2,caseId,'safeguarding_review','ikere',1),StaffRequestError);
+  const compromised=mock({
+    '/admin/api/intake':{items:[{...caseRow,evidenceAccess:'published'}],
+      paginationAvailable:false,scope:'independent_platform_only'},
+  });
+  await assert.rejects(compromised.client.listIntake(aal2,{
+    lgaId:null,kind:null,state:null,
+  }),StaffRequestError);
+});
