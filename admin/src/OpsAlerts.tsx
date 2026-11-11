@@ -95,7 +95,7 @@ export function OpsAlerts({cases,onOpenCase}:{
      <button type="button" onClick={()=>void preview()} disabled={!sounds}>
        Test chime
      </button>
-     <button type="button" onClick={()=>setReadIds(alerts.map(a=>a.id))}
+     <button type="button" onClick={()=>setReadIds(previous=>[...new Set([...previous,...alerts.map(a=>a.id)])])}
        disabled={unread.length===0}>Mark sample alerts read</button>
    </div>
    {error&&<p className="ops-sound-error" role="status">{error}</p>}
