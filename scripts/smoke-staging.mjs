@@ -19,6 +19,16 @@ async function request(path, options) {
 }
 assert.match(await (await request('/')).text(), /id="root"/);
 assert.match(await (await request('/explore')).text(), /id="root"/);
+const expectedSha=process.argv[3];
+if(expectedSha){
+  assert.match(expectedSha,/^[a-f0-9]{40}$/,'Expected SHA must be a Git commit');
+  const manifest=await (await request('/staging-build.json')).json();
+  assert.deepEqual(manifest,{
+    release:'citizen-admin-sprints-03-12',
+    branch:'integration/staging-citizen-admin-sprints-03-12',
+    commit:expectedSha,target:'citizen',
+  },'Deployed citizen Worker does not contain the requested integration commit');
+}
 const areas = await (await request('/api/areas')).json();
 const lgas = areas.filter((a) => a.kind === 'lga');
 const wards = areas.filter((a) => a.kind === 'ward');
