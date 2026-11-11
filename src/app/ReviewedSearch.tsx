@@ -4,6 +4,7 @@ import {useApp} from './state.tsx';
 import {detectIntent} from './intents.ts';
 import type {AskResult} from '../server/ask-knowledge.ts';
 import './reviewed-search.css';
+const ExternalWebResults=React.lazy(()=>import('./ExternalWebResults.tsx'));
 
 interface Place {
   id: string;
@@ -52,6 +53,7 @@ export default function ReviewedSearch() {
   const [params] = useSearchParams();
   const query = (params.get('q') || '').trim();
   const [draft,setDraft] = React.useState(query);
+  const [tab,setTab]=React.useState<'all'|'places'|'knowledge'|'web'>('all');
   const [state,setState] = React.useState<SearchState>('idle');
   const [data,setData] = React.useState<SearchResponse|null>(null);
   const [error,setError] = React.useState('');
@@ -60,7 +62,7 @@ export default function ReviewedSearch() {
   const {language,setPendingReportText}=useApp();
   const navigate = useNavigate();
 
-  React.useEffect(()=>setDraft(query),[query]);
+  React.useEffect(()=>{setDraft(query);setTab('all');},[query]);
   React.useEffect(()=>{
     if(query.length < 2 || query.length > 100) {
       setData(null);
@@ -136,7 +138,7 @@ export default function ReviewedSearch() {
   return <main className="page search-results-page" id="main">
     <div className="search-results-intro">
       <h1>Search Ekiti</h1>
-      <p>Find reviewed businesses, services, places and sourced public information.</p>
+      <p>Ekiti's public directory, source-backed answers and wider web references.</p>
     </div>
     <form className="search-results-form" role="search" onSubmit={submit}>
       <label className="visually-hidden" htmlFor="ekiti-unified-search">Search Ekiti</label>
@@ -146,21 +148,33 @@ export default function ReviewedSearch() {
       <button type="submit">Search</button>
     </form>
     {error && <p role="alert" className="search-results-error">{error}</p>}
+    <nav className="search-category-tabs" role="tablist" aria-label="Search result categories">
+      {([
+        ['all','All results'],['places','Places & services'],
+        ['knowledge','Ekiti information'],['web','Wider web'],
+      ] as const).map(([value,label])=><button type="button" role="tab"
+        key={value} aria-selected={tab===value}
+        onClick={()=>setTab(value)}>{label}</button>)}
+    </nav>
     <nav className="search-results-shortcuts" aria-label="Explore more">
       <Link to="/explore">Browse categories</Link>
       <Link to="/listings/new">Suggest a business</Link>
       <Link to="/report">Report an issue</Link>
     </nav>
 
-    {state==='idle' && <p className="search-results-muted" role="status">
+    {tab==='web'&&query.length>=2&&query.length<=90&&
+      <React.Suspense fallback={<p role="status">Loading web tools…</p>}>
+        <ExternalWebResults query={query}/>
+      </React.Suspense>}
+    {tab!=='web'&&state==='idle' && <p className="search-results-muted" role="status">
       Enter a place, service, business or civic topic to begin.
     </p>}
-    {state==='loading' && <p className="search-results-muted" role="status">Searching reviewed Ekiti records…</p>}
-    {state==='unavailable' && <p className="search-results-muted" role="alert">
+    {tab!=='web'&&state==='loading' && <p className="search-results-muted" role="status">Searching reviewed Ekiti records…</p>}
+    {tab!=='web'&&state==='unavailable' && <p className="search-results-muted" role="alert">
       Verified search is temporarily unavailable. No sample listings are substituted.
     </p>}
 
-    {isPublicQuestion(query) && <section className="search-answer" aria-labelledby="source-answer-title">
+    {(tab==='all'||tab==='knowledge')&&isPublicQuestion(query) && <section className="search-answer" aria-labelledby="source-answer-title">
       <h2 id="source-answer-title">Answer from Ekiti sources</h2>
       {answerState==='loading' && <p role="status">Checking available sources…</p>}
       {answerState==='unavailable' && <p role="status">An answer is unavailable. You can still browse the search results below.</p>}
@@ -177,11 +191,11 @@ export default function ReviewedSearch() {
         {answer.limitation&&<p className="search-answer-limitation">{answer.limitation}</p>}
       </>}
     </section>}
-    {state==='ready' && data && <div className="search-results-content">
+    {tab!=='web'&&state==='ready' && data && <div className="search-results-content">
       <p className="search-results-count" role="status">
         {data.places.length + data.knowledge.length + (data.localityHint?1:0)} reviewed result{data.places.length+data.knowledge.length+(data.localityHint?1:0)===1?'':'s'} shown for “{data.query}”
       </p>
-      {data.localityHint && <section className="search-results-section" aria-labelledby="search-locality">
+      {(tab==='all'||tab==='places')&&data.localityHint && <section className="search-results-section" aria-labelledby="search-locality">
         <h2 id="search-locality">Recognized place</h2>
         <article className="search-result search-locality-result">
           <h3>{data.localityHint.name}</h3>
@@ -192,14 +206,14 @@ export default function ReviewedSearch() {
           </p>}
         </article>
       </section>}
-      {data.locationScope==='ambiguous' && <p className="search-results-muted">
+      {(tab==='all'||tab==='places')&&data.locationScope==='ambiguous' && <p className="search-results-muted">
         This query mentions places in different LGAs. A single location was not assumed.
       </p>}
       {data.places.length===0 && data.knowledge.length===0 && !data.localityHint && <p className="search-results-muted">
         No reviewed result matches yet. The directory is growing; this does not mean the service or place does not exist.
         Try a simpler name, or <Link to="/explore">browse Ekiti categories</Link>.
       </p>}
-      {data.places.length>0 && <section className="search-results-section" aria-labelledby="search-places">
+      {(tab==='all'||tab==='places')&&data.places.length>0 && <section className="search-results-section" aria-labelledby="search-places">
         <h2 id="search-places">Businesses, services and places</h2>
         <div className="search-results-list">{data.places.map(item=>
           <article className="search-result" key={'place-'+item.id}>
@@ -214,7 +228,7 @@ export default function ReviewedSearch() {
             </p>
           </article>)}</div>
       </section>}
-      {data.knowledge.length>0 && <section className="search-results-section" aria-labelledby="search-knowledge">
+      {(tab==='all'||tab==='knowledge')&&data.knowledge.length>0 && <section className="search-results-section" aria-labelledby="search-knowledge">
         <h2 id="search-knowledge">Ekiti knowledge and public information</h2>
         <div className="search-results-list">{data.knowledge.map(item=>
           <article className="search-result" key={'knowledge-'+item.id}>
@@ -229,9 +243,13 @@ export default function ReviewedSearch() {
           </article>)}</div>
       </section>}
     </div>}
+    {tab==='all'&&query.length>=2&&query.length<=90&&
+      <React.Suspense fallback={<p role="status">Loading web tools…</p>}>
+        <ExternalWebResults query={query}/>
+      </React.Suspense>}
     <p className="search-results-disclosure">
-      Only approved public records are searchable. Private reports and pending business submissions are excluded.
-      inEkiti Official operates independently of Ekiti State Government.
+      In-platform results use reviewed public records. Wider-web links are external and not independently verified.
+      Private reports and pending listings are excluded. inEkiti Official is independent of Ekiti State Government.
     </p>
   </main>;
 }
