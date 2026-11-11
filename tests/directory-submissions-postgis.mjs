@@ -14,13 +14,15 @@ test('directory submission RPC is owner-isolated and cannot publish without staf
     await db.query('BEGIN');
     await db.query('INSERT INTO auth.users(id,email) VALUES ($1,$2),($3,$4)',
       [owner,'owner@example.test',other,'other@example.test']);
-    await db.query('SET LOCAL ROLE authenticated');
+    // Verify the principal's grants as the CI database owner before dropping
+    // privileges; unauthorized role cannot resolve private schema objects.
     const grants=await db.query(`SELECT
-      has_schema_privilege(current_user,'civic','USAGE') AS private_schema,
-      has_table_privilege(current_user,'civic.directory_submissions','SELECT') AS raw_read,
-      has_table_privilege(current_user,'civic.directory_submissions','INSERT') AS raw_write,
-      has_function_privilege(current_user,
+      has_schema_privilege('authenticated','civic','USAGE') AS private_schema,
+      has_table_privilege('authenticated','civic.directory_submissions','SELECT') AS raw_read,
+      has_table_privilege('authenticated','civic.directory_submissions','INSERT') AS raw_write,
+      has_function_privilege('authenticated',
         'public.civic_submit_directory_listing(text,text,text,text)','EXECUTE') AS submit`);
+    await db.query('SET LOCAL ROLE authenticated');
     assert.deepEqual(grants.rows[0],{
       private_schema:false,raw_read:false,raw_write:false,submit:true,
     });
