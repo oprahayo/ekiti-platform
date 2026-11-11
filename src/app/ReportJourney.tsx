@@ -2,6 +2,12 @@ import * as React from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { lgas } from './fixtures.ts';
 import { useApp } from './state.tsx';
+import {
+  CHAT_SOUND_KEY, REPORT_CATEGORIES, REPORT_DRAFT_KEY, REPORT_STEPS,
+  journeyPrompt, journeyWelcome, readJourneyDraft,
+  type JourneyStep, type ReportCategory, type EvidenceMethod,
+  type SavedJourneyDraft,
+} from './report-journey-state.ts';
 
 const OnDeviceRecorder = React.lazy(() => import('./OnDeviceRecorder.tsx'));
 
@@ -17,17 +23,11 @@ function MethodSymbol({kind}: {kind:'Text'|'Photo'|'Video'|'Audio'}) {
     aria-hidden="true">{icon[kind]}</svg>;
 }
 
-type Step = 'method' | 'category' | 'description' | 'location' | 'evidence' | 'followup' | 'contact' | 'review' | 'saved';
-type EvidenceMethod = 'Text' | 'Photo' | 'Video' | 'Audio';
+type Step = JourneyStep;
 type ContactMethod = 'none' | 'email' | 'sms';
 type Line = { id: number; speaker: 'assistant' | 'resident'; text: string };
 
-const categories = [
-  'Emergency', 'Security', 'Roads', 'Drainage', 'Water', 'Electricity',
-  'Sanitation', 'Health', 'Education', 'Environment',
-  'Public facilities', 'Service delay / corruption', 'Suggestion', 'Commendation', 'Other',
-] as const;
-type ReportCategory = typeof categories[number];
+const categories = REPORT_CATEGORIES;
 
 const methodHelp: Record<EvidenceMethod, string> = {
   Text: 'Type what happened. You can add media later.',
@@ -35,18 +35,6 @@ const methodHelp: Record<EvidenceMethod, string> = {
   Video: 'Record a video or attach an existing clip.',
   Audio: 'Record an audio note or choose an audio file.',
 };
-const prompts: Record<Step, string> = {
-  method: 'How would you like to share what happened?',
-  category: 'What best describes the report? Choose one category.',
-  description: 'Tell me what happened, in your own words. A short, clear explanation is enough.',
-  location: 'Where in Ekiti did it happen? Choose the LGA and optionally add a community or nearby landmark.',
-  evidence: 'Would you like to attach evidence now? Only you can see media previews in this browser.',
-  followup: 'Would you like a private tracking link sent to you once real reporting launches?',
-  contact: 'Where should that tracking link be sent? Your contact is only held in this tab during this preview.',
-  review: 'Here is your draft. Check it before saving on this device.',
-  saved: 'Your draft is saved in this browser session. No government office has received it.',
-};
-
 const MAX_FILE: Record<Exclude<EvidenceMethod, 'Text'>, number> = {
   Photo: 8_000_000, Video: 25_000_000, Audio: 15_000_000,
 };
@@ -60,19 +48,16 @@ function secureContact(kind: ContactMethod, value: string): boolean {
   if (kind === 'email') return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim()) && value.length <= 160;
   return /^\+?[0-9\s()-]{8,22}$/.test(value.trim());
 }
-function initialLines(feedback: boolean): Line[] {
-  return [{ id: 1, speaker: 'assistant',
-    text: feedback
-      ? 'Welcome. We can prepare your feedback together. ' + prompts.method
-      : 'Welcome. I will guide you through a report, one question at a time. ' + prompts.method }];
+function initialLines(feedback:boolean, language:'en'|'yo'):Line[] {
+  return [{id:1,speaker:'assistant',text:journeyWelcome(feedback,language)}];
 }
 
 export default function ReportJourney() {
   const [search] = useSearchParams();
-  const { pendingReportText, setPendingReportText } = useApp();
+  const { pendingReportText, setPendingReportText, language } = useApp();
   const feedback = search.get('kind') === 'feedback';
   const [step, setStep] = React.useState<Step>('method');
-  const [lines, setLines] = React.useState<Line[]>(() => initialLines(feedback));
+  const [lines, setLines] = React.useState<Line[]>(() => initialLines(feedback,language));
   const nextId = React.useRef(2);
   const [method, setMethod] = React.useState<EvidenceMethod>('Text');
   const [category, setCategory] = React.useState<ReportCategory>(feedback ? 'Suggestion' : 'Other');
@@ -88,11 +73,85 @@ export default function ReportJourney() {
   const [savedNote, setSavedNote] = React.useState('');
   const [captureMode, setCaptureMode] = React.useState<'record'|'upload'|null>(null);
   const [typing, setTyping] = React.useState(false);
-  const [soundsOn, setSoundsOn] = React.useState(false);
+  const [soundsOn, setSoundsOn] = React.useState(() => {
+    try { return localStorage.getItem(CHAT_SOUND_KEY)==='on'; }
+    catch { return false; }
+  });
+  const [history,setHistory] = React.useState<Step[]>([]);
+  const [savedDraft,setSavedDraft] = React.useState<SavedJourneyDraft|null>(() => {
+    try {
+      return readJourneyDraft(sessionStorage.getItem(REPORT_DRAFT_KEY),
+        feedback?'feedback':'report', lgas.map(area=>area.id));
+    } catch { return null; }
+  });
   const timerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const busyRef = React.useRef(false);
   const audioRef = React.useRef<AudioContext | null>(null);
   const threadEnd = React.useRef<HTMLDivElement>(null);
+  const previousPurpose = React.useRef(feedback);
+  const previousLanguage = React.useRef(language);
+
+  function toggleSounds() {
+    setSoundsOn(current => {
+      const next=!current;
+      try { localStorage.setItem(CHAT_SOUND_KEY,next?'on':'off'); } catch { /* Optional. */ }
+      return next;
+    });
+  }
+
+  function clearPendingReply() {
+    if(timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current=null;
+    busyRef.current=false;
+    setTyping(false);
+  }
+
+  function goBack() {
+    if(step==='saved') return;
+    if(busyRef.current) {
+      clearPendingReply();
+      setLines(current=>current.slice(0,-1)); // Remove unconfirmed answer, not earlier messages.
+      return;
+    }
+    const previous=history.at(-1);
+    if(!previous) return;
+    setStep(previous);
+    setHistory(current=>current.slice(0,-1));
+    setLines(current=>current.slice(0,-2)); // One answer + its response per completed step.
+    setValidation('');setMediaError('');
+  }
+
+  function editCategory() {
+    if(busyRef.current) return;
+    const index=history.lastIndexOf('category');
+    if(index>=0) {
+      const remove=history.length-index;
+      setHistory(current=>current.slice(0,index));
+      setLines(current=>current.slice(0,-2*remove));
+    } else {
+      setLines([...initialLines(feedback,language),
+        {id:nextId.current++,speaker:'assistant',text:journeyPrompt('category',language)}]);
+      setHistory([]);
+    }
+    setStep('category');setValidation('');
+  }
+
+  function resumeDraft() {
+    if(!savedDraft || busyRef.current) return;
+    setMethod(savedDraft.method);setCategory(savedDraft.category);
+    setDescription(savedDraft.description);setLgaId(savedDraft.lgaId);
+    setCommunity(savedDraft.community);setMedia(null);setMediaUrl('');
+    setMediaError('');setContact('');setContactMethod('none');setCaptureMode(null);
+    setHistory([]);setValidation('');setSavedNote('');
+    setLines([{id:nextId.current++,speaker:'assistant',
+      text:'Your saved draft is ready to review. Evidence and contact details were not stored.'}]);
+    setStep('review');
+  }
+
+  function discardDraft() {
+    try { sessionStorage.removeItem(REPORT_DRAFT_KEY); } catch { /* Optional. */ }
+    setSavedDraft(null);
+  }
 
   function playChatCue(kind:'send'|'receive') {
     if (!soundsOn || typeof window === 'undefined' || !window.AudioContext) return;
@@ -126,6 +185,24 @@ export default function ReportJourney() {
     void audioRef.current?.close().catch(()=>{});
   }, []);
   React.useEffect(() => {
+    if(previousPurpose.current!==feedback) {
+      clearPendingReply();
+      previousPurpose.current=feedback;
+      setStep('method');setHistory([]);
+      setLines(initialLines(feedback,language));nextId.current=2;
+      setDescription('');setLgaId('');setCommunity('');
+      setMedia(null);setMediaUrl('');setContact('');setContactMethod('none');
+      try { setSavedDraft(readJourneyDraft(sessionStorage.getItem(REPORT_DRAFT_KEY),
+        feedback?'feedback':'report',lgas.map(area=>area.id))); }
+      catch {setSavedDraft(null);}
+    } else if(previousLanguage.current!==language) {
+      previousLanguage.current=language;
+      // Only replace the opening bubble when the conversation is untouched.
+      if(step==='method' && !history.length && !typing)
+        setLines(initialLines(feedback,language));
+    }
+  },[feedback,language]);
+  React.useEffect(() => {
     if (lines.length > 1) threadEnd.current?.scrollIntoView({ block: 'nearest' });
   }, [lines.length,typing]);
 
@@ -133,19 +210,23 @@ export default function ReportJourney() {
     if (busyRef.current) return;
     busyRef.current = true;
     setValidation('');
+    const priorStep=step;
     playChatCue('send');
     setLines(current => [...current, { id: nextId.current++, speaker: 'resident', text: answer }]);
     const showReply = () => {
       setLines(current => [...current,
-        { id: nextId.current++, speaker: 'assistant', text: customPrompt || prompts[next] },
+        { id: nextId.current++, speaker: 'assistant', text: customPrompt || journeyPrompt(next,language) },
       ]);
+      setHistory(current=>[...current,priorStep]);
       setStep(next);
       setTyping(false);
       busyRef.current=false;
       timerRef.current=null;
       playChatCue('receive');
     };
-    if (immediate) showReply(); // Never delay urgent safety instructions.
+    const reduceMotion=typeof window.matchMedia==='function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (immediate || reduceMotion) showReply(); // Never delay urgent or reduced-motion replies.
     else {
       setTyping(true);
       timerRef.current = setTimeout(showReply, 570);
@@ -153,13 +234,13 @@ export default function ReportJourney() {
   }
   function reset() {
     if (!window.confirm('Clear this report conversation and all local evidence?')) return;
-    if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = null;busyRef.current=false;setTyping(false);
-    setStep('method'); setLines(initialLines(feedback)); nextId.current = 2;
+    clearPendingReply();
+    setHistory([]);
+    setStep('method'); setLines(initialLines(feedback,language)); nextId.current = 2;
     setMethod('Text'); setCategory(feedback ? 'Suggestion' : 'Other'); setDescription('');
     setCommunity(''); setLgaId(''); setMedia(null); setMediaUrl(''); setMediaError('');
     setContactMethod('none'); setContact(''); setValidation(''); setSavedNote(''); setCaptureMode(null);
-    try { sessionStorage.removeItem('ekiti-guided-draft-v1'); } catch { /* Works in memory too. */ }
+    discardDraft();
   }
   function chooseMethod(value: EvidenceMethod) {
     setMethod(value); setMedia(null); setMediaUrl(''); setMediaError(''); setCaptureMode(null);
@@ -169,7 +250,7 @@ export default function ReportJourney() {
     setCategory(value);
     respond(value, 'description', value === 'Emergency'
       ? 'If anyone is in immediate danger, contact emergency services directly. This project does not dispatch help. You can still describe the incident here as a private draft.'
-      : prompts.description, value === 'Emergency');
+      : journeyPrompt('description',language), value === 'Emergency');
   }
   function nextDescription() {
     const text = description.trim();
@@ -218,8 +299,10 @@ export default function ReportJourney() {
     };
     try {
       // Only this browser session. Raw media, phone and email are NEVER saved.
-      sessionStorage.setItem('ekiti-guided-draft-v1', JSON.stringify(snapshot));
+      sessionStorage.setItem(REPORT_DRAFT_KEY, JSON.stringify(snapshot));
       setSavedNote('Saved in this browser session. Evidence and contact details were not stored.');
+      setSavedDraft(readJourneyDraft(JSON.stringify(snapshot),
+        feedback?'feedback':'report',lgas.map(area=>area.id)));
     } catch { setSavedNote('Saved only in this open tab. Browser storage is unavailable.'); }
     respond('Save private draft', 'saved');
   }
@@ -227,8 +310,10 @@ export default function ReportJourney() {
   return <main className="page guided-report-page" id="main">
     <h1 className="visually-hidden">{feedback ? 'Share feedback' : 'Report an issue'}</h1>
     <div className="guided-chat-tools">
+      {(history.length>0 || typing) && step!=='saved' && <button type="button"
+        className="guided-back" onClick={goBack}>← Back</button>}
       <button type="button" className="guided-sound-toggle" aria-pressed={soundsOn}
-        onClick={() => setSoundsOn(current => !current)}>
+        onClick={toggleSounds}>
         {soundsOn ? 'Chat sounds on' : 'Chat sounds off'}
       </button>
     </div>
@@ -237,6 +322,14 @@ export default function ReportJourney() {
       {step === 'saved' ? 'Private draft saved' : 'Preparing your report · ' +
         Math.max(1, ['method','category','description','location','evidence','followup','contact','review'].indexOf(step)+1) + ' of 8'}
     </p>
+    {step==='method' && savedDraft && !typing && <aside className="guided-resume">
+      <div><strong>Saved private draft</strong>
+        <p>Continue your text draft in this tab. Media and contact information were not stored.</p></div>
+      <div className="guided-resume-actions">
+        <button type="button" onClick={resumeDraft}>Continue saved draft</button>
+        <button type="button" onClick={discardDraft}>Discard draft</button>
+      </div>
+    </aside>}
     <div className="guided-thread" role="log" aria-label="Report conversation" aria-live="polite">
       {lines.map(line => <div key={line.id} className={'guided-bubble ' + (line.speaker === 'resident' ? 'guided-user' : 'guided-assistant')}>
         {line.speaker === 'assistant' && <span className="conversation-author">Ekiti Civic</span>}
@@ -357,7 +450,7 @@ export default function ReportJourney() {
       </dl>
       <p className="privacy-notice">This is not a submission. No real report ID, phone/email receipt, official assignment or public map marker can be issued until secure intake and moderation are enabled.</p>
       <button className="primary-action" type="button" onClick={save}>Save private draft on this device</button>
-      <button type="button" className="quiet-action" onClick={()=>setStep('category')}>Change category</button>
+      <button type="button" className="quiet-action" onClick={editCategory}>Change category</button>
     </section>}
 
     {!typing && step === 'saved' && <section className="guided-review" role="status">
