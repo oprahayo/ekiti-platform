@@ -109,3 +109,72 @@ test('Source highlights cite original links without claiming generated or verifi
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth);
   expect(overflow).toBeLessThanOrEqual(0);
 });
+
+
+test('Nested search field renders as one borderless input within one responsive shell',async({page})=>{
+  for(const width of [280,320,390,768,1024,1440,1920]){
+    await page.setViewportSize({width,height:820});
+    await page.goto('/report');
+    const result=await page.locator('.inner-universal-search').evaluate(form=>{
+      const input=form.querySelector('input[type="search"]');
+      const computed=getComputedStyle(input);
+      const outer=form.getBoundingClientRect(),inner=input.getBoundingClientRect();
+      return {border:computed.borderTopWidth,background:computed.backgroundColor,
+        outer:outer.width,inner:inner.width,scroll:document.documentElement.scrollWidth,
+        viewport:innerWidth};
+    });
+    expect(result.border).toBe('0px');
+    expect(result.background).toBe('rgba(0, 0, 0, 0)');
+    expect(result.outer).toBeGreaterThan(180);
+    expect(result.inner).toBeGreaterThan(28);
+    expect(result.scroll).toBeLessThanOrEqual(width);
+  }
+});
+test('Grounded public answer is opt-in and orders Ekiti Civic sources before external links',async({page})=>{
+  let answerCalls=0;
+  await page.route('**/api/search?**',route=>route.fulfill({
+    status:200,contentType:'application/json',
+    body:JSON.stringify({query:'Ekiti capital',reviewedOnly:true,places:[],
+      knowledge:[{id:'c1',title:'Capital of Ekiti',summary_en:'Ado-Ekiti is capital',
+        subject:'Government',framing:'fact',
+        source_url:'https://ekitistate.gov.ng/about',publisher:'Government'}]}),
+  }));
+  await page.route('**/api/web-answer?**',route=>{
+    answerCalls++;
+    return route.fulfill({status:200,contentType:'application/json',
+      body:JSON.stringify({query:'Ekiti capital',language:'en',mode:'source-excerpts',
+        provider:'Wikipedia',reviewedFirst:true,
+        claims:[{text:'Ado-Ekiti is capital',sourceIds:[1]}],
+        sources:[
+          {id:1,title:'Capital of Ekiti',url:'https://ekitistate.gov.ng/about',
+            publisher:'Government',origin:'ekiti-civic',evidence:'reviewed-record',excerpt:'Ado-Ekiti is capital'},
+          {id:2,title:'Ekiti State',url:'https://en.wikipedia.org/wiki/Ekiti_State',
+            publisher:'Wikipedia',origin:'external-web',evidence:'search-snippet',excerpt:'A state in Nigeria'},
+        ],
+        limitation:'These are attributed source excerpts, not a generated AI answer.'})});
+  });
+  await page.goto('/search?q=Ekiti+capital');
+  expect(answerCalls).toBe(0);
+  await expect(page.getByRole('heading',{name:'Ekiti knowledge and public information'})).toBeVisible();
+  await page.getByRole('button',{name:'Read sources & explain'}).click();
+  await expect(page.getByRole('heading',{name:'Answer from public sources'})).toBeVisible();
+  await expect(page.getByRole('link',{name:'Citation 1: Capital of Ekiti'}))
+    .toHaveAttribute('href','https://ekitistate.gov.ng/about');
+  await expect(page.getByText(/not a generated AI answer/)).toBeVisible();
+  const sourceRows=await page.locator('.search-grounded-citations li').allTextContents();
+  expect(sourceRows[0]).toContain('Reviewed Ekiti Civic source');
+  expect(sourceRows[1]).toContain('External · search excerpt');
+  expect(answerCalls).toBe(1);
+});
+test('Tailored product symbols keep distinct artwork and report progression visible',async({page})=>{
+  await page.goto('/');
+  await page.getByLabel('Open Ekiti Civic menu').click();
+  const paths=await page.locator('.civic-product-glyph svg').evaluateAll(elements=>
+    elements.map(svg=>svg.innerHTML));
+  expect(paths).toHaveLength(8);
+  expect(new Set(paths).size).toBe(8);
+  await page.getByRole('link',{name:/Civic report/}).click();
+  await expect(page.locator('.guided-stage-meter')).toBeVisible();
+  await page.getByRole('button',{name:/Write text/}).click();
+  await expect(page.getByText(/Step 2 · Topic/)).toBeVisible();
+});
