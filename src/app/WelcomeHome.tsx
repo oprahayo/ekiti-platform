@@ -51,6 +51,7 @@ export default function WelcomeHome() {
         <button type="button" onClick={ask}>Ask about Ekiti</button>
       </div>
       <p className="gateway-search-note">Search results use reviewed public information. Pending business submissions and private incident reports are not searchable.</p>
+      <p className="gateway-account-links"><Link to="/profile">My account & dashboard</Link><span aria-hidden="true"> · </span><Link to="/profile?view=listings">Business workspace</Link></p>
     </form>
     <section className="welcome-activities" aria-labelledby="welcome-task-heading">
       <h2 id="welcome-task-heading">{language === 'yo' ? 'Kí ni o fẹ́ ṣe lónìí?' : 'What would you like to do?'}</h2>
