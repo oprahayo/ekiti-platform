@@ -1,12 +1,13 @@
 import * as React from 'react';
 import type {ReviewedMapPin} from '../web/map.ts';
 
+const NO_PINS:readonly ReviewedMapPin[]=[];
 interface Props {
   onPoint?:(lat:number,lon:number)=>void;
   pins?:readonly ReviewedMapPin[];
   mode?:'incident'|'directory'|'public';
 }
-export default function MapLocation({onPoint,pins=[],mode='incident'}:Props){
+export default function MapLocation({onPoint,pins=NO_PINS,mode='incident'}:Props){
   const container=React.useRef<HTMLDivElement|null>(null);
   const onPointRef=React.useRef(onPoint);
   onPointRef.current=onPoint;
