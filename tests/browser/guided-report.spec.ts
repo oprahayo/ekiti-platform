@@ -91,9 +91,9 @@ test('feedback and listings remain editable drafts without a public forum', asyn
   await page.locator('#listing-lga').selectOption('Ikere');
   await page.locator('#listing-description').fill('An independently operated shop providing affordable clothing repairs and alterations.');
   await page.getByRole('button',{name:'Review listing draft'}).click();
-  await expect(page.getByRole('heading',{name:'Listing preview prepared'})).toBeVisible();
-  await expect(page.getByText(/Not published or submitted/)).toBeVisible();
-  await page.getByRole('link',{name:'Browse Ekiti'}).click();
+  await expect(page.getByRole('heading',{name:'Review your listing'})).toBeVisible();
+  await expect(page.getByText(/no data is sent to a moderator/)).toBeVisible();
+  await page.getByRole('link',{name:'Explore existing reviewed listings'}).click();
   await expect(page).toHaveURL(/\/explore$/);
 });
 
