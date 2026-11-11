@@ -43,3 +43,12 @@ A real notifications system would require a separately reviewed event source, ve
 The current static staging demo can be upgraded only after the branch is reviewed, the release source is deliberately integrated, and an authorized Cloudflare deploy with its exact Git SHA completes. The existing automated deployment workflow cannot deploy without the owner's Cloudflare API token; do not claim a new map is live merely because tests pass.
 
 **No government office notification, emergency alert, real staff push or signed case-assignment workflow exists.** This is an improved safe frontend foundation.
+
+## Follow-up integration from alternate Sprint 14 draft
+
+- Map LGA selections now use strict normalized area equality and a visible Clear area control, not general keyword search.
+- Filtered alert read flags remain intact as operators change LGA or priority selections.
+- The voluntary incident-location step now includes a MapLibre boundary map point picker. Selection is local; the first-party resolver is contacted only after Check. Exact positions are not published or dispatched.
+- The citizen browser suite includes a check that opening and closing the map does not request location resolution.
+
+This remains a source-only preview. No private database, real notifications, or Cloudflare deployment was activated by these commits.
