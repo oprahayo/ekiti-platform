@@ -34,3 +34,18 @@
   .search-results-shortcuts {gap:9px 15px;font-size:13px;}
   .search-result {padding-block:16px;}
 }
+
+/* A modest source-led answer, not an invented generative response. */
+.search-answer {max-width:795px;margin:20px 0 26px;padding:20px 0;border-bottom:1px solid var(--border);}
+.search-answer h2 {font-size:16px;letter-spacing:-.01em;font-weight:640;margin-bottom:12px;}
+.search-answer p {font-size:14px;line-height:1.65;color:var(--text-secondary);margin:9px 0;}
+.search-answer .search-answer-text {font-size:16px;color:var(--text-primary);max-width:73ch;line-height:1.7;}
+.search-answer .search-answer-meta {font-size:11px;color:var(--text-tertiary);}
+.search-answer-sources {font-size:13px;margin-top:10px;}
+.search-answer-sources strong {font-size:12px;font-weight:640;}
+.search-answer-sources ul {margin:5px 0 0;padding-left:20px;}
+.search-answer-sources li {line-height:1.55;margin-bottom:5px;overflow-wrap:anywhere;}
+.search-answer-limitation {color:var(--text-tertiary)!important;font-size:12px!important;}
+@media (prefers-reduced-data:reduce) {
+  .search-results-page *, .search-engine-landing * {animation:none!important;transition:none!important;}
+}
