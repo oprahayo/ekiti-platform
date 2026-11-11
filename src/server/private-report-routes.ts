@@ -128,7 +128,7 @@ export async function handlePrivateReporting(
 
   let connection: Awaited<ReturnType<ReportDatabaseFactory>> | undefined;
   try {
-    connection = await openDatabase(env.REPORTING_HYPERDRIVE.connectionString);
+    connection = await openDatabase(readiness.privateConnection);
     if (validated) {
       const receipt = await createPrivateReport(connection.db, validated, retention);
       // Only issue after COMMIT. No attachment, auto-routing or government
