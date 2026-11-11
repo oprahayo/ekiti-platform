@@ -16,6 +16,10 @@ export function privateHistoryEnabled():boolean {
   const env=(import.meta as ImportMeta & { env?:Record<string,string|undefined> }).env;
   return Boolean(configuredAuth()&&env?.VITE_CITIZEN_REPORT_LINKING_ENABLED==='true');
 }
+export function caseLinkEnabled():boolean{
+  const env=(import.meta as ImportMeta & { env?:Record<string,string|undefined> }).env;
+  return Boolean(privateHistoryEnabled()&&env?.VITE_CITIZEN_CASE_LINKS_ENABLED==='true');
+}
 export interface CitizenSession {
   access_token: string;
   refresh_token: string;
@@ -167,7 +171,8 @@ export async function signOutSession(config: PublicAuthConfig,session: CitizenSe
 }
 export async function authorizedRpc<T>(config: PublicAuthConfig,session: CitizenSession,
   procedure: 'civic_submit_review' | 'civic_request_claim' | 'civic_my_reviews' | 'civic_my_claims' |
-    'civic_link_private_report' | 'civic_my_private_reports' | 'civic_unlink_private_report',
+    'civic_link_private_report' | 'civic_my_private_reports' | 'civic_unlink_private_report' |
+    'civic_request_case_link' | 'civic_redeem_case_link',
   body: Record<string,unknown>, fetcher: typeof fetch = fetch): Promise<T> {
   const value = await authenticateSession(config,session,fetcher);
   saveTabSession(value);
