@@ -87,8 +87,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const media=window.matchMedia('(prefers-color-scheme: dark)');
     const update=()=>setSystemDark(media.matches);
     update();
-    media.addEventListener?.('change',update);
-    return()=>media.removeEventListener?.('change',update);
+    if (typeof media.addEventListener==='function') {
+      media.addEventListener('change',update);
+      return()=>media.removeEventListener('change',update);
+    }
+    media.addListener(update);
+    return()=>media.removeListener(update);
   },[]);
   const [language, setLanguageState] = React.useState<Language>(() => {
     try { return localStorage.getItem('ekiti-ui-language') === 'yo' ? 'yo' : 'en'; }
