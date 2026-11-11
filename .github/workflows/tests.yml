@@ -68,6 +68,15 @@ jobs:
           npx playwright install --with-deps chromium
           npm run test:browser
 
+      - name: Preserve Sprint 01 refinement screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sprint-01-refinement-review
+          path: test-results/sprint-01-refinement/
+          if-no-files-found: ignore
+          retention-days: 5
+
       - name: Preserve Sprint 01 welcome-screen visual review
         if: always()
         uses: actions/upload-artifact@v4
