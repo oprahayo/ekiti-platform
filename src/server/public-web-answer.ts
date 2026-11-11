@@ -278,9 +278,9 @@ export async function synthesizePublicClaims(
   }catch{return null;}
 }
 export async function buildPublicWebAnswer(args:{
-  query:string;language:AnswerLanguage;reviewed?:ReviewedWebContext;
-  external?:ExternalWebResultSet;aiKey?:string;aiModel?:string;
-  aiEnabled?:boolean;fetchImpl?:typeof fetch;
+  query:string;language:AnswerLanguage;reviewed?:ReviewedWebContext|undefined;
+  external?:ExternalWebResultSet|undefined;aiKey?:string|undefined;aiModel?:string|undefined;
+  aiEnabled?:boolean|undefined;fetchImpl?:typeof fetch|undefined;
 }):Promise<PublicWebAnswer>{
   const sources=await enrichPublicSources(
     collectSourceCitations(args.reviewed,args.external),args.fetchImpl);
