@@ -260,7 +260,7 @@ export default function ExploreDirectory() {
         <MapLocation mode="directory" pins={mapPins}/>
         <p className="note">The map uses Ekiti's GRID3 LGA reference geometry.
           Only reviewed directory records with usable coordinates appear as pins.
-          Sample businesses and unverified claims are never plotted.</p>
+          Sample businesses and unverified claims are never plotted. Illustrative places are not geocoded or pinned.</p>
       </React.Suspense>}
       <h2>Can’t find what you need?</h2>
       <Link to="/ask?focus=1" className="text-link" onClick={() => setAskDraft('Find a business in Ekiti')}>
