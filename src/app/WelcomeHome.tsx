@@ -54,7 +54,7 @@ export default function WelcomeHome(){
             placeholder={language==='yo'?'Wá ibi, iṣẹ́ tàbí ìmọ̀ ní Èkìtì…'
               :'Search anything about Ekiti…'} />
           <button className="gateway-inline-submit" type="submit"
-            aria-label="Search Ekiti" disabled={!search.trim()}>
+            aria-label="Submit search" disabled={!search.trim()}>
             <svg width="21" height="21" viewBox="0 0 24 24" fill="none"
               stroke="currentColor" strokeWidth="2" aria-hidden="true">
               <path d="m4 12h16m-7-7 7 7-7 7"/>
