@@ -19,7 +19,7 @@ export default function InnerSearchBar() {
       navigate('/report');return;
     }
     if(intent.kind==='track'){navigate('/track');return;}
-    navigate('/search?'+new URLSearchParams({q:value}));
+    navigate('/search?'+new URLSearchParams({q:value,web:'1'}));
   };
   return <form className="inner-universal-search" role="search" onSubmit={submit}>
     <label className="visually-hidden" htmlFor="inner-ekiti-search">Search across Ekiti</label>
