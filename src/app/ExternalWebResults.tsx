@@ -21,7 +21,7 @@ function SourceHighlights({items}:{items:ExternalWebResultSet['results']}) {
         <p>{item.description}</p>
         <a href={safeLink(item.url)!} target="_blank" rel="noopener noreferrer"
           aria-label={`Source ${index+1}: ${item.title}`}>
-          <span aria-hidden="true">[${index+1}]</span> {item.title} <small>· {item.domain}</small>
+          <span aria-hidden="true">[{index+1}]</span> {item.title} <small>· {item.domain}</small>
         </a>
       </li>)}</ol>
     <p className="search-web-highlights-note">
