@@ -5,8 +5,9 @@ import {
   type PrivateCaseEvent, type StaffSignInStep,
 } from './staff-auth.ts';
 import './private-admin.css';
+import PrivateIntakeQueue from './PrivateIntakeQueue.tsx';
 
-type View = 'cases' | 'moderation' | 'routing' | 'overview';
+type View = 'cases' | 'intake' | 'moderation' | 'routing' | 'overview';
 type PendingMfa = Extract<StaffSignInStep,{kind:'mfa'}>;
 const caseRoles = new Set(['platform_admin','case_manager','moderator']);
 const labels: Record<PrivateCase['currentState'],string> = {
@@ -164,10 +165,10 @@ export function PrivateAdminApp({ config }: { config: StaffAuthConfig }) {
       <div className="staff-brand"><span className="staff-logo">e.</span>
         <span><strong>Ekiti Civic</strong><small>Staff workspace</small></span></div>
       <nav aria-label="Private admin navigation">
-        {(['cases','moderation','routing','overview'] as const).map(key =>
+        {(['cases','intake','moderation','routing','overview'] as const).map(key =>
           <button type="button" key={key} aria-current={view===key?'page':undefined}
             onClick={()=>{setView(key);setSelected(null);setEvents([]);}}>
-            {({cases:'Cases',moderation:'Moderation',routing:'Routing',overview:'Overview'} as const)[key]}
+            {({cases:'Cases',intake:'Intake',moderation:'Moderation',routing:'Routing',overview:'Overview'} as const)[key]}
           </button>)}
       </nav>
       <div className="staff-private-label">PRIVATE · MFA VERIFIED</div>
@@ -180,7 +181,11 @@ export function PrivateAdminApp({ config }: { config: StaffAuthConfig }) {
       <p className="staff-notice" role="note">These are internal platform records only. No listed case implies
         a government office has received, viewed or resolved a report.</p>
       {error && <p role="alert" className="staff-error">{error}</p>}
-      {view==='cases' ? <section className="staff-content">
+      {view==='intake' ? (client&&session?
+        <PrivateIntakeQueue key={session.token} client={client} token={session.token}
+          identity={session.identity} onSessionExpired={forget}/>:
+        <p role="status">Private intake is unavailable.</p>
+      ) : view==='cases' ? <section className="staff-content">
         <div className="staff-section-head"><div><h1>Private cases</h1>
           <p>{canSeeCases ? 'Authorized report metadata, without citizen identity, narrative or exact coordinates.' :
             'This staff role has no access to the private case queue.'}</p></div>
