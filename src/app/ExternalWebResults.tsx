@@ -59,7 +59,8 @@ export default function ExternalWebResults({query}:{query:string}) {
       You can still choose an external search engine below.
     </p>}
     {state==='ready' && data && <>
-      <p className="search-web-attribution">Web results via {data.provider}. External pages are not independently verified by Ekiti Civic.</p>
+      <p className="search-web-attribution">Web results via {data.provider}. External pages are not independently verified by Ekiti Civic.
+        {data.provider==='Wikipedia' && ' Wikipedia text is subject to its free-content license; follow the linked source for authors and revisions.'}</p>
       {data.results.length===0
         ? <p className="search-results-muted">No matching external pages were returned for this public search.</p>
         : <div className="search-web-list">{data.results.map(item=>
