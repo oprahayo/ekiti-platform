@@ -90,7 +90,13 @@ export default function ExternalWebResults({query,autoRead=false}:{query:string;
       if(!controller.signal.aborted){setAnswer(null);setAnswerState('unavailable');}
     });
   },[query,language]);
-  React.useEffect(()=>{if(autoRead)readSources();},[autoRead,readSources]);
+  React.useEffect(()=>{
+    if(!autoRead)return;
+    // React StrictMode performs an extra effect setup/cleanup in development.
+    // Deferring by one tick prevents duplicate upstream requests in that cycle.
+    const timer=window.setTimeout(readSources,0);
+    return ()=>window.clearTimeout(timer);
+  },[autoRead,readSources]);
   const publicQuery=/\bekiti\b/i.test(query)?query:'Ekiti State Nigeria '+query;
   const google='https://www.google.com/search?'+new URLSearchParams({q:publicQuery});
   const brave='https://search.brave.com/search?'+new URLSearchParams({q:publicQuery});
