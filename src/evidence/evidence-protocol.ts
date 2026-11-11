@@ -96,6 +96,6 @@ export function hex(value:Uint8Array):string {
   return Array.from(value,byte=>byte.toString(16).padStart(2,'0')).join('');
 }
 export async function sha256Bytes(bytes:Uint8Array):Promise<string> {
-  const digest=await crypto.subtle.digest('SHA-256',bytes);
+  const digest=await crypto.subtle.digest('SHA-256',bytes.slice().buffer as ArrayBuffer);
   return hex(new Uint8Array(digest));
 }
