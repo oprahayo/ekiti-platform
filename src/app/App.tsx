@@ -5,6 +5,8 @@ import { Ask } from './AskExperience.tsx';
 import WelcomeHome from './WelcomeHome.tsx';
 import { AppProvider, useApp } from './state.tsx';
 import { CitizenAuthProvider } from './CitizenAuth.tsx';
+import { CivicProductsMenu } from './CivicProductsMenu.tsx';
+import './search-engine-home.css';
 
 const Report = React.lazy(() => import('./ReportJourney.tsx'));
 const ReportPrivacy = React.lazy(() => import('./ReportPrivacy.tsx'));
@@ -32,7 +34,10 @@ function Icon({ name }: { name: 'home' | 'explore' | 'report' | 'track' | 'score
 }
 
 function HeaderControls() {
-  const { dark, toggleTheme, language, setLanguage } = useApp();
+  const { appearance, setAppearance, language, setLanguage } = useApp();
+  const label=appearance==='system'?'System':appearance==='light'?'Light':'Dark';
+  const modes=['system','light','dark'] as const;
+  const appearanceRef=React.useRef<HTMLDetailsElement>(null);
   return <div className="header-controls">
     <div className="header-languages" role="group" aria-label="Answer language">
       <button type="button" onClick={() => setLanguage('en')}
@@ -41,15 +46,28 @@ function HeaderControls() {
       <button type="button" onClick={() => setLanguage('yo')}
         aria-pressed={language === 'yo'} lang="yo">YOR</button>
     </div>
-    <button type="button" className="icon-control theme-switch" onClick={toggleTheme}
-      aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
-      title={dark ? 'Light mode' : 'Dark mode'}>
-      {dark ? <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
-        <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.5 1.5m11.2 11.2 1.5 1.5M4.9 19.1l1.5-1.5M17.6 6.4l1.5-1.5"/>
-      </svg> : <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
-        <path d="M20.2 15.2A8.6 8.6 0 0 1 8.8 3.8 8.5 8.5 0 1 0 20.2 15.2Z"/>
-      </svg>}
-    </button>
+    <details ref={appearanceRef} className="appearance-picker">
+      <summary className="icon-control theme-switch" aria-label={'Appearance settings · '+label}
+        title={'Appearance: '+label}>
+        <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor"
+          strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="9"/><path d="M12 3v18A9 9 0 0 0 12 3Z"/>
+        </svg>
+      </summary>
+      <div className="appearance-panel" aria-label="Color mode">
+        <strong>Appearance</strong>
+        <div role="group" aria-label="Choose color mode">
+          {modes.map(mode=><button key={mode} type="button"
+            aria-pressed={appearance===mode}
+            onClick={()=>{setAppearance(mode);if(appearanceRef.current)appearanceRef.current.open=false;}}>
+            {mode==='system'?'System':mode==='light'?'Light':'Dark'}
+            {appearance===mode&&<span aria-hidden="true">✓</span>}
+          </button>)}
+        </div>
+        <small>System follows your device appearance automatically.</small>
+      </div>
+    </details>
+    <CivicProductsMenu />
   </div>;
 }
 
@@ -99,7 +117,7 @@ function BottomNav() {
 
 function Shell() {
   const location = useLocation();
-  const isSearch = location.pathname === '/search';
+  const isSearch = location.pathname === '/search' || location.pathname === '/';
   const isChat = ['/', '/ask', '/report', '/track'].includes(location.pathname) ||
     location.pathname.startsWith('/track/');
   const scrollByRoute = React.useRef<Map<string, number>>(new Map());
