@@ -282,7 +282,7 @@ BEGIN
         AND q.requested_at<now()-interval '30 days');
   GET DIAGNOSTICS _count=ROW_COUNT;
   RETURN _count;
-END $;
+END $$;
 ALTER FUNCTION civic_private.case_link_delivery_purge()
   OWNER TO ekiti_case_link_owner;
 
