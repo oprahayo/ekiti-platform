@@ -3,7 +3,7 @@ import {caseTimelineEnabled} from './case-timeline.ts';
 import {
   authenticateSession, authorizedRpc, configuredAuth, readTabSession, refreshSession,
   requestEmailCode, requestSmsCode, verifySmsCode, phoneOtpEnabled, privateHistoryEnabled, caseLinkEnabled,
-  saveTabSession, signOutSession, verifyEmailCode,
+  saveTabSession, signOutSession, verifyEmailCode, listingSubmissionsEnabled,
   type CitizenSession,
 } from './auth-api.ts';
 
@@ -15,6 +15,7 @@ interface AuthState {
   reportHistoryAvailable:boolean;
   caseLinksAvailable:boolean;
   caseTimelineAvailable:boolean;
+  listingSubmissionsAvailable:boolean;
   requestCode(email: string): Promise<void>;
   verifyCode(email: string, code: string): Promise<void>;
   requestPhoneCode(phone:string):Promise<void>;
@@ -23,7 +24,8 @@ interface AuthState {
   rpc<T>(name: 'civic_submit_review'|'civic_request_claim'|'civic_my_reviews'|'civic_my_claims' |
     'civic_link_private_report'|'civic_my_private_reports'|'civic_unlink_private_report'|
     'civic_request_case_link'|'civic_redeem_case_link'|
-    'civic_my_case_timeline'|'civic_set_case_notice_preference'|'civic_request_case_review',
+    'civic_my_case_timeline'|'civic_set_case_notice_preference'|'civic_request_case_review'|
+    'civic_submit_directory_listing'|'civic_my_directory_submissions'|'civic_withdraw_directory_submission',
     body: Record<string,unknown>): Promise<T>;
 }
 const AuthContext = React.createContext<AuthState | null>(null);
@@ -82,6 +84,9 @@ export function CitizenAuthProvider({ children }: { children: React.ReactNode })
        name==='civic_request_case_review')&&
        (!privateHistoryEnabled()||!caseTimelineEnabled()))
       throw new Error('Private case timeline is not active.');
+    if((name==='civic_submit_directory_listing'||name==='civic_my_directory_submissions'||
+       name==='civic_withdraw_directory_submission')&&!listingSubmissionsEnabled())
+      throw new Error('Directory submission service is not yet activated. Your local draft is safe.');
     try {
       // The direct, authenticated PostgREST RPC verifies its own JWT and role.
       const result = await authorizedRpc<unknown>(config,session,name,body);
@@ -101,6 +106,7 @@ export function CitizenAuthProvider({ children }: { children: React.ReactNode })
     phoneAvailable:phoneOtpEnabled(),reportHistoryAvailable:privateHistoryEnabled(),
     caseLinksAvailable:caseLinkEnabled(),
     caseTimelineAvailable:privateHistoryEnabled()&&caseTimelineEnabled(),
+    listingSubmissionsAvailable:listingSubmissionsEnabled(),
     requestCode,verifyCode,requestPhoneCode,verifyPhoneCode,signOut,rpc,
   };
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

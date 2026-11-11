@@ -57,6 +57,10 @@ jobs:
         run: psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f tests/install-citizen-proposal.sql
       - name: Verify signed-in reviews, claims and privacy gates
         run: node --experimental-strip-types --test tests/citizen-postgis.mjs
+      - name: Install private directory proposal in disposable CI database
+        run: psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f tests/install-directory-submission-proposal.sql
+      - name: Verify owner-only listing submissions and moderation privacy
+        run: node --experimental-strip-types --test tests/directory-submissions-postgis.mjs
       - name: Apply private reporting proposals in disposable CI database only
         run: |
           psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 \
