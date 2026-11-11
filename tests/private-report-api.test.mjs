@@ -67,17 +67,22 @@ class FakePrivateDb {
 function env(overrides = {}) {
   return {
     REPORTING_ENABLED:'true',
+    REPORTING_BOUND_ORIGIN:'https://ekiti.example',
+    REPORTING_OPERATOR_ID:'test-independent-operator',
+    REPORTING_RELEASE_APPROVAL_ID:'test-only-not-a-real-approval',
+    REPORTING_RETENTION_JOB_VERIFIED:'true',
     REPORTING_HYPERDRIVE:{connectionString:'postgres://private-only-in-tests'},
     REPORTING_POLICY_VERSION:policy,
     REPORTING_RETENTION_DAYS:'30',
     REPORTING_LIMIT:{limit: async () => ({ success:true })},
+    REPORTING_TRACK_LIMIT:{limit: async () => ({ success:true })},
     ...overrides,
   };
 }
 function request(path, body = valid, overrides = {}) {
   return new Request('https://ekiti.example'+path,{
     method:'POST',
-    headers:{'Content-Type':'application/json',...overrides},
+    headers:{'Content-Type':'application/json',Origin:'https://ekiti.example',...overrides},
     body:JSON.stringify(body),
   });
 }
@@ -178,6 +183,12 @@ test('enabled handler requires a dedicated backend, retention and rate limiter',
   for(const overrides of [
     {REPORTING_HYPERDRIVE:undefined},
     {REPORTING_LIMIT:undefined},
+    {REPORTING_TRACK_LIMIT:undefined},
+    {REPORTING_OPERATOR_ID:undefined},
+    {REPORTING_RELEASE_APPROVAL_ID:undefined},
+    {REPORTING_RETENTION_JOB_VERIFIED:undefined},
+    {REPORTING_BOUND_ORIGIN:undefined},
+    {REPORTING_BOUND_ORIGIN:'http://ekiti.example'},
     {REPORTING_POLICY_VERSION:undefined},
     {REPORTING_RETENTION_DAYS:'0'},
     {REPORTING_RETENTION_DAYS:'366'},
@@ -197,6 +208,13 @@ test('reject cross-origin calls, GET requests, query-string tokens, invalid medi
   assert.equal(foreign.status,403);
   const crossSite=await handlePrivateReporting(request('/api/reports',valid,{'Sec-Fetch-Site':'cross-site'}),config,fail);
   assert.equal(crossSite.status,403);
+  const noOrigin=await handlePrivateReporting(request('/api/reports',valid,{Origin:''}),config,fail);
+  assert.equal(noOrigin.status,403);
+  const wrongHost=await handlePrivateReporting(new Request('https://unapproved.example/api/reports',{
+    method:'POST',headers:{'Content-Type':'application/json',Origin:'https://ekiti.example'},
+    body:JSON.stringify(valid),
+  }),config,fail);
+  assert.equal(wrongHost.status,403);
   const wrongMethod=await handlePrivateReporting(new Request('https://ekiti.example/api/reports'),config,fail);
   assert.equal(wrongMethod.status,405);
   const queryToken=await handlePrivateReporting(request('/api/tracking?secret=leak'),config,fail);
