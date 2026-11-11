@@ -42,10 +42,7 @@ export async function playPreviewChime():Promise<boolean>{
      osc.start(now+tone.start);osc.stop(now+tone.start+0.16);
    }
    // Short original chime, with no continuous polling or background audio.
-   await new Promise<void>(resolve=>{
-     const timeout=window.setTimeout(resolve,420);
-     void context?.suspend().then(()=>window.clearTimeout(timeout),()=>{});
-   });
+   await new Promise<void>(resolve=>window.setTimeout(resolve,420));
    return true;
  }catch{return false;}
  finally{if(context)void context.close().catch(()=>{});}
