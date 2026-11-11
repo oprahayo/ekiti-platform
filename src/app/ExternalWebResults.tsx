@@ -101,7 +101,8 @@ export default function ExternalWebResults({query}:{query:string}) {
         <p>News, public websites and other platforms mentioning Ekiti.</p>
       </div>
     </div>
-    <p className="search-web-privacy">Search terms are shared with an external provider only when you choose to search.
+    <p className="search-web-privacy">Only when you click a source action will your public query be sent to outside providers.
+      If optional AI summaries are configured, selected public excerpts may also be sent to an AI provider.
       Do not enter private reports, names, phone numbers or confidential details here.</p>
     <div className="search-web-actions">
       <button type="button" className="search-web-action search-web-read" onClick={readSources}
