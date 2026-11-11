@@ -60,6 +60,8 @@ jobs:
         run: node --experimental-strip-types --test tests/citizen-report-links-postgis.mjs
       - name: Verify Sprint 10 one-time case-message delivery and redemption in disposable PostGIS
         run: node --experimental-strip-types --test tests/case-link-delivery-postgis.mjs
+      - name: Verify Sprint 11 scoped case timelines and consent in disposable PostGIS
+        run: node --experimental-strip-types --test tests/case-timeline-postgis.mjs
       - run: npm run test:postgis
       - run: psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f scripts/coverage.sql
 
