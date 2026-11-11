@@ -6,6 +6,7 @@ import WelcomeHome from './WelcomeHome.tsx';
 import { AppProvider, useApp } from './state.tsx';
 import { CitizenAuthProvider } from './CitizenAuth.tsx';
 import { CivicProductsMenu } from './CivicProductsMenu.tsx';
+import InnerSearchBar from './InnerSearchBar.tsx';
 import './search-engine-home.css';
 
 const Ask = React.lazy(() => import('./AskExperience.tsx').then(mod => ({ default: mod.Ask })));
@@ -118,7 +119,9 @@ function BottomNav() {
 
 function Shell() {
   const location = useLocation();
-  const isSearch = location.pathname === '/search' || location.pathname === '/';
+  const isHome=location.pathname === '/';
+  const isSearch=location.pathname === '/search' || isHome;
+  const showInnerSearch=!isHome && location.pathname!=='/search';
   const isChat = ['/', '/ask', '/report', '/track'].includes(location.pathname) ||
     location.pathname.startsWith('/track/');
   const scrollByRoute = React.useRef<Map<string, number>>(new Map());
@@ -130,10 +133,11 @@ function Shell() {
       previousRoute.current = location.pathname;
     }
   }, [location.pathname]);
-  return <div className={isSearch ? "app-shell search-shell" : "app-shell"}>
+  return <div className={isSearch ? "app-shell search-shell" : "app-shell inner-search-shell"}>
     <a className="skip-link" href="#main">Skip to content</a>
     <header className={'app-header ' + (isChat ? 'chat-app-header' : '')}>
       <Link className="wordmark" to="/" aria-label="Ekiti Civic home">ekit<span className="brand-i">i</span><small>civic</small></Link>
+      {showInnerSearch && <InnerSearchBar />}
       <HeaderControls />
       <Link to="/profile" className="header-profile-link" aria-label="Citizen profile"><Icon name="profile" /></Link>
     </header>
