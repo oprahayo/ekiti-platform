@@ -36,7 +36,9 @@ test('sound toggle and preview are user-controlled; no request for notification 
   const checkbox=page.getByLabel('Sound alerts');
   await checkbox.check();
   await expect(checkbox).toBeChecked();
-  await page.getByLabel('Demo alert chime volume').fill('0');
+  await page.getByLabel('Demo alert chime volume').focus();
+  await page.getByLabel('Demo alert chime volume').press('Home');
+  await expect(page.getByLabel('Demo alert chime volume')).toHaveValue('0');
   await page.getByRole('button',{name:'Preview two-tone alert'}).click();
   await expect(page.getByLabel('Sound alerts')).toBeChecked();
   await checkbox.uncheck();
