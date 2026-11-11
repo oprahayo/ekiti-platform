@@ -60,7 +60,7 @@ export default function ReportPrivacy() {
     </section>
     <section className="preview-privacy-section">
       <h2>Optional nearby directory search</h2>
-      <p>Explore includes a separate Find verified places near me action. Only after you press it
+      <p>Explore includes a separate Find nearby places by distance action. Only after you press it
         will the browser ask for your current device location and, if permission is granted,
         send the coordinate pair in a short-lived request body to the first-party
         <code>/api/places/nearby</code> endpoint. A separate Near me control only filters by
