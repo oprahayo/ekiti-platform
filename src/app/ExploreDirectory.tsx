@@ -252,6 +252,7 @@ export default function ExploreDirectory() {
     </section>}
 
     <div className="directory-secondary">
+      <Link to="/map" className="quiet-action atlas-open-link">Open Ekiti interactive map</Link>
       <button type="button" className="quiet-action" onClick={() => setMapOpen(value => !value)}>
         {mapOpen ? 'Hide Ekiti map' : 'View LGA boundaries on map'}
       </button>
