@@ -33,6 +33,38 @@ export function parseExternalQuery(params:URLSearchParams):string {
     throw new ExternalQueryError();
   return query;
 }
+/**
+ * A wide web provider can return Nigerian or unrelated results even when
+ * "Ekiti" is present in the request. The returned content itself must
+ * establish an Ekiti connection; merely adding Ekiti to q is not evidence.
+ *
+ * Strong locality names are included here, but ambiguous short names (e.g.
+ * Oye, Ise, Ado) intentionally cannot qualify a result on their own.
+ */
+const ekitiEvidence=/\bekiti\b|\bado[\s-]+ekiti\b|\bikogosi\b|\bikere[\s-]+ekiti\b|\bikole[\s-]+ekiti\b|\bilawe[\s-]+ekiti\b|\bile[\s-]+ife[\s-]+ekiti\b|\befon[\s-]+alaaye\b|\bijero[\s-]+ekiti\b|\biludun[\s-]+ekiti\b|\beda[\s-]+oniyo\b/i;
+const ekitiGovHost=/^(?:www\.)?ekitistate\.gov\.ng$/i;
+
+export function ekitiResultRelevance(result:{
+  title:string;description:string;url:string;domain:string
+}):number {
+  let host='';
+  try{host=new URL(result.url).hostname.toLowerCase();}
+  catch{return 0;}
+  const titleEvidence=ekitiEvidence.test(result.title);
+  const descriptionEvidence=ekitiEvidence.test(result.description);
+  const urlEvidence=ekitiEvidence.test(new URL(result.url).pathname.replace(/[_%-]/g,' '));
+  const official=ekitiGovHost.test(host);
+  if(!official&&!titleEvidence&&!descriptionEvidence&&!urlEvidence)return 0;
+  return (official?5:0)+(titleEvidence?4:0)+(descriptionEvidence?2:0)+(urlEvidence?1:0);
+}
+
+function rankedEkitiResults(items:ExternalWebResult[]):ExternalWebResult[] {
+  return items.map((item,index)=>({item,index,score:ekitiResultRelevance(item)}))
+    .filter(value=>value.score>0)
+    .sort((a,b)=>b.score-a.score||a.index-b.index)
+    .slice(0,8).map(value=>value.item);
+}
+
 function verifiedWebUrl(value:unknown):string|null {
   if(typeof value!=='string'||value.length>2000)return null;
   try {
@@ -73,7 +105,8 @@ export async function fetchEkitiWebResults(
   if(!key.trim())throw new ExternalProviderError('Web search unavailable');
   const url=new URL('https://api.search.brave.com/res/v1/web/search');
   url.searchParams.set('q',/\bekiti\b/i.test(query)?query:'Ekiti State Nigeria '+query);
-  url.searchParams.set('count','8');
+  // Request a modest candidate pool; relevance is validated before display.
+  url.searchParams.set('count','16');
   // Ekiti/Nigeria intent is in q; omit optional country filters for API compatibility.
   url.searchParams.set('search_lang','en');
   url.searchParams.set('safesearch','strict');
@@ -106,11 +139,11 @@ export async function fetchEkitiWebResults(
       title,description:textValue(entry.description,360),
       url:verified,domain:canonical.hostname,
     });
-    if(safe.length===8)break;
+    if(safe.length===16)break;
   }
   return {
     query,scope:'ekiti-public-web',provider:'Brave Search',
-    verifiedByEkitiCivic:false,results:safe,
+    verifiedByEkitiCivic:false,results:rankedEkitiResults(safe),
   };
 }
 
@@ -149,5 +182,5 @@ export async function fetchEkitiWikipediaResults(
     });
   }
   return {query,scope:'ekiti-public-web',provider:'Wikipedia',
-    verifiedByEkitiCivic:false,results};
+    verifiedByEkitiCivic:false,results:rankedEkitiResults(results)};
 }
