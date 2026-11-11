@@ -1,0 +1,51 @@
+name: Audit live Ekiti staging release
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - integration/staging-citizen-admin-sprints-03-12
+    paths:
+      - .github/workflows/audit-live-staging.yml
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Inspect both public deployment manifests without credentials
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+        run: |
+          node --input-type=module <<'EOF'
+          const targets = [
+            ['citizen', 'https://ekiti-platform-staging.inekitikete.workers.dev/staging-build.json'],
+            ['admin-demo', 'https://ekiti-admin-demo-staging.inekitikete.workers.dev/staging-build.json'],
+          ];
+          for(const [target,url] of targets){
+            try {
+              const response=await fetch(url,{redirect:'error',signal:AbortSignal.timeout(15000),
+                headers:{'Cache-Control':'no-cache'}});
+              const raw=await response.text();
+              let manifest;
+              try { manifest=JSON.parse(raw); } catch {
+                console.log(target+': NO RELEASE MANIFEST (HTTP '+response.status+
+                  ', content-type '+response.headers.get('content-type')+')');
+                continue;
+              }
+              const valid=manifest.target===target&&
+                manifest.branch==='integration/staging-citizen-admin-sprints-03-12'&&
+                /^[a-f0-9]{40}$/.test(manifest.commit||'');
+              console.log(target+': HTTP '+response.status+
+                '; unified release manifest '+(valid?'PRESENT':'INVALID')+
+                '; deployed commit='+(valid?manifest.commit:'unknown')+
+                '; current GitHub commit='+process.env.EXPECTED_SHA);
+            } catch(error) {
+              console.log(target+': UNREACHABLE ('+
+                (error instanceof Error?error.message:'network error')+')');
+            }
+          }
+          EOF
