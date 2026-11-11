@@ -123,13 +123,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         typeof result.lga.match.id === 'string' &&
         lgas.some(area => area.id === result.lga!.match!.id)) {
         const match = result.lga.match;
-        const knownName = lgas.find(area => area.id === match.id)!.name;
+        const matchId = match.id;
+        if (typeof matchId !== 'string') throw new PositionError('unavailable');
+        const knownName = lgas.find(area => area.id === matchId)!.name;
         const ward = result.ward?.match;
         const wardName = result.consistency === 'consistent' &&
-          result.ward?.status === 'matched' && ward?.parentId === match.id &&
-          !ward.onBoundary && !result.stateOnBoundary && !match.onBoundary ?
-            ward.name : undefined;
-        setExploreLga(match.id);
+          result.ward?.status === 'matched' &&
+          ward !== null && ward !== undefined &&
+          ward.parentId === matchId && !ward.onBoundary &&
+          !result.stateOnBoundary && !match.onBoundary &&
+          typeof ward.name === 'string' ? ward.name : undefined;
+        setExploreLga(matchId);
         setDeviceLocation({
           status: 'matched', lgaName: knownName, wardName,
           message: 'Showing verified Ekiti LGA results for ' + knownName +
