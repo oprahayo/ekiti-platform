@@ -38,7 +38,8 @@ test('vulnerable-person and retaliation choices restrict photo/video/audio captu
   await page.goto('/report');
   await page.getByRole('button',{name:'Photo',exact:true}).click();
   await page.getByRole('button',{name:'Security',exact:true}).click();
-  await page.getByRole('checkbox',{name:'It involves a child or a vulnerable person'}).check();
+  await page.getByText('Optional safety and privacy details').click();
+  await page.getByRole('checkbox',{name:'I need extra privacy protection for someone affected'}).check();
   await page.getByRole('checkbox',{name:'I am worried about threats, identification or retaliation'}).check();
   await expect(page.getByText(/Media capture is disabled for this sensitive draft/)).toBeVisible();
   await page.locator('#guided-description').fill('A threatening situation was witnessed near a public facility yesterday.');

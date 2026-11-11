@@ -145,7 +145,8 @@ test('safeguarding flags suppress sensitive coordinate checks; 280px remains usa
   await page.goto('/report');
   await page.getByRole('button',{name:'Write text'}).click();
   await page.getByRole('button',{name:'Security',exact:true}).click();
-  await page.getByRole('checkbox',{name:'It involves a child or a vulnerable person'}).check();
+  await page.getByText('Optional safety and privacy details').click();
+  await page.getByRole('checkbox',{name:'I need extra privacy protection for someone affected'}).check();
   await page.locator('#guided-description').fill(
     'Someone reported threats near the public facility, no names should be shared.');
   await page.getByRole('button',{name:'Continue',exact:true}).click();

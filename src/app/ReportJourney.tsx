@@ -2,6 +2,7 @@ import * as React from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { lgas } from './fixtures.ts';
 import IncidentLocationPicker from './IncidentLocationPicker.tsx';
+import EmergencyContactNotice from './EmergencyContactNotice.tsx';
 import {inferEkitiLocality} from '../geo/reviewed-localities.ts';
 import { useApp } from './state.tsx';
 import {
@@ -445,6 +446,7 @@ export default function ReportJourney() {
     </section>}
 
     {!typing && step === 'description' && <form className="guided-input-form" onSubmit={event=>{event.preventDefault();nextDescription();}}>
+      {!feedback && (category==='Emergency' || immediateDanger==='yes') && <EmergencyContactNotice />}
       <fieldset className="guided-triage-question">
         <legend>{taxonomyQuestion(category,language)}</legend>
         <div className="guided-triage-options">
@@ -457,7 +459,9 @@ export default function ReportJourney() {
         <p className="guided-hint">{language==='yo'
           ? 'O lè fo ìbéèrè yìí bí o kò bá mọ ìdáhùn.' : 'Choose a detail if it fits, or continue without selecting one.'}</p>
       </fieldset>
-      {!feedback && <fieldset className="guided-triage-question">
+      <details className="guided-optional-safety">
+        <summary>Optional safety and privacy details</summary>
+        {!feedback && <fieldset className="guided-triage-question">
         <legend>{language==='yo' ? 'Ṣé ẹnikẹ́ni wà nínú ewu báyìí?' : 'Is anyone in immediate danger right now?'}</legend>
         <div className="guided-triage-options">
           {([
@@ -474,13 +478,13 @@ export default function ReportJourney() {
             Ekiti Civic cannot dispatch help, preserve emergency recordings or alert an agency.
           </p>}
         <p className="guided-hint">This answer only helps prepare a private draft for future human review. No priority is assigned or alert sent.</p>
-      </fieldset>}
-      <fieldset className="guided-safeguard-fieldset">
+        </fieldset>}
+        <fieldset className="guided-safeguard-fieldset">
         <legend>{language==='yo' ? 'Ṣé ọ̀rọ̀ yìí lè fi ẹnikẹ́ni sínú ewu?' : 'Could this report expose someone to harm?'}</legend>
         <label><input type="checkbox" checked={safeguardConcerns.includes('vulnerable_person')}
           onChange={event=>toggleSafeguard('vulnerable_person',event.target.checked)}/>
           {language==='yo' ? 'Ó kan ọmọ tàbí ẹni tó nílò ààbò pàtàkì' :
-            'It involves a child or a vulnerable person'}</label>
+            'I need extra privacy protection for someone affected'}</label>
         <label><input type="checkbox" checked={safeguardConcerns.includes('retaliation')}
           onChange={event=>toggleSafeguard('retaliation',event.target.checked)}/>
           {language==='yo' ? 'Mo bẹ̀rù ìhalẹ̀ tàbí ìgbẹ̀san' :
@@ -491,7 +495,8 @@ export default function ReportJourney() {
           This preview cannot keep identities confidential or alert protection services.
         </p>}
         <p className="guided-hint">These safety choices are advisory and stay in this page's memory only; they are not saved or sent.</p>
-      </fieldset>
+        </fieldset>
+      </details>
       <label htmlFor="guided-description">Your report</label>
       <textarea id="guided-description" rows={4} maxLength={4000} value={description}
         onChange={event=>{setDescription(event.target.value);setValidation('');}}
