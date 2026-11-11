@@ -119,3 +119,20 @@ test('emergency instructions are immediate, never delayed for typing animation',
   await expect(page.getByText(/contact emergency services directly/)).toBeVisible();
   await expect(page.getByLabel('Ekiti Civic is typing')).toHaveCount(0);
 });
+
+test('visual review: home, report and compact Explore at 280, 390 and 1280px', async ({page}) => {
+  for(const width of [280,390,1280]) {
+    await page.setViewportSize({width,height:844});
+    await page.goto('/');
+    await expect(page.locator('.welcome-dice-list .welcome-action')).toHaveCount(5);
+    await page.screenshot({path:'test-results/sprint-01-refinement/home-'+width+'.png',fullPage:true});
+    await page.goto('/report');
+    await expect(page.getByText(/Welcome\. I will guide you through a report/)).toBeVisible();
+    await page.screenshot({path:'test-results/sprint-01-refinement/report-'+width+'.png',fullPage:true});
+    await page.goto('/explore');
+    await expect(page.locator('.directory-category-tile')).toHaveCount(24);
+    await page.screenshot({path:'test-results/sprint-01-refinement/explore-'+width+'.png',fullPage:true});
+    const w=await page.evaluate(()=>document.documentElement.scrollWidth);
+    expect(w).toBeLessThanOrEqual(width);
+  }
+});
