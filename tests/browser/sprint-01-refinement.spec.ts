@@ -80,7 +80,7 @@ test('Explore removes Yellow Pages branding, hides LGA selector, and fits compac
   });
   expect(sizes.yDiff).toBeLessThan(3);
   expect(sizes.height).toBeLessThanOrEqual(110);
-  expect(sizes.columns).toBe(4);
+  expect(sizes.columns).toBe(3);
   expect(sizes.scroll).toBeLessThanOrEqual(sizes.viewport);
   await expect(page.locator('.directory-manual-area')).not.toHaveAttribute('open');
   await page.locator('.directory-manual-area summary').click();
