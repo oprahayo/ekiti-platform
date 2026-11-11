@@ -7,7 +7,7 @@ test('search-first homepage sends an Ekiti service query to reviewed directory s
   await expect(box).toBeVisible();
   await box.fill('electrician in Ikere');
   await page.getByRole('button',{name:'Search Ekiti'}).click();
-  await expect(page).toHaveURL(/\/explore/);
+  await expect(page).toHaveURL(/\/search\?q=electrician\+in\+Ikere/);
   await expect(page.getByRole('searchbox').first()).toHaveValue('electrician in Ikere');
 });
 

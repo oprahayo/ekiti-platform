@@ -12,6 +12,7 @@ const LegacyReport = React.lazy(() => import('./Report.tsx'));
 const ListingDraft = React.lazy(() => import('./ContributionDrafts.tsx'));
 const Track = React.lazy(() => import('./TrackConversation.tsx'));
 const Explore = React.lazy(() => import('./ExploreDirectory.tsx'));
+const ReviewedSearch = React.lazy(() => import('./ReviewedSearch.tsx'));
 const PlaceDetails = React.lazy(() => import('./PlaceDetails.tsx'));
 const CitizenProfile = React.lazy(() => import('./CitizenProfile.tsx'));
 const CaseLinkClaim = React.lazy(() => import('./CaseLinkClaim.tsx'));
@@ -98,6 +99,7 @@ function BottomNav() {
 
 function Shell() {
   const location = useLocation();
+  const isSearch = location.pathname === '/search';
   const isChat = ['/', '/ask', '/report', '/track'].includes(location.pathname) ||
     location.pathname.startsWith('/track/');
   const scrollByRoute = React.useRef<Map<string, number>>(new Map());
@@ -109,7 +111,7 @@ function Shell() {
       previousRoute.current = location.pathname;
     }
   }, [location.pathname]);
-  return <div className="app-shell">
+  return <div className={isSearch ? "app-shell search-shell" : "app-shell"}>
     <a className="skip-link" href="#main">Skip to content</a>
     <header className={'app-header ' + (isChat ? 'chat-app-header' : '')}>
       <Link className="wordmark" to="/" aria-label="Ekiti Civic home">ekit<span className="brand-i">i</span><small>civic</small></Link>
@@ -122,6 +124,7 @@ function Shell() {
           <Route path="/" element={<WelcomeHome />} />
           <Route path="/ask" element={<Ask />} />
           <Route path="/explore" element={<Explore />} />
+          <Route path="/search" element={<ReviewedSearch />} />
           <Route path="/report" element={<Report />} />
           <Route path="/privacy" element={<ReportPrivacy />} />
           <Route path="/report/text-draft" element={<LegacyReport />} />
