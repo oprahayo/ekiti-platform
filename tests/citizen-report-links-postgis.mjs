@@ -57,7 +57,7 @@ test('Sprint 09 receipt-to-account proposal is opt-in, least privileged and cros
         [reference,secret]);
       assert.equal(denied.rows[0].linked,false);
       assert.equal((await db.query('SELECT * FROM public.civic_my_private_reports()')).rowCount,0);
-      await db.query('RESET ROLE');
+      await db.query('SET LOCAL ROLE postgres');
       assert.equal((await db.query('SELECT enabled FROM civic_private.citizen_link_release')).rows[0].enabled,false);
     });
     // A privileged operator explicitly approves this TEST ONLY inside an
@@ -65,6 +65,9 @@ test('Sprint 09 receipt-to-account proposal is opt-in, least privileged and cros
     await db.query(`UPDATE civic_private.citizen_link_release
       SET enabled=true,approved_at=now(),review_id='CI-ONLY-OPERATOR-APPROVAL-NEVER-LIVE'
       WHERE singleton=true`);
+    assert.equal((await db.query('SELECT enabled FROM civic_private.citizen_link_release')).rows[0].enabled,true);
+    assert.equal((await db.query(`SELECT tracking_secret_digest=extensions.digest(convert_to($1,'UTF8'),'sha256') AS matches
+      FROM civic_private.reports WHERE id=$2`,[secret,id])).rows[0].matches,true);
 
     await t.test('guest cannot link, wrong secret fails and correct secret links only to explicit account',async()=>{
       const guest=await db.query('SELECT public.civic_link_private_report($1,$2) AS linked',
@@ -75,13 +78,15 @@ test('Sprint 09 receipt-to-account proposal is opt-in, least privileged and cros
       const bad=await db.query('SELECT public.civic_link_private_report($1,$2) AS linked',
         [reference,wrongSecret]);
       assert.equal(bad.rows[0].linked,false);
+      const authStatus=await db.query('SELECT auth.uid() AS uid');
+      assert.equal(authStatus.rows[0].uid,userA,'JWT subject is present for signed-in RPC');
       const good=await db.query('SELECT public.civic_link_private_report($1,$2) AS linked',
         [reference,secret]);
       assert.equal(good.rows[0].linked,true);
       const retry=await db.query('SELECT public.civic_link_private_report($1,$2) AS linked',
         [reference,secret]);
       assert.equal(retry.rows[0].linked,true);
-      await db.query('RESET ROLE');
+      await db.query('SET LOCAL ROLE postgres');
       const raw=await db.query(`SELECT citizen_id FROM civic_private.citizen_case_links
         WHERE report_id=$1`,[id]);
       assert.deepEqual(raw.rows,[{citizen_id:userA}]);
@@ -108,7 +113,7 @@ test('Sprint 09 receipt-to-account proposal is opt-in, least privileged and cros
       assert.equal(steal.rows[0].linked,false,'correct receipt does not silently transfer ownership');
       const unlinkOther=await db.query('SELECT public.civic_unlink_private_report($1) AS unlinked',[reference]);
       assert.equal(unlinkOther.rows[0].unlinked,false);
-      await db.query('RESET ROLE');
+      await db.query('SET LOCAL ROLE postgres');
     });
     await t.test('owner can explicitly unlink; report is not deleted and link reclaims only with receipt',async()=>{
       await db.query('SET LOCAL ROLE authenticated');
@@ -116,14 +121,14 @@ test('Sprint 09 receipt-to-account proposal is opt-in, least privileged and cros
       const removed=await db.query('SELECT public.civic_unlink_private_report($1) AS unlinked',[reference]);
       assert.equal(removed.rows[0].unlinked,true);
       assert.equal((await db.query('SELECT * FROM public.civic_my_private_reports()')).rowCount,0);
-      await db.query('RESET ROLE');
+      await db.query('SET LOCAL ROLE postgres');
       assert.equal((await db.query('SELECT id FROM civic_private.reports WHERE id=$1',[id])).rowCount,1);
       await db.query('SET LOCAL ROLE authenticated');
       await db.query("SELECT set_config('request.jwt.claim.sub',$1,true)",[userB]);
       const relink=await db.query('SELECT public.civic_link_private_report($1,$2) AS linked',
         [reference,secret]);
       assert.equal(relink.rows[0].linked,true);
-      await db.query('RESET ROLE');
+      await db.query('SET LOCAL ROLE postgres');
     });
     await t.test('retention deletion cascades to linked account index',async()=>{
       await db.query('DELETE FROM civic_private.reports WHERE id=$1',[id]);
