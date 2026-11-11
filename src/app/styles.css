@@ -1333,3 +1333,49 @@ button { min-height: 44px; border-radius: var(--radius-input); font-size: 14px; 
 @media(prefers-reduced-motion:reduce){
   .welcome-dice-list>.welcome-action{transition:none}
 }
+
+/* Sprint 02: compact, keyboard-accessible conversation editing and
+   user-initiated session-draft recovery. No automatic PII persistence. */
+.guided-chat-tools{justify-content:flex-end;gap:9px;min-height:38px}
+.guided-back{
+  margin-right:auto;
+  min-height:38px;
+  border:1px solid var(--border);
+  border-radius:999px;
+  background:var(--surface);
+  color:var(--text-primary);
+  font-size:12px;
+  font-weight:600;
+  padding:7px 13px;
+}
+.guided-back:focus-visible,.guided-sound-toggle:focus-visible,
+.guided-resume button:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.guided-resume{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+  background:var(--surface-muted);
+  border:1px solid var(--border);
+  border-radius:13px;
+  padding:12px 13px;
+  margin:4px 0 15px;
+}
+.guided-resume strong{font-size:13px;font-weight:700}
+.guided-resume p{font-size:11px;color:var(--text-secondary);line-height:1.5;margin:4px 0 0}
+.guided-resume-actions{display:flex;gap:7px;flex-wrap:wrap}
+.guided-resume-actions button{
+  min-height:44px;
+  padding:7px 11px;
+  border:1px solid var(--border);
+  border-radius:9px;
+  background:var(--surface);
+  color:var(--text-primary);
+  font-size:12px;
+}
+.guided-resume-actions button:first-child{
+  background:var(--positive);
+  color:var(--surface);
+  border-color:var(--positive);
+}
