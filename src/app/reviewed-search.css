@@ -158,3 +158,38 @@
   margin:12px 0 0;padding-top:10px;border-top:1px solid var(--border);
 }
 @media(max-width:480px){.search-web-highlights{padding:14px;border-radius:12px}}
+
+
+/* Public-source answer: read-first layout, then ordinary external links. */
+.search-web-actions {display:flex;align-items:center;gap:9px 15px;flex-wrap:wrap;margin:12px 0 18px}
+.search-web-actions>span {font-size:12px;color:var(--text-secondary)}
+.search-web-read {border-color:var(--text-primary);background:var(--text-primary);color:var(--surface)}
+.search-web-read:hover {background:var(--text-primary);color:var(--surface)}
+.search-web-read:disabled {opacity:.6}
+.search-grounded-answer {
+  max-width:795px;padding:20px 0 22px;margin:16px 0 28px;
+  border-top:1px solid var(--border);border-bottom:1px solid var(--border);
+}
+.search-grounded-heading {display:flex;align-items:baseline;gap:8px 18px;
+  flex-wrap:wrap;margin-bottom:14px}
+.search-grounded-heading h3 {font-size:18px;font-weight:650;letter-spacing:-.02em}
+.search-grounded-heading small {font-size:11px;color:var(--text-tertiary)}
+.search-grounded-claims {max-width:72ch}
+.search-grounded-claims p {font-size:15px;line-height:1.75;color:var(--text-primary);
+  margin:10px 0;overflow-wrap:anywhere}
+.search-grounded-claims a {font-size:11px;font-weight:700;color:var(--accent);
+  text-decoration:none;white-space:nowrap;padding-left:4px;vertical-align:super}
+.search-grounded-claims a:hover {text-decoration:underline}
+.search-grounded-citations {margin-top:19px;padding-top:13px;border-top:1px solid var(--border)}
+.search-grounded-citations>strong {font-size:12px;font-weight:650}
+.search-grounded-citations ol {list-style:none;margin:11px 0 0;padding:0;display:grid;gap:12px}
+.search-grounded-citations li {display:flex;flex-direction:column;gap:2px;min-width:0}
+.search-grounded-citations a {font-size:13px;line-height:1.5;font-weight:560;overflow-wrap:anywhere}
+.search-grounded-citations span {font-size:11px;color:var(--text-tertiary);line-height:1.4}
+@media(max-width:480px) {.search-grounded-answer {padding-block:16px}
+  .search-grounded-claims p {font-size:14px;line-height:1.65}}
+/* Search-results input uses a single border, independent of global input rules. */
+.search-results-page form.search-results-form > input[type="search"] {
+  flex:1 1 auto;min-width:0;width:0;max-width:none;
+  border:1px solid var(--border);background:var(--surface);box-shadow:none;
+}
