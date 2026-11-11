@@ -40,9 +40,11 @@ export type StaffSignInStep =
   | { kind: 'verified'; token: string };
 
 export class StaffRequestError extends Error {
-  constructor(readonly status: number = 0) {
+  readonly status: number;
+  constructor(status: number = 0) {
     super('Staff access could not be completed');
     this.name = 'StaffRequestError';
+    this.status = status;
   }
 }
 const id = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
