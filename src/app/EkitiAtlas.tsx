@@ -6,6 +6,7 @@ import {parseReviewedMapPins,type PublicDirectoryPin} from './map-public-data.ts
 const MapLocation=React.lazy(()=>import('./MapLocation.tsx'));
 type Layer='directory'|'reports';
 const areaNames=new Map(lgas.map(lga=>[lga.id,lga.name]));
+const EMPTY_PINS:readonly PublicDirectoryPin[]=[];
 export default function EkitiAtlas(){
   const [layer,setLayer]=React.useState<Layer>('directory');
   const [lga,setLga]=React.useState('');
@@ -89,7 +90,7 @@ export default function EkitiAtlas(){
     </section>}
     <React.Suspense fallback={<p role="status">Loading Ekiti LGA map…</p>}>
       <MapLocation mode={layer==='reports'?'public':'directory'}
-        pins={layer==='directory'?pins:[]}/>
+        pins={layer==='directory'?pins:EMPTY_PINS}/>
     </React.Suspense>
     <div className="atlas-links">
       <Link to="/explore">Browse all categories</Link>
