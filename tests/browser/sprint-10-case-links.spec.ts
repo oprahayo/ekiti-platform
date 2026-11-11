@@ -61,6 +61,6 @@ test('mobile private-link view remains readable without sideways scrolling',asyn
 test('Privacy disclosure makes no government delivery or completed SMS assertion',async({page})=>{
   await page.goto('/privacy');
   await expect(page.getByRole('heading',{name:'One-time email/SMS case links'})).toBeVisible();
-  await expect(page.getByText(/provider acceptance does not prove the message reached the recipient/)).toBeVisible();
+  await expect(page.getByText(/provider acceptance does not prove the message reached the recipient/i)).toBeVisible();
   await expect(page.getByText(/no actual email or SMS provider is connected/)).toBeVisible();
 });
