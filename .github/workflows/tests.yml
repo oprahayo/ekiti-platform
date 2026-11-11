@@ -63,6 +63,8 @@ jobs:
         run: psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f tests/install-admin-repository.sql
       - name: Test real PostgreSQL scoped admin queries and atomic audit/notes
         run: node --experimental-strip-types --test tests/admin-repository-postgis.mjs
+      - name: Verify Sprint 12 two-person staff approval and revocation on disposable PostGIS
+        run: node --experimental-strip-types --test tests/admin-staff-lifecycle-postgis.mjs
 
       - name: Build isolated administrative demo
         run: npm run build:admin
