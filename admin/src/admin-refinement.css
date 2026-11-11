@@ -103,3 +103,10 @@
 @media(max-width:320px){.ops-map-demo{white-space:normal}
   .ops-map-heading{flex-wrap:wrap}
   .ops-alert-shortcut{font-size:10px}}
+
+/* Exact map-to-queue geography remains separate from keyword search. */
+.ops-active-lga{display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:8px;padding:10px 16px;border-bottom:1px solid #dbe6de;
+  background:#f0f8f2;color:#294d3b;font-size:12px;line-height:1.5}
+.ops-active-lga button{border:1px solid #b8d2c1;border-radius:6px;
+  background:#fff;color:#246b58;padding:6px 10px;font-size:12px;font-weight:650}
