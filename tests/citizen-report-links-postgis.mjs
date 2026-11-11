@@ -28,11 +28,12 @@ test('Sprint 09 receipt-to-account proposal is opt-in, least privileged and cros
         has_schema_privilege('authenticated','civic_private','USAGE') AS schema,
         has_table_privilege('authenticated','civic_private.reports','SELECT') AS cases,
         has_table_privilege('authenticated','civic_private.citizen_case_links','SELECT') AS links,
+        has_table_privilege('authenticated','civic_private.citizen_link_release','UPDATE') AS enable_links,
         has_table_privilege('anon','civic_private.citizen_case_links','SELECT') AS anon_links,
         has_function_privilege('authenticated','public.civic_link_private_report(uuid,text)','EXECUTE') AS link_rpc,
         has_function_privilege('anon','public.civic_my_private_reports()','EXECUTE') AS anon_history,
         has_schema_privilege('ekiti_citizen_link_owner','public','CREATE') AS owner_create`);
-      assert.deepEqual(p,{schema:false,cases:false,links:false,anon_links:false,
+      assert.deepEqual(p,{schema:false,cases:false,links:false,enable_links:false,anon_links:false,
         link_rpc:true,anon_history:false,owner_create:false});
     });
     await db.query('INSERT INTO auth.users(id,email) VALUES ($1,$2),($3,$4)',
@@ -48,6 +49,22 @@ test('Sprint 09 receipt-to-account proposal is opt-in, least privileged and cros
     const id=report.rows[0].id,reference=report.rows[0].public_reference;
     await db.query(`INSERT INTO civic_private.case_events(report_id,kind,actor_kind)
       VALUES($1,'intake_accepted','system'),($1,'under_review','moderator')`,[id]);
+
+    await t.test('SQL installation is independently OFF even for a valid signed-in receipt',async()=>{
+      await db.query('SET LOCAL ROLE authenticated');
+      await db.query("SELECT set_config('request.jwt.claim.sub',$1,true)",[userA]);
+      const denied=await db.query('SELECT public.civic_link_private_report($1,$2) AS linked',
+        [reference,secret]);
+      assert.equal(denied.rows[0].linked,false);
+      assert.equal((await db.query('SELECT * FROM public.civic_my_private_reports()')).rowCount,0);
+      await db.query('RESET ROLE');
+      assert.equal((await db.query('SELECT enabled FROM civic_private.citizen_link_release')).rows[0].enabled,false);
+    });
+    // A privileged operator explicitly approves this TEST ONLY inside an
+    // uncommitted transaction. Browser credentials cannot update the switch.
+    await db.query(`UPDATE civic_private.citizen_link_release
+      SET enabled=true,approved_at=now(),review_id='CI-ONLY-OPERATOR-APPROVAL-NEVER-LIVE'
+      WHERE singleton=true`);
 
     await t.test('guest cannot link, wrong secret fails and correct secret links only to explicit account',async()=>{
       const guest=await db.query('SELECT public.civic_link_private_report($1,$2) AS linked',
