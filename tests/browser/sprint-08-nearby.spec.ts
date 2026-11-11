@@ -140,3 +140,17 @@ test('nearby search stays usable at 280px without overflowing or adding a dashbo
   expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(280);
   await page.screenshot({path:'test-results/sprint-08-review/explore-nearby-280.png',fullPage:true});
 });
+
+test('unclassified trades never return unrelated hotels or other nearby records',async({page})=>{
+  const calls=[];
+  page.on('request',request=>{
+    if(request.url().includes('/api/places/nearby'))calls.push(request.url());
+  });
+  await page.goto('/explore');
+  await page.getByRole('button',{name:'Plumbers',exact:true}).click();
+  await expect(page.getByText(/no reviewed directory classification yet/)).toBeVisible();
+  await expect(page.getByRole('button',{name:'Find verified places near me'})).toBeDisabled();
+  expect(calls).toEqual([]);
+  await page.getByRole('button',{name:/Browse all categories/}).click();
+  await expect(page.getByRole('button',{name:'Find verified places near me'})).toBeEnabled();
+});
