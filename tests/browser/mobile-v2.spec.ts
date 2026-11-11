@@ -91,9 +91,9 @@ test('Explore does not load map assets unless explicitly requested', async ({ pa
   await expect(page.locator('.directory-category-tile')).toHaveCount(24);
   await expect(page.locator('.place-row')).toHaveCount(0);
   expect(resources.some(url => /\/assets\/(map-|lga-)/.test(url))).toBe(false);
-  await page.getByRole('button', { name: 'View LGA boundaries on map' }).click();
-  await expect(page.locator('#map')).toBeVisible();
-  await expect(page.getByText('Illustrative places are not geocoded or pinned.')).toBeVisible();
+  await page.getByRole('button', { name: 'View interactive Ekiti directory map' }).click();
+  await expect(page.locator('.directory-review-map-canvas')).toBeVisible();
+  await expect(page.getByText('Sample directory entries are never pinned as real locations.')).toBeVisible();
 });
 
 test('Scores show the denominator and a negative metric without implying real outcomes', async ({ page }) => {

@@ -27,6 +27,17 @@ export interface AdminCaseEvent {
   createdAt: string;
   detail: string;
 }
+export type IntakeReviewKind='safeguarding_review'|'possible_duplicate'|'assignment_review';
+export interface AdminIntakeRecord extends AdminCaseRecord {
+  evidenceAccess:'blocked_pending_safeguarding';
+}
+export type IntakeReviewResult =
+  | {result:'queued'|'replayed';proposalId:string}
+  | {result:'conflict'|'not_available'};
+export interface IntakeReviewCommand {
+  actorId:string;caseId:string;kind:IntakeReviewKind;
+  targetLgaId:string|null;expectedRevision:number;
+}
 export type InternalNoteResult =
   | { result: 'created' | 'replayed'; eventId: string; revision: number }
   | { result: 'conflict' | 'not_found' };
@@ -54,6 +65,14 @@ export interface PrivateAdminRepository {
   findCase(id: string, actorId: string): Promise<AdminCaseRecord | null>;
   listEvents(caseId: string, limit: number, actorId: string): Promise<readonly AdminCaseEvent[]>;
   createInternalNote(command: InternalNoteCommand): Promise<InternalNoteResult>;
+  // Separate, operator-disabled Sprint 13 RPCs. Old private repositories may
+  // not implement them; absence always fails closed rather than falling back
+  // to unscoped local filtering of case records.
+  listIntake?(input:{
+    actorId:string;lgaId:string|null;kind:PrivateCaseKind|null;
+    state:PrivateCaseState|null;limit:number
+  }):Promise<readonly AdminIntakeRecord[]>;
+  proposeIntakeReview?(input:IntakeReviewCommand):Promise<IntakeReviewResult>;
   recordRead(input: { actorId: string; action: 'case_list' | 'case_read' | 'event_read'; caseId: string | null; lgaId: string | null }): Promise<void>;
 }
 export interface AdminRateLimit {
@@ -74,6 +93,9 @@ const lgaSlug = /^[a-z0-9][a-z0-9-]{1,63}$/;
 const allRoles = new Set(['platform_admin','case_manager','moderator','directory_reviewer','government_officer','auditor']);
 const caseStates = new Set(['intake_accepted','under_review','needs_information','closed']);
 const caseKinds = new Set(['Complaint','Commendation','Issue']);
+const reviewKinds=new Set<IntakeReviewKind>([
+  'safeguarding_review','possible_duplicate','assignment_review',
+]);
 
 function respond(data: unknown, status: number, extras: Record<string,string> = {}): Response {
   return Response.json(data, { status, headers: {
@@ -111,6 +133,24 @@ function validCase(record: AdminCaseRecord): boolean {
     caseStates.has(record.currentState) && Number.isSafeInteger(record.revision) &&
     record.revision >= 1 && !Number.isNaN(Date.parse(record.receivedAt)) &&
     !Number.isNaN(Date.parse(record.updatedAt));
+}
+function parseReview(input:string|null):
+  Omit<IntakeReviewCommand,'actorId'|'caseId'>|null {
+  if(input===null)return null;
+  let v:unknown;
+  try{v=JSON.parse(input);}catch{return null;}
+  if(!v||typeof v!=='object'||Array.isArray(v))return null;
+  const r=v as Record<string,unknown>;
+  if(Object.keys(r).sort().join(',')!=='expectedRevision,kind,targetLgaId'||
+     !reviewKinds.has(r.kind as IntakeReviewKind)||
+     !Number.isSafeInteger(r.expectedRevision)||Number(r.expectedRevision)<1||
+     (r.kind==='assignment_review'
+       ?typeof r.targetLgaId!=='string'||!lgaSlug.test(r.targetLgaId)
+       :r.targetLgaId!==null))
+     return null;
+  return {kind:r.kind as IntakeReviewKind,
+    expectedRevision:r.expectedRevision as number,
+    targetLgaId:r.targetLgaId as string|null};
 }
 function projectCase(r: AdminCaseRecord) {
   // Never return unknown repository fields, descriptions or tracking secrets.
@@ -175,10 +215,12 @@ export function createAdminGateway(options: AdminGatewayOptions): (request: Requ
       return notFound();
     const route = url.pathname;
     const casePath = /^\/admin\/api\/cases\/([a-f0-9-]{36})(?:\/(events|notes))?$/i.exec(route);
+    const intakePath=/^\/admin\/api\/intake\/([a-f0-9-]{36})\/proposals$/i.exec(route);
+    const intakeList=route==='/admin/api/intake';
     const casesList = route === '/admin/api/cases';
     const me = route === '/admin/api/me';
-    if (!casePath && !casesList && !me) return notFound();
-    const isWrite = !!casePath && casePath[2] === 'notes';
+    if (!casePath && !casesList && !me && !intakeList && !intakePath) return notFound();
+    const isWrite = (!!casePath && casePath[2] === 'notes')||!!intakePath;
     const method = isWrite ? 'POST' : 'GET';
     if (request.method !== method)
       return respond({ error: 'Method not allowed' }, 405, { Allow: method });
@@ -186,7 +228,11 @@ export function createAdminGateway(options: AdminGatewayOptions): (request: Requ
       (request.headers.has('Origin') && request.headers.get('Origin') !== options.origin) ||
       (isWrite && request.headers.get('Origin') !== options.origin))
       return forbidden();
-    if ((!casesList && url.search) || (casesList && [...url.searchParams.keys()].some(k => k !== 'limit' && k !== 'lga')) ||
+    if ((!casesList && !intakeList && url.search) ||
+      (intakeList && ([...url.searchParams.keys()].some(
+        k=>!['limit','lga','kind','state'].includes(k)) ||
+        ['limit','lga','kind','state'].some(k=>url.searchParams.getAll(k).length>1))) ||
+      (casesList && [...url.searchParams.keys()].some(k => k !== 'limit' && k !== 'lga')) ||
       (casesList && (url.searchParams.getAll('limit').length > 1 || url.searchParams.getAll('lga').length > 1)))
       return invalid();
     const tokenHeader = request.headers.get('Authorization');
@@ -218,6 +264,65 @@ export function createAdminGateway(options: AdminGatewayOptions): (request: Requ
         identity, membership, capability, target: { kind: 'case', lgaId: 'ado-ekiti' }, nowSeconds: now,
       });
       if (!canReadAnyCase) return forbidden();
+      if(intakeList){
+        if(!repo.listIntake)return notFound();
+        const query=url.searchParams;
+        const limitText=query.get('limit');
+        if(limitText!==null&&!/^(?:[1-9]|1[0-9]|2[0-5])$/.test(limitText))return invalid();
+        const limit=limitText===null?20:Number(limitText);
+        const lgaId=query.get('lga'),kind=query.get('kind'),state=query.get('state');
+        if((lgaId!==null&&!lgaSlug.test(lgaId))||
+          (kind!==null&&!caseKinds.has(kind))||
+          (state!==null&&!caseStates.has(state)))return invalid();
+        if(lgaId!==null&&membership.role!=='platform_admin'&&
+          !membership.allowedLgaIds.includes(lgaId))return forbidden();
+        const found=await repo.listIntake({
+          actorId:identity.subject,lgaId,
+          kind:kind as PrivateCaseKind|null,
+          state:state as PrivateCaseState|null,limit,
+        });
+        if(!Array.isArray(found)||found.length>limit||
+          found.some(r=>!validCase(r)||r.evidenceAccess!=='blocked_pending_safeguarding'||
+            (lgaId!==null&&r.lgaId!==lgaId)||
+            (kind!==null&&r.kind!==kind)||
+            (state!==null&&r.currentState!==state)||
+            !caseScope(identity,membership,r,now)))
+          return serviceUnavailable();
+        // Reuse the audited list operation; SQL rechecks the actor independently.
+        await repo.recordRead({actorId:identity.subject,action:'case_list',caseId:null,lgaId});
+        return respond({items:found.map(r=>({
+          ...projectCase(r),evidenceAccess:'blocked_pending_safeguarding',
+        })),pageLimit:limit,paginationAvailable:false,
+        scope:'independent_platform_only'},200);
+      }
+      if(intakePath){
+        if(!repo.proposeIntakeReview)return notFound();
+        const caseId=intakePath[1]?.toLowerCase();
+        if(!caseId||!uuid.test(caseId))return notFound();
+        if(noContentType(request))return respond({error:'Expected JSON'},415);
+        const payload=parseReview(await readBounded(request));
+        if(!payload)return invalid();
+        if(payload.kind==='assignment_review'&&
+          !['platform_admin','case_manager'].includes(membership.role))return forbidden();
+        if(payload.targetLgaId!==null&&
+          membership.role!=='platform_admin'&&
+          !membership.allowedLgaIds.includes(payload.targetLgaId))return forbidden();
+        const record=await repo.findCase(caseId,identity.subject);
+        if(!record||!validCase(record)||!caseScope(identity,membership,record,now))return notFound();
+        if(record.revision!==payload.expectedRevision)
+          return respond({error:'Case changed; reload before proposing'},409);
+        const result=await repo.proposeIntakeReview({
+          actorId:identity.subject,caseId:record.id,...payload,
+        });
+        if(result.result==='not_available')return notFound();
+        if(result.result==='conflict')
+          return respond({error:'Proposal conflict; reload before retrying'},409);
+        if((result.result!=='queued'&&result.result!=='replayed')||
+          !uuid.test(result.proposalId))return serviceUnavailable();
+        return respond({proposalId:result.proposalId,
+          reviewOnly:true,officeNotified:false,caseChanged:false,
+          result:result.result},result.result==='queued'?201:200);
+      }
       if (casesList) {
         const query = url.searchParams;
         const limitText = query.get('limit');

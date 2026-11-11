@@ -2,6 +2,7 @@ import type { QueryResult, QueryResultRow } from 'pg';
 import type {
   PrivateAdminRepository, AdminCaseRecord, AdminCaseEvent,
   InternalNoteCommand, InternalNoteResult,
+  AdminIntakeRecord,IntakeReviewCommand,IntakeReviewResult,
 } from './admin-gateway.ts';
 import type { StaffMembership, AdminRole } from './admin-access.ts';
 
@@ -118,6 +119,32 @@ export function createPrivatePostgresRepository(db: RestrictedQueryClient): Priv
       );
       if (r.rowCount !== 1) throw new Error('Unexpected note result');
       return note(r.rows[0]!.result);
+    },
+    async listIntake({actorId,lgaId,kind,state,limit}):Promise<readonly AdminIntakeRecord[]>{
+      const r=await db.query(
+        'SELECT * FROM civic_private.admin_rpc_intake_cases($1::uuid,$2::text,$3::text,$4::text,$5::integer)',
+        [actorId,lgaId,kind,state,limit],
+      );
+      return r.rows.map(row=>{
+        if(row.evidence_access!=='blocked_pending_safeguarding')
+          throw new Error('Invalid intake security state');
+        return {...data(row),evidenceAccess:'blocked_pending_safeguarding' as const};
+      });
+    },
+    async proposeIntakeReview(input:IntakeReviewCommand):Promise<IntakeReviewResult>{
+      const r=await db.query(
+        'SELECT civic_private.admin_rpc_intake_propose($1::uuid,$2::uuid,$3::text,$4::text,$5::bigint) AS result',
+        [input.actorId,input.caseId,input.kind,input.targetLgaId,input.expectedRevision],
+      );
+      if(r.rowCount!==1||!r.rows[0]||!r.rows[0].result||
+        typeof r.rows[0].result!=='object')
+        throw new Error('Invalid review proposal response');
+      const v=r.rows[0].result as Record<string,unknown>;
+      if(v.result==='conflict'||v.result==='not_available')
+        return {result:v.result};
+      if((v.result==='queued'||v.result==='replayed')&&typeof v.proposalId==='string')
+        return {result:v.result,proposalId:v.proposalId};
+      throw new Error('Invalid review proposal response');
     },
     async recordRead({ actorId, action, caseId, lgaId }): Promise<void> {
       await db.query(

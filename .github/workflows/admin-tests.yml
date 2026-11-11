@@ -10,7 +10,9 @@ concurrency:
 
 jobs:
   admin:
-    runs-on: ubuntu-latest
+    # Pin before the Ubuntu 26 migration: its new apt-mirror setup caused
+    # external DNS failures in the pinned geographic import and browser CI.
+    runs-on: ubuntu-24.04
     services:
       postgres:
         image: postgis/postgis:16-3.5
@@ -54,9 +56,12 @@ jobs:
         run: node --experimental-strip-types --test tests/admin-repository-postgis.mjs
       - name: Verify Sprint 12 dual-control and revocation
         run: node --experimental-strip-types --test tests/admin-staff-lifecycle-postgis.mjs
+      - name: Verify Sprint 13 scoped admin intake and proposal-only actions
+        run: node --experimental-strip-types --test tests/admin-intake-postgis.mjs
       - name: Verify fictional admin demo browser UI
         run: |
-          npx playwright install --with-deps chromium
+          # GitHub hosted runner already provides Chromium system libraries; avoid flaky apt mirror.
+          npx playwright install chromium
           npm run test:admin:browser
       - name: Preserve admin visual review
         if: always()

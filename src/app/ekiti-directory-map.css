@@ -1,0 +1,14 @@
+/* Read-only, review-gated Ekiti directory map; no live incident pins. */
+.directory-review-map{border:1px solid #dfe8df;background:#fff;border-radius:12px;
+  padding:14px;margin:12px 0 20px;max-width:100%;overflow:hidden}
+.directory-review-map-header h2{font-size:18px;letter-spacing:-.2px;margin:3px 0}
+.directory-review-map-header p{font-size:12px;color:#5e7469;line-height:1.5}
+.directory-review-map-canvas{height:clamp(260px,52vw,460px);width:100%;
+  background:#edf4eb;border-radius:9px;overflow:hidden;position:relative}
+.directory-review-map .directory-geo-clarification{margin:12px 0 0;font-size:12px;
+  line-height:1.6;color:#60786a}
+.directory-review-map>p[role=status],.directory-review-map>p[role=alert]{
+  font-size:12px;line-height:1.5;padding:10px 12px;border-radius:8px;
+  background:#f6f9f6;margin:10px 0}
+@media(max-width:450px){.directory-review-map{padding:9px;border-radius:9px}
+ .directory-review-map-canvas{height:310px}}
