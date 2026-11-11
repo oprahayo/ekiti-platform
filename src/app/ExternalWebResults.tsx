@@ -30,7 +30,7 @@ export default function ExternalWebResults({query}:{query:string}) {
     }).then(value=>{
       if(controller.signal.aborted)return;
       if(value.query!==query||value.verifiedByEkitiCivic!==false||
-        !Array.isArray(value.results)||value.provider!=='Brave Search')
+        !Array.isArray(value.results)||!['Brave Search','Wikipedia'].includes(value.provider))
         throw new Error('Unexpected provider response');
       setData(value);setState('ready');
     }).catch(()=>{
