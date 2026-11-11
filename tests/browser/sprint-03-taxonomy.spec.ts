@@ -5,7 +5,7 @@ test('Sprint 03 category-dependent prompts and optional answers survive back nav
   await page.getByRole('button',{name:'Write text'}).click();
   await page.getByRole('button',{name:'Roads',exact:true}).click();
   await expect(page.getByText('What is the main road problem?')).toBeVisible();
-  await expect(page.getByRole('group',{name:'Immediate danger'})).toBeVisible();
+  await expect(page.getByRole('group',{name:'Is anyone in immediate danger right now?'})).toBeVisible();
   await page.getByRole('button',{name:'Potholes or damaged surface'}).click();
   await expect(page.getByRole('button',{name:'Potholes or damaged surface'})).toHaveAttribute('aria-pressed','true');
   await page.locator('#guided-description').fill('The road surface outside the town market has severe potholes.');
@@ -24,7 +24,7 @@ test('immediate danger warning is visible without delayed emergency-response dis
   await page.goto('/report');
   await page.getByRole('button',{name:'Write text'}).click();
   await page.getByRole('button',{name:'Electricity',exact:true}).click();
-  await page.getByRole('group',{name:'Immediate danger'}).getByRole('button',{name:'Yes',exact:true}).click();
+  await page.getByRole('group',{name:'Is anyone in immediate danger right now?'}).getByRole('button',{name:'Yes',exact:true}).click();
   await expect(page.getByText(/Ekiti Civic cannot dispatch help/)).toBeVisible();
   await page.getByRole('button',{name:'Exposed wire or electrical danger'}).click();
   await page.locator('#guided-description').fill('A fallen power cable is across the road near the main junction.');
