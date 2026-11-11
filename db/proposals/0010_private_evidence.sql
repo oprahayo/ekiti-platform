@@ -143,9 +143,10 @@ BEGIN
     IF _old_sha=_sha256 AND _old_bytes=_bytes THEN RETURN false; END IF;
     RAISE EXCEPTION 'conflicting_chunk' USING ERRCODE='23505';
   END IF;
-  IF _s.finished OR _index<>_s.next_index OR
-     _s.total_bytes+_bytes>CASE WHEN _s.kind='Audio' THEN 15000000 ELSE 25000000 END
-     THEN RAISE EXCEPTION 'invalid_chunk_sequence' USING ERRCODE='22023';
+  IF _s.finished OR _index<>_s.next_index
+     OR (_s.kind='Audio' AND _s.total_bytes+_bytes>15000000)
+     OR (_s.kind='Video' AND _s.total_bytes+_bytes>25000000) THEN
+    RAISE EXCEPTION 'invalid_chunk_sequence' USING ERRCODE='22023';
   END IF;
   INSERT INTO civic_private.evidence_chunks(session_id,index,sha256,bytes,object_key)
     VALUES(_id,_index,_sha256,_bytes,_object_key);
