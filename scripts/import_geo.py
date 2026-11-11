@@ -56,7 +56,7 @@ def ward_rows_pdfplumber(raw, parents):
                     if len(cells) < 3:
                         continue
                     number = (cells[0] or "").strip()
-                    if not re.fullmatch(r"\\d+", number):
+                    if not re.fullmatch(r"\d+", number):
                         continue
                     parent = " ".join((cells[1] or "").split())
                     ward = " ".join((cells[2] or "").split())
