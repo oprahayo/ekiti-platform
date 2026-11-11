@@ -20,7 +20,7 @@ test('Sprint 08 starts with the unchanged 24 categories, no GPS prompt and no au
   await page.goto('/explore');
   await expect(page.locator('.directory-category-tile')).toHaveCount(24);
   await expect(page.getByRole('searchbox',{name:'Search services and places'})).toBeVisible();
-  await expect(page.getByRole('button',{name:'Find verified places near me'})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Find nearby places by distance'})).toBeVisible();
   await expect(page.getByText(/filters by verified LGA, not distance/)).toBeVisible();
   await expect(page.getByText(/Only reviewed, geocoded listings can appear/)).toBeVisible();
   expect(requests).toEqual([]);
@@ -37,10 +37,11 @@ test('explicit nearby click shows two reviewed, distance-sorted records with sou
       payload:JSON.parse(route.request().postData()||'{}'),
     });
     await route.fulfill({status:200,contentType:'application/json',
-      body:JSON.stringify(response())});
+      body:JSON.stringify(response([one,two],'ready',
+        JSON.parse(route.request().postData()||'{}').radiusKm))});
   });
   await page.goto('/explore');
-  await page.getByRole('button',{name:'Find verified places near me'}).click();
+  await page.getByRole('button',{name:'Find nearby places by distance'}).click();
   await expect(page.getByRole('heading',{name:'Reviewed places nearby'})).toBeVisible();
   await expect(page.getByRole('link',{name:'CI nearby reviewed clinic'})).toBeVisible();
   await expect(page.getByRole('link',{name:'CI second nearby clinic'})).toBeVisible();
@@ -59,7 +60,7 @@ test('explicit nearby click shows two reviewed, distance-sorted records with sou
   });
   await page.locator('#nearby-radius').selectOption('10');
   await expect(page.getByRole('heading',{name:'Reviewed places nearby'})).toHaveCount(0);
-  await page.getByRole('button',{name:'Find verified places near me'}).click();
+  await page.getByRole('button',{name:'Find nearby places by distance'}).click();
   await expect(page.getByRole('heading',{name:'Reviewed places nearby'})).toBeVisible();
   expect(calls[1].payload.radiusKm).toBe(10);
 });
@@ -77,7 +78,7 @@ test('category and LGA selection carry across the explicit nearby lookup and res
   await page.getByRole('button',{name:'Hospitals'}).click();
   await page.locator('.directory-manual-area summary').click();
   await page.locator('#explore-lga').selectOption('ado-ekiti');
-  await page.getByRole('button',{name:'Find verified places near me'}).click();
+  await page.getByRole('button',{name:'Find nearby places by distance'}).click();
   await expect(page.getByRole('link',{name:one.name})).toBeVisible();
   expect(submitted).toHaveLength(1);
   expect(submitted[0].category).toBe('Health');
@@ -95,7 +96,7 @@ test('outside-Ekiti and uncertain-coverage states do not claim any nearby matche
     body:JSON.stringify(response([],'outside_ekiti')),
   }));
   await page.goto('/explore');
-  await page.getByRole('button',{name:'Find verified places near me'}).click();
+  await page.getByRole('button',{name:'Find nearby places by distance'}).click();
   await expect(page.getByText(/Your device appears outside Ekiti State/)).toBeVisible();
   await expect(page.getByRole('heading',{name:'Reviewed places nearby'})).toHaveCount(0);
   await expect(page.getByRole('button',{name:'Hotels',exact:true})).toBeVisible();
@@ -104,7 +105,7 @@ test('outside-Ekiti and uncertain-coverage states do not claim any nearby matche
     status:200,contentType:'application/json',
     body:JSON.stringify(response([],'uncertain_coverage')),
   }));
-  await page.getByRole('button',{name:'Find verified places near me'}).click();
+  await page.getByRole('button',{name:'Find nearby places by distance'}).click();
   await expect(page.getByText(/cannot be matched confidently/)).toBeVisible();
 });
 
@@ -116,11 +117,11 @@ test('unreviewed or unsorted payloads and disabled API fail without misleading r
     body:JSON.stringify({...response([one]),reviewedOnly:false}),
   }));
   await page.goto('/explore');
-  await page.getByRole('button',{name:'Find verified places near me'}).click();
+  await page.getByRole('button',{name:'Find nearby places by distance'}).click();
   await expect(page.getByText(/Verified distance search is not available here/)).toBeVisible();
   await expect(page.getByRole('link',{name:one.name})).toHaveCount(0);
   await page.unroute('**/api/places/nearby');
-  await page.getByRole('button',{name:'Find verified places near me'}).click();
+  await page.getByRole('button',{name:'Find nearby places by distance'}).click();
   await expect(page.getByText(/Verified distance search is not available here/)).toBeVisible();
   await expect(page.locator('.directory-category-tile')).toHaveCount(24);
 });
@@ -135,7 +136,7 @@ test('nearby search stays usable at 280px without overflowing or adding a dashbo
   }));
   await page.goto('/explore');
   await expect(page.locator('.directory-category-tile')).toHaveCount(24);
-  await page.getByRole('button',{name:'Find verified places near me'}).click();
+  await page.getByRole('button',{name:'Find nearby places by distance'}).click();
   await expect(page.getByRole('heading',{name:'Reviewed places nearby'})).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(280);
   await page.screenshot({path:'test-results/sprint-08-review/explore-nearby-280.png',fullPage:true});
@@ -149,8 +150,8 @@ test('unclassified trades never return unrelated hotels or other nearby records'
   await page.goto('/explore');
   await page.getByRole('button',{name:'Plumbers',exact:true}).click();
   await expect(page.getByText(/no reviewed directory classification yet/)).toBeVisible();
-  await expect(page.getByRole('button',{name:'Find verified places near me'})).toBeDisabled();
+  await expect(page.getByRole('button',{name:'Find nearby places by distance'})).toBeDisabled();
   expect(calls).toEqual([]);
   await page.getByRole('button',{name:/Browse all categories/}).click();
-  await expect(page.getByRole('button',{name:'Find verified places near me'})).toBeEnabled();
+  await expect(page.getByRole('button',{name:'Find nearby places by distance'})).toBeEnabled();
 });
