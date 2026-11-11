@@ -7,6 +7,8 @@ import {
 import { makeDemoCases } from './demo-cases.ts';
 import { ModerationWorkspace, RoutingWorkspace } from './OperationsModules.tsx';
 import { adminViewUrl, isCaseView, readAdminView, type AdminView } from './navigation.ts';
+import AdminAlerts from './AdminAlerts.tsx';
+import {deriveDemoAlerts,playDemoChime} from './alert-model.ts';
 
 type View = AdminView;
 
@@ -301,6 +303,11 @@ export function AdminApp() {
   const [query, setQuery] = React.useState('');
   const [selectedId, setSelectedId] = React.useState<string | null>('DEMO-1001');
   const [mobileDetail, setMobileDetail] = React.useState(false);
+  const [alertsOpen,setAlertsOpen] = React.useState(false);
+  const [alertSound,setAlertSound] = React.useState(false);
+  const [alertVolume,setAlertVolume] = React.useState(35);
+  const [browserAlerts,setBrowserAlerts] = React.useState(false);
+  const alerts=React.useMemo(()=>deriveDemoAlerts(cases),[cases]);
   const counts = React.useMemo(() => queueCounts(cases), [cases]);
   const shown = React.useMemo(() =>
     view === 'analytics' || view === 'moderation' || view === 'routing' ? [] : filterCases(cases, view, query), [cases, view, query]);
@@ -323,6 +330,16 @@ export function AdminApp() {
     if (!current) throw new InvalidCaseAction();
     const updated = applyDemoAction(current, action, note, new Date().toISOString());
     setCases(previous => previous.map(item => item.id === id ? updated : item));
+    // Sound can only play after the user has enabled it, and never during
+    // initial render or from a remote, unaudited event stream.
+    if(alertSound)void playDemoChime(alertVolume,
+      updated.priority==='high'?'attention':'update');
+    if(browserAlerts&&'Notification' in window&&window.Notification.permission==='granted'){
+      try{new window.Notification('Ekiti Civic · sample update',{
+        body:'Fictional case action recorded in this browser session. No office notified.',
+        tag:'ekiti-demo-'+id,
+      });}catch{/* Browser/mobile notification support varies. */}
+    }
     // Stay on the case even when it moves to another queue.
     if (isCaseView(view) && view !== 'all' && caseQueue(updated) !== view) {
       setView('all');
@@ -331,7 +348,8 @@ export function AdminApp() {
     setSelectedId(id);
   };
   const reset = () => {
-    setCases(makeDemoCases()); setView('all'); setQuery(''); setSelectedId('DEMO-1001'); setMobileDetail(false);
+    setCases(makeDemoCases()); setView('all'); setQuery(''); setSelectedId('DEMO-1001');
+    setMobileDetail(false);setAlertsOpen(false);
     window.history.replaceState(null, '', adminViewUrl('all', window.location.pathname));
   };
   return <div className="admin-app">
@@ -341,9 +359,29 @@ export function AdminApp() {
       <header className="workspace-header">
         <div className="header-title"><span className="header-mobile-brand">ekiti civic / </span><span>Operations</span><span className="header-slash">/</span><strong>{isCaseView(view) ? 'Cases' : view === 'analytics' ? 'Overview' : view === 'moderation' ? 'Moderation' : 'Routing'}</strong></div>
         <div className="header-actions"><span className="environment-pill"><span aria-hidden="true" /> DEMO MODE</span>
+          <button type="button" className="admin-alerts-button"
+            aria-expanded={alertsOpen} aria-controls="admin-alerts-menu"
+            onClick={()=>setAlertsOpen(value=>!value)}
+            title="Sample notifications and alert preferences">
+            <svg width="17" height="17" viewBox="0 0 24 24" aria-hidden="true"
+              fill="none" stroke="currentColor" strokeWidth="1.8"
+              strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 8a6 6 0 0 0-12 0c0 7-3 8-3 10h18c0-2-3-3-3-10M10 21h4"/>
+            </svg>
+            Alerts <span>{alerts.length}</span>
+          </button>
           <button type="button" onClick={reset} title="Restore sample cases" className="reset-button">Reset demo</button>
           <div className="avatar" aria-label="Demo moderator">DM</div></div>
       </header>
+      {alertsOpen&&<div id="admin-alerts-menu" className="alerts-layer">
+        <AdminAlerts cases={cases} soundOn={alertSound} setSoundOn={setAlertSound}
+          volume={alertVolume} setVolume={setAlertVolume}
+          browserOn={browserAlerts} setBrowserOn={setBrowserAlerts}
+          onClose={()=>setAlertsOpen(false)}
+          onOpenCase={id=>{
+            setAlertsOpen(false);changeView('all');setSelectedId(id);setMobileDetail(true);
+          }}/>
+      </div>}
       <div className="workspace-notice" role="note"><strong>Demo only.</strong>
         <span className="notice-wide"> All cases and updates are fictional and stay in memory. Live intake, staff login, notifications and government connections are not enabled.</span>
         <span className="notice-mobile"> Sample records; no live reports or government access.</span>
