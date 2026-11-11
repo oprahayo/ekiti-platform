@@ -7,13 +7,17 @@
   "scripts": {
     "test": "node --experimental-strip-types --test tests/*.test.mjs",
     "check": "tsc --noEmit",
-    "test:all": "npm run check && npm test",
+    "test:all": "npm run check && npm run check:admin && npm test",
     "test:postgis": "node --experimental-strip-types --test tests/postgis.mjs && node --experimental-strip-types --test tests/evidence-postgis.mjs && node --experimental-strip-types --test tests/nearby-postgis.mjs",
     "build": "vite build",
     "dev": "wrangler dev",
     "test:browser": "playwright test",
     "staging:prepare": "node scripts/prepare-staging.mjs",
-    "staging:check": "npm run build && node scripts/prepare-staging.mjs --dry-run && wrangler deploy --config wrangler.dry-run.local.json --dry-run --outdir .wrangler/staging-check"
+    "staging:check": "npm run build && node scripts/prepare-staging.mjs --dry-run && wrangler deploy --config wrangler.dry-run.local.json --dry-run --outdir .wrangler/staging-check",
+    "check:admin": "tsc --project tsconfig.admin.json --noEmit",
+    "build:admin": "vite build --config vite.admin.config.ts",
+    "dev:admin": "vite --config vite.admin.config.ts",
+    "test:admin:browser": "playwright test --config playwright.admin.config.ts"
   },
   "engines": {
     "node": ">=22.16.0"
