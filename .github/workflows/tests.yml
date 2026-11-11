@@ -9,7 +9,9 @@ concurrency:
   cancel-in-progress: true
 jobs:
   test:
-    runs-on: ubuntu-latest
+    # Pin before the Ubuntu 26 migration: its new apt-mirror setup caused
+    # external DNS failures in the pinned geographic import and browser CI.
+    runs-on: ubuntu-24.04
     services:
       postgres:
         image: postgis/postgis:16-3.5
