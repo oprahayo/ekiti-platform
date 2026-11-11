@@ -83,7 +83,7 @@
 /* Sprint 13: scoped intake queue. The fictional public demo remains separate. */
 .staff-intake-warning{padding:13px 15px;border:1px solid #e2d7b1;background:#fffaf0;
  color:#5f4b24;border-radius:9px;font-size:13px;line-height:1.55;margin:0 0 18px}
-.staff-intake-filters{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+.staff-intake-filters{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)
  minmax(0,1fr) auto;gap:10px;align-items:end;background:#fff;
  padding:16px;border:1px solid #dce4e9;border-radius:11px}
 .staff-intake-filters label{display:block;grid-row:1;font-size:12px;font-weight:700;color:#365566}
