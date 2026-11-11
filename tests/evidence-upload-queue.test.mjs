@@ -52,6 +52,7 @@ test('each MediaRecorder blob is acknowledged before savedBytes increments',asyn
   const {server,fetcher}=transport();const queue=await open(fetcher);
   assert.equal(queue.snapshot().savedBytes,0);
   await queue.enqueue(new Blob([Uint8Array.from([11,22,33])]));
+  await queue.waitForAcks();
   assert.deepEqual(queue.snapshot(),{sessionId,phase:'ready',ackedChunks:1,
     savedBytes:3,unsavedChunks:0,unsavedBytes:0,warning:null});
   await queue.enqueue(new Blob([Uint8Array.from([40,50])]));
@@ -69,6 +70,7 @@ test('lost network ACK is an UNSAVED warning until verified against server state
   const {server,fetcher}=transport();const queue=await open(fetcher);
   server.loseAck=true;
   await queue.enqueue(new Blob([Uint8Array.from([91,92,93])]));
+  await queue.waitForAcks();
   assert.equal(queue.snapshot().phase,'offline');
   assert.equal(queue.snapshot().savedBytes,0,'no receipt means not saved in local UI');
   assert.equal(queue.snapshot().unsavedChunks,1);
@@ -86,6 +88,7 @@ test('offline before R2 write queues unsaved bytes and retries same indexed cont
   const {server,fetcher}=transport();const queue=await open(fetcher);
   server.failNext=true;
   await queue.enqueue(new Blob([Uint8Array.from([1,1,2,3,5,8])]));
+  await queue.waitForAcks();
   assert.equal(queue.snapshot().phase,'offline');
   assert.equal(queue.snapshot().unsavedBytes,6);
   assert.equal(queue.snapshot().ackedChunks,0);
@@ -106,4 +109,5 @@ test('recovering after tab crash never claims unacknowledged segments can be res
   await assert.rejects(recovered.enqueue(new Blob(['new chunk'])),
     error=>error instanceof EvidenceUploadError&&error.code==='recording_not_available');
   await assert.rejects(recovered.retry(),{code:'resume_status_only'});
+  await assert.rejects(recovered.finish(),{code:'recovered_session_cannot_be_completed'});
 });
