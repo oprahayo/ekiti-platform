@@ -20,6 +20,9 @@
 .gateway-search-actions button:disabled{opacity:.45;cursor:default}
 .gateway-search-note{font-size:11px;color:var(--text-tertiary);line-height:1.6;
   max-width:550px;margin:11px auto 0}
+.gateway-account-links{display:flex;justify-content:center;gap:8px;align-items:center;
+  font-size:12px;color:var(--text-tertiary);margin:13px auto 0;flex-wrap:wrap}
+.gateway-account-links a{color:var(--accent);text-underline-offset:3px}
 .welcome-activities{margin-top:clamp(25px,4vw,38px)}
 .welcome-dice-list>.welcome-action{border-radius:9px;min-height:94px;box-shadow:none}
 @media(min-width:1000px){
