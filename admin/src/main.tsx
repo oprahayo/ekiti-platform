@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 import * as React from 'react';
 import { createRoot } from 'react-dom/client';
 import { AdminApp } from './AdminApp.tsx';
