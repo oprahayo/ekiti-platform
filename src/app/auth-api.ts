@@ -6,7 +6,7 @@ export interface PublicAuthConfig { url: string; key: string }
 export interface CitizenIdentity { id: string; email: string; phone?: string }
 export function phoneOk(value:string):boolean {
   // E.164 only. Never guess country codes or send ambiguous domestic numbers.
-  return /^\\+[1-9][0-9]{7,14}$/.test(value);
+  return /^\+[1-9][0-9]{7,14}$/.test(value);
 }
 export function phoneOtpEnabled():boolean {
   const env=(import.meta as ImportMeta & { env?:Record<string,string|undefined> }).env;
