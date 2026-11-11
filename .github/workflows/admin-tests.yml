@@ -54,6 +54,8 @@ jobs:
         run: node --experimental-strip-types --test tests/admin-repository-postgis.mjs
       - name: Verify Sprint 12 dual-control and revocation
         run: node --experimental-strip-types --test tests/admin-staff-lifecycle-postgis.mjs
+      - name: Verify Sprint 13 scoped admin intake and proposal-only actions
+        run: node --experimental-strip-types --test tests/admin-intake-postgis.mjs
       - name: Verify fictional admin demo browser UI
         run: |
           npx playwright install --with-deps chromium
