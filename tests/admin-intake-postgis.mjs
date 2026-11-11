@@ -71,7 +71,13 @@ test('Sprint 13 scoped private intake proposal is opt-in, default-off, audited a
     const asRpc=async action=>{
       await db.query('SET LOCAL ROLE ekiti_admin_rpc');
       try{return await action();}
-      finally{await db.query('SET LOCAL ROLE postgres');}
+      finally{
+        // An expected SQL exception aborts the disposable transaction until
+        // the surrounding SAVEPOINT is rolled back. Never replace the
+        // original exception with a second "transaction aborted" error.
+        try{await db.query('SET LOCAL ROLE postgres');}
+        catch{/* Caller restores the savepoint for expected failures. */}
+      }
     };
     const list=(who,lga=null,kind=null,state=null,limit=20)=>asRpc(async()=>{
       return (await db.query(`SELECT * FROM civic_private.admin_rpc_intake_cases(
