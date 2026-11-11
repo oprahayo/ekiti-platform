@@ -165,7 +165,8 @@ export default function ExploreDirectory() {
       <NearbyDirectorySearch
         category={activeCategory?.group??null}
         lga={exploreLga||null}
-        query={query||null}/>
+        query={query||null}
+        unsupported={Boolean(activeCategory&&!activeCategory.group)}/>
     </section>
     {activeCategory && <button type="button" className="directory-back" onClick={allCategories}>
       <span aria-hidden="true">←</span> Browse all categories
