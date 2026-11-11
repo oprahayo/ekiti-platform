@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import { demoPlaces, lgas } from './fixtures.ts';
 import { DirectoryIcon, categoryForGroup, directoryCategories } from './DirectoryCategories.tsx';
 import { useApp } from './state.tsx';
@@ -29,10 +29,11 @@ type LoadState = 'idle' | 'loading' | 'ready' | 'unavailable' | 'unclassified';
 export default function ExploreDirectory() {
   const {
     exploreService, setExploreService, exploreCategory, setExploreCategory,
-    exploreQuery, setExploreQuery, exploreLga, setExploreLga, setAskDraft,
+    exploreQuery, setExploreQuery, exploreLga, setExploreLga,
     deviceLocation, requestDeviceLocation, selectManualArea,
   } = useApp();
-  const [mapOpen, setMapOpen] = React.useState(false);
+  const [searchParams] = useSearchParams();
+  const [mapOpen, setMapOpen] = React.useState(() => searchParams.get('map') === '1');
   const [places, setPlaces] = React.useState<ReviewedPlace[]>([]);
   const [loadState, setLoadState] = React.useState<LoadState>('idle');
 
@@ -254,8 +255,8 @@ export default function ExploreDirectory() {
           onSelectLga={selectManualArea}/>
       </React.Suspense>}
       <h2>Can’t find what you need?</h2>
-      <Link to="/ask?focus=1" className="text-link" onClick={() => setAskDraft('Find a business in Ekiti')}>
-        Ask Ekiti Civic
+      <Link to="/search" className="text-link">
+        Search all of Ekiti
       </Link>
       <p className="directory-footer">Own a business? <a href="/listings/new">Prepare a listing</a> for future verification and moderation. Nothing is published automatically.</p>
       <p className="directory-independence">Independent civic project · Not a government service</p>
