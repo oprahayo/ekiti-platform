@@ -89,6 +89,7 @@ function Sidebar({ view, onViewChange, counts }: {
 
 function CaseList({
   view, cases, query, onQuery, onQueueChange, counts, selectedId, onSelect,
+  selectedLga, onClearLga,
 }: {
   view: Queue | 'all';
   cases: AdminCase[];
@@ -96,6 +97,8 @@ function CaseList({
   counts: Record<Queue, number>;
   query: string;
   onQuery: (query: string) => void;
+  selectedLga: string;
+  onClearLga: () => void;
   selectedId: string | null;
   onSelect: (id: string) => void;
 }) {
@@ -124,6 +127,10 @@ function CaseList({
         onChange={event => onQuery(event.target.value)} />
       {query && <button type="button" onClick={() => onQuery('')} aria-label="Clear search">×</button>}
     </label>
+    {selectedLga && <div className="ops-active-lga" role="status">
+      <span>Showing sample cases in <strong>{selectedLga}</strong></span>
+      <button type="button" onClick={onClearLga}>Clear area</button>
+    </div>}
     <div className="list-meta"><span>RECENT ACTIVITY</span><span>NEWEST FIRST</span></div>
     <div className="case-scroll">
       {cases.length === 0 && <div className="empty-state">
@@ -307,18 +314,21 @@ function Analytics({ cases, onNavigate, onOpenCase, onArea }: {
   </main>;
 }
 
+const normalizedLga = (value: string) => value.toLocaleLowerCase().replace(/[^a-z0-9]/g, '');
+
 export function AdminApp() {
   const [cases, setCases] = React.useState<AdminCase[]>(makeDemoCases);
   const [view, setView] = React.useState<View>(() => readAdminView(window.location.search));
   const [query, setQuery] = React.useState('');
-  const [areaSearch,setAreaSearch]=React.useState('');
+  const [selectedLga, setSelectedLga] = React.useState('');
   const [selectedId, setSelectedId] = React.useState<string | null>('DEMO-1001');
   const [mobileDetail, setMobileDetail] = React.useState(false);
   const counts = React.useMemo(() => queueCounts(cases), [cases]);
   const shown = React.useMemo(() =>
     view === 'analytics' || view === 'moderation' || view === 'routing' ? [] :
-      filterCases(cases, view, query||areaSearch),
-    [cases, view, query, areaSearch]);
+      filterCases(cases, view, query).filter(item =>
+        !selectedLga || normalizedLga(item.lga) === normalizedLga(selectedLga)),
+    [cases, view, query, selectedLga]);
   const selected = shown.find(item => item.id === selectedId) ?? shown[0] ?? null;
   React.useEffect(() => {
     const onPopState = () => {
@@ -332,15 +342,15 @@ export function AdminApp() {
   const changeView = (next: View) => {
     if (next !== view) window.history.pushState(null, '', adminViewUrl(next, window.location.pathname));
     setView(next); setSelectedId(null); setMobileDetail(false);
-    setAreaSearch('');
+    setSelectedLga('');
   };
-  const openArea=(area:string)=>{
-    setQuery(area);setAreaSearch('');
+  const openArea = (area: string) => {
     changeView('all');
-    setQuery(area);
+    setQuery('');
+    setSelectedLga(area);
   };
   const openAttentionCase=(id:string)=>{
-    changeView('all');setQuery('');setAreaSearch('');
+    changeView('all');setQuery('');
     setSelectedId(id);setMobileDetail(true);
   };
   const apply = (id: string, action: Action, note: string) => {
@@ -356,7 +366,7 @@ export function AdminApp() {
     setSelectedId(id);
   };
   const reset = () => {
-    setCases(makeDemoCases()); setView('all'); setQuery('');setAreaSearch(''); setSelectedId('DEMO-1001'); setMobileDetail(false);
+    setCases(makeDemoCases()); setView('all'); setQuery(''); setSelectedLga(''); setSelectedId('DEMO-1001'); setMobileDetail(false);
     window.history.replaceState(null, '', adminViewUrl('all', window.location.pathname));
   };
   return <div className="admin-app">
@@ -384,7 +394,8 @@ export function AdminApp() {
         view === 'routing' ? <RoutingWorkspace cases={cases} /> :
         <div className={'case-workspace ' + (mobileDetail ? 'mobile-detail-open' : '')}>
           <CaseList view={view} cases={shown} query={query} onQuery={setQuery}
-            onQueueChange={changeView} counts={counts}
+            selectedLga={selectedLga} onClearLga={() => setSelectedLga('')}
+             onQueueChange={changeView} counts={counts}
             selectedId={selected?.id || null}
             onSelect={id => { setSelectedId(id); setMobileDetail(true); }} />
           <CaseDetails item={selected} onBack={() => setMobileDetail(false)} onApply={apply} />
