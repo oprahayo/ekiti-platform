@@ -14,6 +14,9 @@ const clean=(value:string)=>value.trim().replace(/\s+/g,' ');
 const hasControl=(value:string)=>/[\u0000-\u001f\u007f]/u.test(value);
 
 export function validateListingInput(value: ListingInput): ListingInput {
+  // Reject embedded control characters before trimming/collapsing whitespace.
+  if(hasControl(value.name)||hasControl(value.category)||hasControl(value.lgaId)||
+     hasControl(value.description))throw new Error('Remove control characters from the listing.');
   const fields={
     name:clean(value.name),
     category:clean(value.category),
