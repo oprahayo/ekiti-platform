@@ -41,7 +41,7 @@ export default function CitizenCaseLinkRequest(){
   return <section className="citizen-report-delivery" aria-label="Request a private case link">
     <h3>Request a private case link</h3>
     <p className="note">This optional feature sends a 10-minute, single-use link
-      to a contact already verified on your account. It never uses a new
+      to an account contact whose verification is checked by the server. It never uses a new
       phone number or email typed into the request. You still must sign in
       to the same account to redeem it. This is not a case submission
       or a government acknowledgement.</p>
@@ -51,11 +51,11 @@ export default function CitizenCaseLinkRequest(){
         <legend>Send through verified account contact</legend>
         {supportsEmail&&<label>
           <input type="radio" name="private-delivery-channel" checked={channel==='email'}
-            onChange={()=>setChannel('email')} disabled={busy}/> Verified email
+            onChange={()=>setChannel('email')} disabled={busy}/> Account email (confirmation required)
         </label>}
         {supportsSms&&<label>
           <input type="radio" name="private-delivery-channel" checked={channel==='sms'}
-            onChange={()=>setChannel('sms')} disabled={busy}/> Verified phone (SMS)
+            onChange={()=>setChannel('sms')} disabled={busy}/> Account phone (SMS; confirmation required)
         </label>}
       </fieldset>
       <label htmlFor="citizen-delivery-reference">Submitted report reference</label>
@@ -72,7 +72,7 @@ export default function CitizenCaseLinkRequest(){
         <input type="checkbox" checked={confirmed} disabled={busy}
           onChange={event=>setConfirmed(event.target.checked)}/>
         I request one private case link for this receipt to be sent
-        to my already verified {channel==='sms'?'phone':'email'}.
+        to my {channel==='sms'?'confirmed phone':'confirmed email'} on this account.
       </label>
       <button type="submit" className="quiet-action"
         disabled={!confirmed||busy}>{busy?'Requesting…':'Request one-time case link'}</button>
