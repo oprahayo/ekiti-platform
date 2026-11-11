@@ -1,7 +1,8 @@
 import * as React from 'react';
 import { BrowserRouter, Link, NavLink, Route, Routes, useLocation } from 'react-router';
 import { demoMetrics, lgas } from './fixtures.ts';
-import { Ask } from './AskExperience.tsx';
+const Ask = React.lazy(() => import('./AskExperience.tsx').then(mod => ({ default: mod.Ask })));
+
 import WelcomeHome from './WelcomeHome.tsx';
 import { AppProvider, useApp } from './state.tsx';
 import { CitizenAuthProvider } from './CitizenAuth.tsx';
