@@ -592,7 +592,7 @@ export default function ReportJourney() {
           I understand this is a local draft, not a report submission, and I choose to save it here.
         </label>
         <p className="guided-hint">This choice only authorizes this device's local draft save. It is not consent to future server processing.</p>
-        <Link to="/privacy">Privacy and safety details</Link>
+        <Link to="/privacy" target="_blank" rel="noopener noreferrer">Privacy and safety details</Link>
         {validation && <p role="alert" className="guided-error">{validation}</p>}
       </div>
       <button className="primary-action" type="button" onClick={save} disabled={!localSaveAcknowledged}>
@@ -607,11 +607,11 @@ export default function ReportJourney() {
       <p className="privacy-notice">No report has been submitted. There is no tracking ID or email/SMS receipt, and nothing has been placed on the public map.</p>
       <Link to="/track" className="text-link">How tracking will work</Link>
       <button className="quiet-action" type="button" onClick={reset}>Delete this draft and start another</button>
-      <Link to="/privacy" className="text-link">Manage local draft privacy</Link>
+      <Link to="/privacy" target="_blank" rel="noopener noreferrer" className="text-link">Manage local draft privacy</Link>
     </section>}
 
     <p className="guided-independent-note">Independent civic project · Not a government emergency service.
       No secure intake, moderation or dispatch is active. Legal operator identification and the live privacy policy await approval.
-      {' '}<Link to="/privacy">Privacy and safety</Link></p>
+      {' '}<Link to="/privacy" target="_blank" rel="noopener noreferrer">Privacy and safety</Link></p>
   </main>;
 }
