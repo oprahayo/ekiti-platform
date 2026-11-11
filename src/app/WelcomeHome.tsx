@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { useApp } from './state.tsx';
 import CivicActionIcon from './CivicActionIcon.tsx';
 
@@ -13,7 +13,22 @@ const actions = [
 ] as const;
 
 export default function WelcomeHome() {
-  const { language, deviceLocation, requestDeviceLocation, dismissDeviceLocation } = useApp();
+  const { language, deviceLocation, requestDeviceLocation, dismissDeviceLocation,
+    setExploreQuery, setAskDraft } = useApp();
+  const [search,setSearch] = React.useState('');
+  const navigate=useNavigate();
+  const find=(event:React.FormEvent)=>{
+    event.preventDefault();
+    const value=search.trim();
+    if(!value)return;
+    setExploreQuery(value);
+    navigate('/explore');
+  };
+  const ask=()=>{
+    const value=search.trim();
+    if(value)setAskDraft(value);
+    navigate('/ask?focus=1');
+  };
   return <main id="main" className="page welcome-gateway">
     <div className="welcome-primary">
     <section className="welcome-heading" aria-labelledby="welcome-title">
@@ -23,6 +38,20 @@ export default function WelcomeHome() {
         : 'Your mobile gateway to Ekiti State.'}</p>
     </section>
 
+    <form className="gateway-search-form" role="search" onSubmit={find}>
+      <label htmlFor="ekiti-home-search" className="visually-hidden">Search Ekiti State</label>
+      <div className="gateway-search-field">
+        <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m16 16 5 5"/></svg>
+        <input id="ekiti-home-search" type="search" maxLength={140}
+          value={search} onChange={event=>setSearch(event.target.value)}
+          placeholder="Search hotels, businesses, services or places in Ekiti…" />
+      </div>
+      <div className="gateway-search-actions">
+        <button type="submit" disabled={!search.trim()}>Search Ekiti</button>
+        <button type="button" onClick={ask}>Ask about Ekiti</button>
+      </div>
+      <p className="gateway-search-note">Search results use reviewed public information. Pending business submissions and private incident reports are not searchable.</p>
+    </form>
     <section className="welcome-activities" aria-labelledby="welcome-task-heading">
       <h2 id="welcome-task-heading">{language === 'yo' ? 'Kí ni o fẹ́ ṣe lónìí?' : 'What would you like to do?'}</h2>
       <nav aria-label="Choose an activity" className="welcome-action-list welcome-dice-list">
