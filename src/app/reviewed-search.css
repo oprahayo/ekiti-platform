@@ -129,3 +129,32 @@
   .search-results-shortcuts {gap:7px 16px;font-size:12px}
   .search-web-heading h2 {font-size:16px}
 }
+
+
+/* Citation-first source brief: responsive, low-data, no external assets. */
+.search-web-highlights {
+  max-width:795px;margin:21px 0 8px;padding:17px 20px 15px;
+  border:1px solid var(--border);border-radius:15px;
+  background:var(--surface);
+}
+.search-web-highlights-heading {
+  display:flex;justify-content:space-between;align-items:baseline;
+  gap:8px 18px;flex-wrap:wrap;margin-bottom:12px;
+}
+.search-web-highlights-heading h3 {font-size:15px;font-weight:650;margin:0}
+.search-web-highlights-heading span {font-size:11px;color:var(--text-tertiary)}
+.search-web-highlights-list {list-style:none;padding:0;margin:0;display:grid;gap:15px}
+.search-web-highlights-list li {padding:0 0 14px;border-bottom:1px solid var(--border);min-width:0}
+.search-web-highlights-list li:last-child {border-bottom:0;padding-bottom:4px}
+.search-web-highlights-list p {
+  font-size:14px;line-height:1.55;color:var(--text-primary);
+  overflow-wrap:anywhere;margin:0 0 6px;
+}
+.search-web-highlights-list a {font-size:12px;color:var(--accent);overflow-wrap:anywhere;text-decoration:none}
+.search-web-highlights-list a:hover {text-decoration:underline}
+.search-web-highlights-list small {color:var(--text-tertiary);font-size:11px}
+.search-web-highlights-note {
+  font-size:11px;line-height:1.6;color:var(--text-tertiary);
+  margin:12px 0 0;padding-top:10px;border-top:1px solid var(--border);
+}
+@media(max-width:480px){.search-web-highlights{padding:14px;border-radius:12px}}

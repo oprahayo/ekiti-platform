@@ -6,6 +6,31 @@ function safeLink(value:string):string|null {
   try {const u=new URL(value);return u.protocol==='https:'?u.href:null;}
   catch{return null;}
 }
+
+/** Citation-first preview of provider excerpts, never a fabricated AI answer. */
+function SourceHighlights({items}:{items:ExternalWebResultSet['results']}) {
+  const excerpts=items.filter(item=>item.description.trim() && safeLink(item.url)).slice(0,3);
+  if(excerpts.length===0)return null;
+  return <section className="search-web-highlights" aria-labelledby="web-highlights-title">
+    <div className="search-web-highlights-heading">
+      <h3 id="web-highlights-title">Source highlights</h3>
+      <span>From public web results</span>
+    </div>
+    <ol className="search-web-highlights-list">{excerpts.map((item,index)=>
+      <li key={item.url}>
+        <p>{item.description}</p>
+        <a href={safeLink(item.url)!} target="_blank" rel="noopener noreferrer"
+          aria-label={`Source ${index+1}: ${item.title}`}>
+          <span aria-hidden="true">[{index+1}]</span> {item.title} <small>· {item.domain}</small>
+        </a>
+      </li>)}</ol>
+    <p className="search-web-highlights-note">
+      These are excerpts supplied by the search provider, not an AI-generated answer.
+      They have not been fact-checked by Ekiti Civic. Follow each citation to verify details.
+    </p>
+  </section>;
+}
+
 export default function ExternalWebResults({query}:{query:string}) {
   const [state,setState]=React.useState<'idle'|'loading'|'ready'|'unavailable'>('idle');
   const [data,setData]=React.useState<ExternalWebResultSet|null>(null);
@@ -63,13 +88,13 @@ export default function ExternalWebResults({query}:{query:string}) {
         {data.provider==='Wikipedia' && ' Wikipedia text is subject to its free-content license; follow the linked source for authors and revisions.'}</p>
       {data.results.length===0
         ? <p className="search-results-muted">No matching external pages were returned for this public search.</p>
-        : <div className="search-web-list">{data.results.map(item=>
+        : <><SourceHighlights items={data.results}/><div className="search-web-list">{data.results.map(item=>
             <article key={item.url} className="search-web-result">
               <p className="search-web-domain">{item.domain}</p>
               <h3><a href={safeLink(item.url)||'#'} target="_blank" rel="noopener noreferrer">{item.title}</a></h3>
               {item.description&&<p className="search-web-description">{item.description}</p>}
               <small>External web page · Verify important claims at the source</small>
-            </article>)}</div>}
+            </article>)}</div></>}
       <button className="search-web-action search-web-refresh" type="button" onClick={search}>Refresh web results</button>
     </>}
     <nav className="search-web-alternatives" aria-label="Other web search engines">
