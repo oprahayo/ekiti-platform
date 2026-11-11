@@ -9,14 +9,9 @@ import pg from 'pg';
 import { parseReportInput, ReportInputError, MAX_REPORT_BYTES } from '../reporting/intake-contract.ts';
 import { parseTrackRequest, ReceiptAccessError } from '../reporting/receipt-crypto.ts';
 import { createPrivateReport, readPrivateTimeline, CaseStoreError, type Queryable } from '../reporting/private-case-store.ts';
+import { assessIntakeRelease, type IntakeReleaseConfig } from '../reporting/intake-release.ts';
 
-export interface PrivateReportingEnv {
-  REPORTING_ENABLED?: string;
-  REPORTING_HYPERDRIVE?: { connectionString: string };
-  REPORTING_LIMIT?: { limit(options: { key: string }): Promise<{ success: boolean }> };
-  REPORTING_POLICY_VERSION?: string;
-  REPORTING_RETENTION_DAYS?: string;
-}
+export interface PrivateReportingEnv extends IntakeReleaseConfig {}
 
 export type ReportDatabaseFactory = (connectionString: string) => Promise<{
   db: Queryable;
@@ -88,21 +83,29 @@ export async function handlePrivateReporting(
     return json({ error: 'Unknown route' }, 404);
   if (request.method !== 'POST')
     return json({ error: 'Unsupported method' }, 405, { Allow: 'POST' });
+
+  // A second independent configuration gate is required even if someone
+  // accidentally toggles REPORTING_ENABLED. Configuration is not approval:
+  // the actual legal/operator reviews and deletion evidence remain mandatory.
+  const readiness = assessIntakeRelease(env);
+  if (!readiness.ready) return json({ error: 'Secure intake unavailable' }, 503);
   const origin = request.headers.get('Origin');
-  if ((origin && origin !== url.origin) || request.headers.get('Sec-Fetch-Site') === 'cross-site')
+  const fetchSite = request.headers.get('Sec-Fetch-Site');
+  if (url.origin !== readiness.origin || origin !== readiness.origin ||
+      (fetchSite !== null && fetchSite !== 'same-origin'))
     return json({ error: 'Cross-site request denied' }, 403);
   if (request.headers.get('Content-Type')?.split(';')[0]?.trim() !== 'application/json')
     return json({ error: 'Expected JSON' }, 415);
 
-  const policy = env.REPORTING_POLICY_VERSION;
-  const retention = Number(env.REPORTING_RETENTION_DAYS);
-  if (!env.REPORTING_HYPERDRIVE?.connectionString || !env.REPORTING_LIMIT || !policy?.trim() ||
-      !Number.isInteger(retention) || retention < 1 || retention > 365)
-    return json({ error: 'Secure intake unavailable' }, 503);
+  const policy = readiness.policyVersion;
+  const retention = readiness.retentionDays;
   try {
-    // Rate limits are separate from public geo/knowledge traffic.
-    const key = request.headers.get('CF-Connecting-IP') || 'local';
-    if (!(await env.REPORTING_LIMIT.limit({ key })).success)
+    // Intake and tracking MUST have separately provisioned rate-limit
+    // bindings and disjoint keys; tracking guesses cannot exhaust intake.
+    const limiter = intake ? env.REPORTING_LIMIT! : env.REPORTING_TRACK_LIMIT!;
+    const key = (intake ? 'intake:' : 'tracking:') +
+      (request.headers.get('CF-Connecting-IP') || 'local');
+    if (!(await limiter.limit({ key })).success)
       return json({ error: 'Please try again later' }, 429, { 'Retry-After': '60' });
   } catch {
     return json({ error: 'Secure intake unavailable' }, 503);
