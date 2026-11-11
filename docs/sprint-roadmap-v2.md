@@ -1,5 +1,8 @@
 # Ekiti Civic — Revised delivery roadmap (11 November 2026)
 
+> **Product target updated later on 11 November 2026:** The [search-first product contract](search-first-product-contract.md) supersedes older visual assumptions in this historical sprint roadmap. Continue the delivered backend foundations; deliver a unified public search, independently responsive desktop/mobile UI, vetted service directory, intelligent geo-resolution, media reporting, moderated public incident map and verified office action logs. Old category-first/homepage and routine LGA/questionnaire designs are **not final acceptance criteria**. Sprint numbering below is historical planning, not evidence of release readiness.
+
+
 **Repository:** `oprahayo/ekiti-platform` (React/Vite + Cloudflare Worker + private PostGIS proposals). This is not the separate Next.js EkiSignal demonstration.
 
 **Product goal:** Bridge the communication gap between Ekiti residents and the right public offices. Make residents' voices count, with traceable private reporting and reviewed public accountability. Do not create a generic chatbot or social-media forum.
