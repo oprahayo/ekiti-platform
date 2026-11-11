@@ -1,7 +1,6 @@
 import * as React from 'react';
 import { BrowserRouter, Link, NavLink, Route, Routes, useLocation } from 'react-router';
 import { demoMetrics, lgas } from './fixtures.ts';
-const Ask = React.lazy(() => import('./AskExperience.tsx').then(mod => ({ default: mod.Ask })));
 
 import WelcomeHome from './WelcomeHome.tsx';
 import { AppProvider, useApp } from './state.tsx';
@@ -9,6 +8,7 @@ import { CitizenAuthProvider } from './CitizenAuth.tsx';
 import { CivicProductsMenu } from './CivicProductsMenu.tsx';
 import './search-engine-home.css';
 
+const Ask = React.lazy(() => import('./AskExperience.tsx').then(mod => ({ default: mod.Ask })));
 const Report = React.lazy(() => import('./ReportJourney.tsx'));
 const ReportPrivacy = React.lazy(() => import('./ReportPrivacy.tsx'));
 const LegacyReport = React.lazy(() => import('./Report.tsx'));
