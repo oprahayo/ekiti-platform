@@ -1,6 +1,7 @@
 import * as React from 'react';
 import {Link} from 'react-router';
 import {useCitizenAuth} from './CitizenAuth.tsx';
+import CitizenCaseLinkRequest from './CitizenCaseLinkRequest.tsx';
 import {validateLinkedReports,validateReceiptLink,type LinkedReport} from './report-account.ts';
 
 const statusLabels:Record<LinkedReport['last_platform_event'],string>={
@@ -142,6 +143,7 @@ export default function CitizenReports(){
           Link with private receipt
         </button>
       </form>
+      {auth.caseLinksAvailable&&<CitizenCaseLinkRequest/>}
       <button type="button" className="text-link" disabled={busy||loading}
         onClick={()=>void reload()}>Refresh linked reports</button>
     </>}

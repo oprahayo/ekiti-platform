@@ -6,6 +6,7 @@ CREATE SCHEMA auth;
 CREATE TABLE auth.users (
   id uuid PRIMARY KEY,
   email text NOT NULL UNIQUE,
+  phone text UNIQUE,
   email_confirmed_at timestamptz,
   phone_confirmed_at timestamptz
 );
