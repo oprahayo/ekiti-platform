@@ -316,3 +316,15 @@
 .admin-atlas-panel .map-region{margin:0 0 8px}
 @media(max-width:760px){.admin-atlas-teaser{align-items:flex-start;flex-direction:column;
  padding:15px}.admin-atlas-teaser button{width:100%}}
+
+
+/* Four stable mobile navigation cells. Long labels cannot widen viewport. */
+@media(max-width:760px){
+ .sidebar{width:100%;max-width:100%;overflow:hidden}
+ .main-nav{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));
+   width:100%;min-width:0;max-width:100%;overflow:hidden;gap:0;padding:3px}
+ .main-nav .nav-link{width:100%!important;max-width:100%;min-width:0!important;
+   flex:none;padding:4px 1px;justify-content:center;text-align:center}
+ .main-nav .nav-label{max-width:100%;white-space:normal;line-height:1.2;
+   overflow-wrap:anywhere;font-size:10px}
+}
