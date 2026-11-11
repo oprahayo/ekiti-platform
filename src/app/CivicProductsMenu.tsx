@@ -1,5 +1,6 @@
 import * as React from 'react';
 import {Link} from 'react-router';
+import {useApp} from './state.tsx';
 
 /** Product navigation stays independent of the search engine itself. */
 const products=[
@@ -14,6 +15,7 @@ const products=[
 ] as const;
 
 export function CivicProductsMenu(){
+  const {language,setLanguage}=useApp();
   const ref=React.useRef<HTMLDetailsElement>(null);
   React.useEffect(()=>{
     const onKey=(event:KeyboardEvent)=>{if(event.key==='Escape'&&ref.current?.open){
@@ -25,7 +27,7 @@ export function CivicProductsMenu(){
   },[]);
   return <details className="civic-products" ref={ref}>
     <summary className="icon-control civic-products-trigger" title="Ekiti Civic services"
-      aria-label="Open Ekiti Civic menu" aria-haspopup="menu">
+      aria-label="Open Ekiti Civic menu">
       <svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
         {[5,12,19].flatMap(y=>[5,12,19].map(x=><circle key={x+'-'+y} cx={x} cy={y} r="1.9"/>))}
       </svg>
@@ -40,6 +42,13 @@ export function CivicProductsMenu(){
           <span><strong>{product.label}</strong><small>{product.description}</small></span>
         </Link>)}
       </nav>
+      <div className="civic-products-language" role="group" aria-label="Menu language">
+        <strong>Language</strong>
+        <button type="button" aria-pressed={language==='en'}
+          onClick={()=>setLanguage('en')}>English</button>
+        <button type="button" aria-pressed={language==='yo'}
+          onClick={()=>setLanguage('yo')}>Yorùbá</button>
+      </div>
       <p className="civic-products-disclaimer">
         Operated independently by inEkiti Official. Government delivery and
         real citizen reporting are not active in this preview.
