@@ -14,6 +14,7 @@ const Track = React.lazy(() => import('./TrackConversation.tsx'));
 const Explore = React.lazy(() => import('./ExploreDirectory.tsx'));
 const PlaceDetails = React.lazy(() => import('./PlaceDetails.tsx'));
 const CitizenProfile = React.lazy(() => import('./CitizenProfile.tsx'));
+const CaseLinkClaim = React.lazy(() => import('./CaseLinkClaim.tsx'));
 
 function Icon({ name }: { name: 'home' | 'explore' | 'report' | 'track' | 'scores' | 'profile' | 'settings' | 'search' }) {
   const shapes: Record<typeof name, React.ReactNode> = {
@@ -129,6 +130,7 @@ function Shell() {
           <Route path="/track/:publicId" element={<Track />} />
           <Route path="/scores" element={<Scores />} />
           <Route path="/profile" element={<CitizenProfile />} />
+          <Route path="/case-link" element={<CaseLinkClaim />} />
           <Route path="/places/:id" element={<PlaceDetails />} />
           <Route path="*" element={<main className="page"><h1>Page not found</h1><Link to="/">Return home</Link></main>} />
         </Routes>
