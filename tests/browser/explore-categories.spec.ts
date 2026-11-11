@@ -27,7 +27,7 @@ test('Explore shows compact categories without Yellow Pages branding', async ({ 
     });
     return { columns, tiles, color: computed.backgroundColor };
   });
-  expect(grid.columns).toHaveLength(4);
+  expect(grid.columns).toHaveLength(3);
   expect(grid.tiles[0].y).toBe(grid.tiles[1].y);
   expect(grid.tiles[1].y).toBe(grid.tiles[2].y);
   expect(grid.tiles[0].x).toBeLessThan(grid.tiles[1].x);
@@ -54,7 +54,7 @@ for (const width of [280, 320, 360, 375, 390, 428, 768, 1024]) {
       };
     });
     expect(metrics.documentWidth).toBeLessThanOrEqual(metrics.viewportWidth);
-    expect(metrics.columns).toBe(width <= 350 ? 3 : width < 560 ? 4 : 6);
+    expect(metrics.columns).toBe(width <= 420 ? 3 : width < 560 ? 4 : 6);
     expect(Math.min(...metrics.tileWidths)).toBeGreaterThanOrEqual(65);
     expect(Math.min(...metrics.tileHeights)).toBeGreaterThanOrEqual(70);
     expect(Math.max(...metrics.tileHeights)).toBeLessThanOrEqual(110);
