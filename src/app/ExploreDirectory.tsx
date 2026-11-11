@@ -5,7 +5,7 @@ import { DirectoryIcon, categoryForGroup, directoryCategories } from './Director
 import { useApp } from './state.tsx';
 import NearbyDirectorySearch from './NearbyDirectorySearch.tsx';
 
-const MapLocation = React.lazy(() => import('./MapLocation.tsx'));
+const EkitiDirectoryMap = React.lazy(() => import('./EkitiDirectoryMap.tsx'));
 
 interface ReviewedPlace {
   id: string;
@@ -247,11 +247,11 @@ export default function ExploreDirectory() {
 
     <div className="directory-secondary">
       <button type="button" className="quiet-action" onClick={() => setMapOpen(value => !value)}>
-        {mapOpen ? 'Hide Ekiti map' : 'View LGA boundaries on map'}
+        {mapOpen ? 'Hide Ekiti map' : 'View interactive Ekiti directory map'}
       </button>
       {mapOpen && <React.Suspense fallback={<p role="status" className="note">Loading map only now…</p>}>
-        <MapLocation onPoint={() => { /* No business points unless individually verified. */ }} />
-        <p className="note">The map shows verified LGA boundaries. Illustrative places are not geocoded or pinned.</p>
+        <EkitiDirectoryMap places={loadState==='ready'?places:[]}
+          onSelectLga={selectManualArea}/>
       </React.Suspense>}
       <h2>Can’t find what you need?</h2>
       <Link to="/ask?focus=1" className="text-link" onClick={() => setAskDraft('Find a business in Ekiti')}>
