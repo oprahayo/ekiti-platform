@@ -1,4 +1,5 @@
 import pg from 'pg';
+import { parseUnifiedSearch, searchReviewedEkiti, type UnifiedSearchFilters } from './unified-search.ts';
 import { handlePrivateReporting, type PrivateReportingEnv } from './private-report-routes.ts';
 import {handlePrivateEvidence,type EvidenceEnvironment} from './private-evidence-routes.ts';
 import { resolveIncidentLocation } from './location.ts';
@@ -117,13 +118,14 @@ export default {
     const directory = url.pathname === '/api/areas';
     const ask = url.pathname === '/api/ask';
     const knowledge = url.pathname === '/api/knowledge';
+    const unifiedSearch = url.pathname === '/api/search';
     const places = url.pathname === '/api/places';
     const nearby = url.pathname === '/api/places/nearby';
     if(nearby&&(env.NEARBY_DIRECTORY_ENABLED!=='true'||env.NEARBY_DIRECTORY_REVIEWED!=='true'))
       return json({error:'Unknown route'},404);
     const reviews = url.pathname.startsWith('/api/places/') && url.pathname.endsWith('/reviews');
     const place = url.pathname.startsWith('/api/places/') && !reviews && !nearby;
-    const isPublicData = knowledge || places || place || reviews || nearby;
+    const isPublicData = knowledge || places || place || reviews || nearby || unifiedSearch;
     if ((!directory && !ask && !isPublicData && url.pathname !== '/api/resolve') ||
       ((!isPublicData || nearby) && url.search))
       return json({ error: 'Unknown route' }, 404);
@@ -142,6 +144,7 @@ export default {
         return json({ error: 'Please try again in a minute' }, 429, { 'Retry-After': '60' });
       let point = null;
       let filters: KnowledgeFilters | DirectoryFilters | null = null;
+      let unifiedFilters: UnifiedSearchFilters | null = null;
       let placeId: string | null = null;
       let reviewFilters: ReviewFilters | null = null;
       let nearbyFilters:NearbySearch|null=null;
@@ -156,7 +159,8 @@ export default {
       }
       if (isPublicData && !nearby) {
         try {
-          if (knowledge) filters = parseKnowledgeFilters(url.searchParams);
+          if (unifiedSearch) unifiedFilters = parseUnifiedSearch(url.searchParams);
+          else if (knowledge) filters = parseKnowledgeFilters(url.searchParams);
           else if (places) filters = parseDirectoryFilters(url.searchParams);
           else if (reviews) reviewFilters = parsePublicReviews(url.pathname,url.searchParams);
           else {
@@ -200,6 +204,8 @@ export default {
             status:'ready',radiusKm:nearbyFilters.radiusKm},200,
             {'Referrer-Policy':'no-referrer'});
         }
+        if (unifiedSearch && unifiedFilters)
+          return json(await searchReviewedEkiti(client, unifiedFilters));
         if (knowledge)
           return json({ items: await searchKnowledge(client, filters as KnowledgeFilters),
             reviewedOnly: true });
