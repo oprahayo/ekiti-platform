@@ -8,6 +8,10 @@ import {
   type JourneyStep, type ReportCategory, type EvidenceMethod,
   type SavedJourneyDraft,
 } from './report-journey-state.ts';
+import {
+  INCIDENT_TAXONOMY, taxonomyQuestion, taxonomyChoiceLabel,
+  reviewSignal, possibleSameTabDraft, type DangerAnswer,
+} from './incident-taxonomy.ts';
 
 const OnDeviceRecorder = React.lazy(() => import('./OnDeviceRecorder.tsx'));
 
@@ -62,6 +66,9 @@ export default function ReportJourney() {
   const [method, setMethod] = React.useState<EvidenceMethod>('Text');
   const [category, setCategory] = React.useState<ReportCategory>(feedback ? 'Suggestion' : 'Other');
   const [description, setDescription] = React.useState('');
+  const [subcategory,setSubcategory] = React.useState('');
+  const [immediateDanger,setImmediateDanger] = React.useState<DangerAnswer>('unknown');
+  const [resumedDraft,setResumedDraft] = React.useState(false);
   const [community, setCommunity] = React.useState('');
   const [lgaId, setLgaId] = React.useState('');
   const [media, setMedia] = React.useState<File | null>(null);
@@ -140,6 +147,9 @@ export default function ReportJourney() {
     if(!savedDraft || busyRef.current) return;
     setMethod(savedDraft.method);setCategory(savedDraft.category);
     setDescription(savedDraft.description);setLgaId(savedDraft.lgaId);
+    setSubcategory(savedDraft.subcategory ?? '');
+    setImmediateDanger(savedDraft.immediateDanger ?? 'unknown');
+    setResumedDraft(true);
     setCommunity(savedDraft.community);setMedia(null);setMediaUrl('');
     setMediaError('');setContact('');setContactMethod('none');setCaptureMode(null);
     setHistory([]);setValidation('');setSavedNote('');
@@ -191,6 +201,7 @@ export default function ReportJourney() {
       setStep('method');setHistory([]);
       setLines(initialLines(feedback,language));nextId.current=2;
       setDescription('');setLgaId('');setCommunity('');
+      setSubcategory('');setImmediateDanger('unknown');setResumedDraft(false);
       setMedia(null);setMediaUrl('');setContact('');setContactMethod('none');
       try { setSavedDraft(readJourneyDraft(sessionStorage.getItem(REPORT_DRAFT_KEY),
         feedback?'feedback':'report',lgas.map(area=>area.id))); }
@@ -238,16 +249,18 @@ export default function ReportJourney() {
     setHistory([]);
     setStep('method'); setLines(initialLines(feedback,language)); nextId.current = 2;
     setMethod('Text'); setCategory(feedback ? 'Suggestion' : 'Other'); setDescription('');
+    setSubcategory('');setImmediateDanger('unknown');setResumedDraft(false);
     setCommunity(''); setLgaId(''); setMedia(null); setMediaUrl(''); setMediaError('');
     setContactMethod('none'); setContact(''); setValidation(''); setSavedNote(''); setCaptureMode(null);
     discardDraft();
   }
   function chooseMethod(value: EvidenceMethod) {
     setMethod(value); setMedia(null); setMediaUrl(''); setMediaError(''); setCaptureMode(null);
+    setResumedDraft(false);
     respond(value + ' · ' + methodHelp[value], 'category');
   }
   function chooseCategory(value: ReportCategory) {
-    setCategory(value);
+    setCategory(value);setSubcategory('');setImmediateDanger('unknown');
     respond(value, 'description', value === 'Emergency'
       ? 'If anyone is in immediate danger, contact emergency services directly. This project does not dispatch help. You can still describe the incident here as a private draft.'
       : journeyPrompt('description',language), value === 'Emergency');
@@ -294,7 +307,10 @@ export default function ReportJourney() {
   function save() {
     const snapshot = {
       purpose: feedback ? 'feedback' : 'report', method, category, description: description.trim(),
-      lgaId, community: community.trim(), attachment: media ? 'Not stored: ' + media.name : 'None',
+      lgaId, community: community.trim(),
+      ...(subcategory ? {subcategory} : {}),
+      immediateDanger:feedback ? 'unknown' : immediateDanger,
+      attachment: media ? 'Not stored: ' + media.name : 'None',
       followupRequested: contactMethod !== 'none', savedAt: new Date().toISOString(),
     };
     try {
@@ -307,6 +323,9 @@ export default function ReportJourney() {
     respond('Save private draft', 'saved');
   }
   const chosenArea = lgas.find(item => item.id === lgaId)?.name || 'Not selected';
+  const safetySignal = reviewSignal(category,feedback?'unknown':immediateDanger);
+  const sameTabOverlap = !resumedDraft && possibleSameTabDraft(
+    {purpose:feedback?'feedback':'report',category,lgaId,description:description.trim()},savedDraft);
   return <main className="page guided-report-page" id="main">
     <h1 className="visually-hidden">{feedback ? 'Share feedback' : 'Report an issue'}</h1>
     <div className="guided-chat-tools">
@@ -355,6 +374,36 @@ export default function ReportJourney() {
     </section>}
 
     {!typing && step === 'description' && <form className="guided-input-form" onSubmit={event=>{event.preventDefault();nextDescription();}}>
+      <fieldset className="guided-triage-question">
+        <legend>{taxonomyQuestion(category,language)}</legend>
+        <div className="guided-triage-options" role="group" aria-label="Incident detail">
+          {INCIDENT_TAXONOMY[category].choices.map(option=>
+            <button key={option.id} type="button" aria-pressed={subcategory===option.id}
+              onClick={()=>setSubcategory(subcategory===option.id?'':option.id)}>
+              {option.label[language]}
+            </button>)}
+        </div>
+        <p className="guided-hint">{language==='yo'
+          ? 'O lè fo ìbéèrè yìí bí o kò bá mọ ìdáhùn.' : 'Choose a detail if it fits, or continue without selecting one.'}</p>
+      </fieldset>
+      {!feedback && <fieldset className="guided-triage-question">
+        <legend>{language==='yo' ? 'Ṣé ẹnikẹ́ni wà nínú ewu báyìí?' : 'Is anyone in immediate danger right now?'}</legend>
+        <div className="guided-triage-options" role="group" aria-label="Immediate danger">
+          {([
+            ['yes',language==='yo'?'Bẹ́ẹ̀ni':'Yes'],
+            ['no',language==='yo'?'Rárá':'No'],
+            ['unknown',language==='yo'?'Mi ò mọ̀':'Not sure'],
+          ] as const).map(([value,label])=>
+            <button key={value} type="button" aria-pressed={immediateDanger===value}
+              onClick={()=>setImmediateDanger(value)}>{label}</button>)}
+        </div>
+        {(immediateDanger==='yes' || category==='Emergency') &&
+          <p className="guided-urgent-advice" role="alert">
+            If anyone is in immediate danger, contact local emergency services directly.
+            Ekiti Civic cannot dispatch help, preserve emergency recordings or alert an agency.
+          </p>}
+        <p className="guided-hint">This answer only helps prepare a private draft for future human review. No priority is assigned or alert sent.</p>
+      </fieldset>}
       <label htmlFor="guided-description">Your report</label>
       <textarea id="guided-description" rows={4} maxLength={4000} value={description}
         onChange={event=>{setDescription(event.target.value);setValidation('');}}
@@ -442,13 +491,27 @@ export default function ReportJourney() {
       <dl className="review-list">
         <dt>Purpose</dt><dd>{feedback ? 'Feedback' : 'Report'}</dd>
         <dt>Category</dt><dd>{category}</dd>
+        <dt>Issue detail</dt><dd>{taxonomyChoiceLabel(category,subcategory,language) ?? 'Not specified'}</dd>
+        {!feedback && <><dt>Safety answer</dt><dd>{immediateDanger==='yes'?'Immediate danger reported':
+          immediateDanger==='no'?'No immediate danger reported':'Not sure / not assessed'}</dd>
+          <dt>Review signal</dt><dd>{safetySignal==='immediate_safety_concern'?
+            'Possible immediate safety concern — manual review needed' :
+            'Human assessment required before any priority decision'}</dd></>}
         <dt>Method</dt><dd>{method}</dd>
         <dt>Description</dt><dd>{description.trim()}</dd>
         <dt>Location</dt><dd>{chosenArea}{community ? ' · ' + community : ''}</dd>
         <dt>Evidence</dt><dd>{media ? media.name + ' (not uploaded)' : 'No file attached'}</dd>
         <dt>Follow-up</dt><dd>{contactMethod === 'none' ? 'None requested' : contactMethod.toUpperCase() + ' · delivery not active'}</dd>
       </dl>
-      <p className="privacy-notice">This is not a submission. No real report ID, phone/email receipt, official assignment or public map marker can be issued until secure intake and moderation are enabled.</p>
+      {sameTabOverlap && <aside className="guided-duplicate-notice" role="status">
+        <strong>Possible repeat of your own saved draft</strong>
+        <p>This report resembles a draft saved in this browser tab. Check whether it describes the same incident.
+        No other residents' reports were searched, no identity was compared and no case has been merged.</p>
+      </aside>}
+      {safetySignal==='immediate_safety_concern' && !feedback && <p className="guided-urgent-advice" role="alert">
+        If the danger is current, seek emergency help directly; this private draft is not monitored or dispatched.
+      </p>}
+      <p className="privacy-notice">This is not a submission. These answers are preliminary, not verified severity or official triage. No real report ID, phone/email receipt, official assignment or public map marker can be issued until secure intake and moderation are enabled.</p>
       <button className="primary-action" type="button" onClick={save}>Save private draft on this device</button>
       <button type="button" className="quiet-action" onClick={editCategory}>Change category</button>
     </section>}
