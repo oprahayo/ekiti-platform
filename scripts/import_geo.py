@@ -7,6 +7,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shutil
 import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -35,8 +36,45 @@ def copy_rows(table, rows):
     return f"COPY {table} FROM STDIN WITH (FORMAT csv);\n{buf.getvalue()}\\.\n"
 
 
+def ward_rows_pdfplumber(raw, parents):
+    """Table-based fallback when a runner does not include Poppler's pdftotext.
+
+    Preserve the same pinned PDF SHA and strict 177-row, ordered-LGA checks.
+    The INEC source's first four pages are three-column, ruled tables; later
+    pages contain collection centres, not ward references.
+    """
+    try:
+        import pdfplumber
+    except ImportError as exc:
+        raise RuntimeError("Install pinned pdfplumber to parse the INEC table without pdftotext") from exc
+
+    rows = []
+    with pdfplumber.open(io.BytesIO(raw)) as document:
+        for page in document.pages[:4]:
+            for table in page.extract_tables():
+                for cells in table:
+                    if len(cells) < 3:
+                        continue
+                    number = (cells[0] or "").strip()
+                    if not re.fullmatch(r"\\d+", number):
+                        continue
+                    parent = " ".join((cells[1] or "").split())
+                    ward = " ".join((cells[2] or "").split())
+                    slug = {"ado": "ado-ekiti", "irepodun": "irepodun-ifelodun",
+                            "gboyin": "gbonyin"}.get(area_id(parent), area_id(parent))
+                    if int(number) != len(rows) + 1 or slug not in parents or not ward:
+                        raise ValueError(f"Unexpected INEC table row {number}: {parent} / {ward}")
+                    rows.append((f"inec-rac-ekiti-{number}", slug, ward))
+
+    if len(rows) != 177 or len({(parent, name) for _, parent, name in rows}) != 177:
+        raise ValueError("Incomplete or duplicate INEC table reference")
+    return rows
+
+
 def ward_rows(pdf, parents):
     raw = checked(pdf, "rac")
+    if shutil.which("pdftotext") is None:
+        return ward_rows_pdfplumber(raw, parents)
     layout = subprocess.check_output(["pdftotext", "-layout", "-enc", "UTF-8", "-", "-"], input=raw).decode("utf-8")
     rows = []
     for line in layout.splitlines():
