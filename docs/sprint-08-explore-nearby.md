@@ -34,4 +34,4 @@
 4. Provision and independently approve deployment configuration, rate limits and rollback; only then deliberately enable the two nearby-specific flags. Do not enable reporting/evidence or admin.
 5. Perform mobile field tests, accuracy review at LGA borders, no-persist/log review, negative security tests and accessibility sign-off.
 
-**Next:** Sprint 09 — civic knowledge / question answering and official source validation (per 26-sprint roadmap). Do not conflate source-only feature code with a launched directory.
+**Next:** Sprint 09 — Optional Citizen Authentication (verified email/phone OTP, guest access and privacy-safe recovery, per the 26-sprint roadmap). Do not conflate source-only feature code with a launched directory.
