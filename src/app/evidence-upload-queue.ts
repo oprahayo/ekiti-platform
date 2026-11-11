@@ -152,6 +152,12 @@ export class EvidenceUploadQueue {
     this.captureChain=work.catch(()=>{});
     return work;
   }
+  /** Wait for current network attempts, then inspect the actual ACK snapshot. */
+  async waitForAcks():Promise<EvidenceUploadSnapshot>{
+    await this.captureChain;
+    if(this.inFlight)await this.inFlight;
+    return this.snapshot();
+  }
   /** Reconcile an ACK whose response was lost before resending pending bytes. */
   async retry():Promise<void>{
     if(this.restored)throw new EvidenceUploadError('resume_status_only');
