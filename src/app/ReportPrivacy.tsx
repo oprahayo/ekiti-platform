@@ -75,6 +75,29 @@ export default function ReportPrivacy() {
         and activated independently.</p>
     </section>
     <section className="preview-privacy-section">
+      <h2>Optional citizen account and private report links</h2>
+      <p>Guest browsing and unsent drafts never require registration. A separately enabled
+        Supabase Auth sign-in can verify an email using a one-time code. SMS sign-in
+        is only available if an approved delivery provider and an independent phone-OTP
+        release flag are configured. A verified contact is not proof of legal identity,
+        Ekiti residency or ownership of a report. The same verified contact can recover
+        its account on another device after a new OTP; email and phone accounts are not
+        automatically merged.</p>
+      <p>Account tokens are presently held in tab-scoped sessionStorage, readable by
+        scripts on this origin. They are removed on local sign-out; short-lived access
+        tokens can remain valid until expiry. Browsing as a guest is safer for residents
+        concerned about sharing contact information.</p>
+      <p>Private report history is a separate, currently disabled feature. If approved,
+        a report can be linked to an account only by presenting the specific report's
+        server-issued UUID and 256-bit receipt secret after sign-in and confirming the
+        link. The platform must never infer ownership from matching contact, location,
+        internet address or device. Only sanitized platform timeline labels and receipt
+        references may appear in My Reports, not descriptions, contact details, evidence
+        or government acknowledgement claims. Unlinking removes the account relationship,
+        not the report itself. The report and its link remain subject to independent
+        retention and deletion controls.</p>
+    </section>
+    <section className="preview-privacy-section">
       <h2>Delete saved local drafts</h2>
       <p>Delete saved guided and legacy text drafts from this browser. This does not delete downloaded copies,
         content you have shared elsewhere, data held by another device or active text still on a different open tab.
