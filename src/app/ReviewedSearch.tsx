@@ -28,6 +28,8 @@ interface SearchResponse {
   reviewedOnly: true;
   places: Place[];
   knowledge: Knowledge[];
+  localityHint?: {name:string;lgaId:string;lgaName:string;source:string;confidence:'reviewed-place-name'} | null;
+  locationScope?: 'specific-place'|'lga'|'none'|'ambiguous';
 }
 type SearchState = 'idle' | 'loading' | 'ready' | 'unavailable';
 
@@ -116,9 +118,23 @@ export default function ReviewedSearch() {
     </p>}
     {state==='ready' && data && <div className="search-results-content">
       <p className="search-results-count" role="status">
-        {data.places.length + data.knowledge.length} reviewed result{data.places.length+data.knowledge.length===1?'':'s'} shown for “{data.query}”
+        {data.places.length + data.knowledge.length + (data.localityHint?1:0)} reviewed result{data.places.length+data.knowledge.length+(data.localityHint?1:0)===1?'':'s'} shown for “{data.query}”
       </p>
-      {data.places.length===0 && data.knowledge.length===0 && <p className="search-results-muted">
+      {data.localityHint && <section className="search-results-section" aria-labelledby="search-locality">
+        <h2 id="search-locality">Recognized place</h2>
+        <article className="search-result search-locality-result">
+          <h3>{data.localityHint.name}</h3>
+          <p>Likely local government area: {data.localityHint.lgaName}.</p>
+          <p className="search-result-meta">Based on a reviewed public place-name source; not GPS verification or a promise of nearby results.</p>
+          {safeSource(data.localityHint.source) && <p className="search-result-source">
+            <a href={safeSource(data.localityHint.source)!} rel="noopener noreferrer" target="_blank">View location source</a>
+          </p>}
+        </article>
+      </section>}
+      {data.locationScope==='ambiguous' && <p className="search-results-muted">
+        This query mentions places in different LGAs. A single location was not assumed.
+      </p>}
+      {data.places.length===0 && data.knowledge.length===0 && !data.localityHint && <p className="search-results-muted">
         No reviewed result matches yet. The directory is growing; this does not mean the service or place does not exist.
         Try a simpler name, or <Link to="/explore">browse Ekiti categories</Link>.
       </p>}
