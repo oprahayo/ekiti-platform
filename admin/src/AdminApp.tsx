@@ -6,6 +6,8 @@ import {
 } from './case-model.ts';
 import { makeDemoCases } from './demo-cases.ts';
 import { ModerationWorkspace, RoutingWorkspace } from './OperationsModules.tsx';
+import { OpsAlerts, deriveDemoAlerts } from './OpsAlerts.tsx';
+const EkitiOpsMap=React.lazy(()=>import('./EkitiOpsMap.tsx'));
 import { adminViewUrl, isCaseView, readAdminView, type AdminView } from './navigation.ts';
 
 type View = AdminView;
@@ -254,7 +256,10 @@ function CaseDetails({
   </section>;
 }
 
-function Analytics({ cases, onNavigate }: { cases: AdminCase[]; onNavigate: (next: View) => void }) {
+function Analytics({ cases, onNavigate, onOpenCase, onArea }: {
+  cases: AdminCase[]; onNavigate: (next: View) => void;
+  onOpenCase:(id:string)=>void;onArea:(area:string)=>void;
+}) {
   const counts = queueCounts(cases);
   const total = cases.length;
   const kindCounts = ['Complaint', 'Issue', 'Commendation'].map(kind =>
@@ -263,6 +268,12 @@ function Analytics({ cases, onNavigate }: { cases: AdminCase[]; onNavigate: (nex
     <div className="analytics-top"><p className="eyebrow">OPERATIONS / DEMO</p>
       <h1>Workspace overview</h1>
       <p>Numbers below refer only to fictional cases in this browser session. No government performance metrics are published.</p></div>
+    <div className="ops-dashboard-grid">
+      <OpsAlerts cases={cases} onOpenCase={onOpenCase}/>
+      <React.Suspense fallback={<section className="ops-map-loading" role="status">Loading Ekiti boundaries…</section>}>
+        <EkitiOpsMap cases={cases} onSelectArea={onArea}/>
+      </React.Suspense>
+    </div>
     <section className="attention-panel" aria-label="Next actions">
       <div className="attention-title"><h2>Next actions</h2><span>Sample work only</span></div>
       <div className="attention-actions">
@@ -299,11 +310,14 @@ export function AdminApp() {
   const [cases, setCases] = React.useState<AdminCase[]>(makeDemoCases);
   const [view, setView] = React.useState<View>(() => readAdminView(window.location.search));
   const [query, setQuery] = React.useState('');
+  const [areaSearch,setAreaSearch]=React.useState('');
   const [selectedId, setSelectedId] = React.useState<string | null>('DEMO-1001');
   const [mobileDetail, setMobileDetail] = React.useState(false);
   const counts = React.useMemo(() => queueCounts(cases), [cases]);
   const shown = React.useMemo(() =>
-    view === 'analytics' || view === 'moderation' || view === 'routing' ? [] : filterCases(cases, view, query), [cases, view, query]);
+    view === 'analytics' || view === 'moderation' || view === 'routing' ? [] :
+      filterCases(cases, view, query||areaSearch),
+    [cases, view, query, areaSearch]);
   const selected = shown.find(item => item.id === selectedId) ?? shown[0] ?? null;
   React.useEffect(() => {
     const onPopState = () => {
@@ -317,6 +331,16 @@ export function AdminApp() {
   const changeView = (next: View) => {
     if (next !== view) window.history.pushState(null, '', adminViewUrl(next, window.location.pathname));
     setView(next); setSelectedId(null); setMobileDetail(false);
+    setAreaSearch('');
+  };
+  const openArea=(area:string)=>{
+    setQuery(area);setAreaSearch('');
+    changeView('all');
+    setQuery(area);
+  };
+  const openAttentionCase=(id:string)=>{
+    changeView('all');setQuery('');setAreaSearch('');
+    setSelectedId(id);setMobileDetail(true);
   };
   const apply = (id: string, action: Action, note: string) => {
     const current = cases.find(item => item.id === id);
@@ -331,7 +355,7 @@ export function AdminApp() {
     setSelectedId(id);
   };
   const reset = () => {
-    setCases(makeDemoCases()); setView('all'); setQuery(''); setSelectedId('DEMO-1001'); setMobileDetail(false);
+    setCases(makeDemoCases()); setView('all'); setQuery('');setAreaSearch(''); setSelectedId('DEMO-1001'); setMobileDetail(false);
     window.history.replaceState(null, '', adminViewUrl('all', window.location.pathname));
   };
   return <div className="admin-app">
@@ -340,7 +364,12 @@ export function AdminApp() {
     <div className="workspace-shell" id="workspace">
       <header className="workspace-header">
         <div className="header-title"><span className="header-mobile-brand">ekiti civic / </span><span>Operations</span><span className="header-slash">/</span><strong>{isCaseView(view) ? 'Cases' : view === 'analytics' ? 'Overview' : view === 'moderation' ? 'Moderation' : 'Routing'}</strong></div>
-        <div className="header-actions"><span className="environment-pill"><span aria-hidden="true" /> DEMO MODE</span>
+        <div className="header-actions">
+          <button className="ops-alert-shortcut" type="button" onClick={()=>changeView('analytics')}
+            aria-label={'Open sample alerts, '+deriveDemoAlerts(cases).length+' items'}>
+            <span aria-hidden="true">Alerts</span>
+            <strong>{deriveDemoAlerts(cases).length}</strong></button>
+          <span className="environment-pill"><span aria-hidden="true" /> DEMO MODE</span>
           <button type="button" onClick={reset} title="Restore sample cases" className="reset-button">Reset demo</button>
           <div className="avatar" aria-label="Demo moderator">DM</div></div>
       </header>
@@ -348,7 +377,8 @@ export function AdminApp() {
         <span className="notice-wide"> All cases and updates are fictional and stay in memory. Live intake, staff login, notifications and government connections are not enabled.</span>
         <span className="notice-mobile"> Sample records; no live reports or government access.</span>
       </div>
-      {view === 'analytics' ? <Analytics cases={cases} onNavigate={changeView} /> :
+      {view === 'analytics' ? <Analytics cases={cases} onNavigate={changeView}
+        onOpenCase={openAttentionCase} onArea={openArea}/> :
         view === 'moderation' ? <ModerationWorkspace /> :
         view === 'routing' ? <RoutingWorkspace cases={cases} /> :
         <div className={'case-workspace ' + (mobileDetail ? 'mobile-detail-open' : '')}>
