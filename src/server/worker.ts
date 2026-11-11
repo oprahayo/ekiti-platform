@@ -1,5 +1,6 @@
 import pg from 'pg';
 import { handlePrivateReporting, type PrivateReportingEnv } from './private-report-routes.ts';
+import {handlePrivateEvidence,type EvidenceEnvironment} from './private-evidence-routes.ts';
 import { resolveIncidentLocation } from './location.ts';
 import { answerQuestion } from './ask.ts';
 import {
@@ -8,7 +9,7 @@ import {
 } from './public-data.ts';
 import { parsePublicReviews, publicReviews, type ReviewFilters } from './reviews.ts';
 
-interface Env extends PrivateReportingEnv {
+interface Env extends PrivateReportingEnv, EvidenceEnvironment {
   HYPERDRIVE: { connectionString: string };
   LOCATION_LIMIT: { limit(options: { key: string }): Promise<{ success: boolean }> };
 }
@@ -85,6 +86,9 @@ export default {
     const url = new URL(request.url);
     if (url.pathname === '/api/reports' || url.pathname === '/api/tracking') {
       return handlePrivateReporting(request, env);
+    }
+    if (url.pathname === '/api/evidence/sessions' || url.pathname.startsWith('/api/evidence/sessions/')) {
+      return handlePrivateEvidence(request,env);
     }
     const directory = url.pathname === '/api/areas';
     const ask = url.pathname === '/api/ask';
