@@ -47,23 +47,21 @@ test('Yellow Pages uses the shared theme and useful non-fabricated shortcuts', a
   await expect(page.locator('.directory-hero')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Browse Categories' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Near me' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Categories' })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Add listing' })).toHaveAttribute('href', '/listings/new');
+  await expect(page.getByRole('link', { name: 'Prepare a listing' })).toHaveAttribute('href', '/listings/new');
+  await expect(page.locator('.directory-manual-area:not([open])')).toHaveCount(1);
   await expect(page.locator('.directory-category-tile')).toHaveCount(24);
   await expect(page.locator('.place-row')).toHaveCount(0);
 });
 
-test('Near Me never transmits precise coordinates before a second confirmation', async ({ page, context }) => {
+test('Near Me sends device coordinates only after residents explicitly opt in', async ({ page, context }) => {
   await context.grantPermissions(['geolocation']);
   await context.setGeolocation({ latitude: 7.677235411135371, longitude: 4.943747799903621 });
   let coordinates = 0;
   page.on('request', req => { if (req.url().endsWith('/api/resolve')) coordinates++; });
   await page.goto('/explore');
-  await page.getByRole('button', { name: 'Near me' }).click();
-  await expect(page.getByText('Location proposed. Confirm before checking its LGA on the server.')).toBeVisible();
   expect(coordinates).toBe(0);
-  await page.getByRole('button', { name: 'Confirm location and find LGA' }).click();
-  await expect(page.getByText(/Showing results in Efon/)).toBeVisible();
+  await page.getByRole('button', { name: 'Near me' }).click();
+  await expect(page.getByText(/Showing verified Ekiti LGA results for Efon/)).toBeVisible();
   await expect(page.locator('#explore-lga')).toHaveValue('efon');
   expect(coordinates).toBe(1);
 });

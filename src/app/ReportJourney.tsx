@@ -3,6 +3,20 @@ import { Link, useSearchParams } from 'react-router';
 import { lgas } from './fixtures.ts';
 import { useApp } from './state.tsx';
 
+const OnDeviceRecorder = React.lazy(() => import('./OnDeviceRecorder.tsx'));
+
+function MethodSymbol({kind}: {kind:'Text'|'Photo'|'Video'|'Audio'}) {
+  const icon: Record<typeof kind,React.ReactNode> = {
+    Text: <><path d="M6 4h12v16H6z"/><path d="M9 9h6M9 13h6M9 17h4"/></>,
+    Photo: <><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m4 17 5-4 4 3 3-4 4 5"/></>,
+    Video: <><rect x="3" y="5" width="13" height="14" rx="2"/><path d="m16 10 5-3v10l-5-3"/></>,
+    Audio: <><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4M8 21h8"/></>,
+  };
+  return <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"
+    aria-hidden="true">{icon[kind]}</svg>;
+}
+
 type Step = 'method' | 'category' | 'description' | 'location' | 'evidence' | 'followup' | 'contact' | 'review' | 'saved';
 type EvidenceMethod = 'Text' | 'Photo' | 'Video' | 'Audio';
 type ContactMethod = 'none' | 'email' | 'sms';
@@ -72,7 +86,32 @@ export default function ReportJourney() {
   const [contact, setContact] = React.useState('');
   const [validation, setValidation] = React.useState('');
   const [savedNote, setSavedNote] = React.useState('');
+  const [captureMode, setCaptureMode] = React.useState<'record'|'upload'|null>(null);
+  const [typing, setTyping] = React.useState(false);
+  const [soundsOn, setSoundsOn] = React.useState(false);
+  const timerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const busyRef = React.useRef(false);
+  const audioRef = React.useRef<AudioContext | null>(null);
   const threadEnd = React.useRef<HTMLDivElement>(null);
+
+  function playChatCue(kind:'send'|'receive') {
+    if (!soundsOn || typeof window === 'undefined' || !window.AudioContext) return;
+    try {
+      const context = audioRef.current || new window.AudioContext();
+      audioRef.current = context;
+      if (context.state === 'suspended') void context.resume().catch(() => {});
+      const now=context.currentTime+0.012;
+      const osc=context.createOscillator(), gain=context.createGain();
+      osc.type='sine';
+      osc.frequency.setValueAtTime(kind==='send'?550:700,now);
+      if (kind==='receive') osc.frequency.exponentialRampToValueAtTime(900,now+0.09);
+      gain.gain.setValueAtTime(0.0001,now);
+      gain.gain.exponentialRampToValueAtTime(0.025,now+0.014);
+      gain.gain.exponentialRampToValueAtTime(0.0001,now+0.15);
+      osc.connect(gain);gain.connect(context.destination);
+      osc.start(now);osc.stop(now+0.16);
+    } catch { /* Sound is optional. */ }
+  }
 
   React.useEffect(() => {
     if (pendingReportText) {
@@ -82,34 +121,55 @@ export default function ReportJourney() {
     }
   }, [pendingReportText, setPendingReportText]);
   React.useEffect(() => () => { if (mediaUrl) URL.revokeObjectURL(mediaUrl); }, [mediaUrl]);
+  React.useEffect(() => () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    void audioRef.current?.close().catch(()=>{});
+  }, []);
   React.useEffect(() => {
     if (lines.length > 1) threadEnd.current?.scrollIntoView({ block: 'nearest' });
-  }, [lines.length]);
+  }, [lines.length,typing]);
 
-  function respond(answer: string, next: Step, customPrompt?: string) {
-    setLines(current => [...current,
-      { id: nextId.current++, speaker: 'resident', text: answer },
-      { id: nextId.current++, speaker: 'assistant', text: customPrompt || prompts[next] },
-    ]);
-    setStep(next); setValidation('');
+  function respond(answer: string, next: Step, customPrompt?: string, immediate = false) {
+    if (busyRef.current) return;
+    busyRef.current = true;
+    setValidation('');
+    playChatCue('send');
+    setLines(current => [...current, { id: nextId.current++, speaker: 'resident', text: answer }]);
+    const showReply = () => {
+      setLines(current => [...current,
+        { id: nextId.current++, speaker: 'assistant', text: customPrompt || prompts[next] },
+      ]);
+      setStep(next);
+      setTyping(false);
+      busyRef.current=false;
+      timerRef.current=null;
+      playChatCue('receive');
+    };
+    if (immediate) showReply(); // Never delay urgent safety instructions.
+    else {
+      setTyping(true);
+      timerRef.current = setTimeout(showReply, 570);
+    }
   }
   function reset() {
     if (!window.confirm('Clear this report conversation and all local evidence?')) return;
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = null;busyRef.current=false;setTyping(false);
     setStep('method'); setLines(initialLines(feedback)); nextId.current = 2;
     setMethod('Text'); setCategory(feedback ? 'Suggestion' : 'Other'); setDescription('');
     setCommunity(''); setLgaId(''); setMedia(null); setMediaUrl(''); setMediaError('');
-    setContactMethod('none'); setContact(''); setValidation(''); setSavedNote('');
+    setContactMethod('none'); setContact(''); setValidation(''); setSavedNote(''); setCaptureMode(null);
     try { sessionStorage.removeItem('ekiti-guided-draft-v1'); } catch { /* Works in memory too. */ }
   }
   function chooseMethod(value: EvidenceMethod) {
-    setMethod(value); setMedia(null); setMediaUrl(''); setMediaError('');
+    setMethod(value); setMedia(null); setMediaUrl(''); setMediaError(''); setCaptureMode(null);
     respond(value + ' · ' + methodHelp[value], 'category');
   }
   function chooseCategory(value: ReportCategory) {
     setCategory(value);
     respond(value, 'description', value === 'Emergency'
       ? 'If anyone is in immediate danger, contact emergency services directly. This project does not dispatch help. You can still describe the incident here as a private draft.'
-      : prompts.description);
+      : prompts.description, value === 'Emergency');
   }
   function nextDescription() {
     const text = description.trim();
@@ -165,16 +225,15 @@ export default function ReportJourney() {
   }
   const chosenArea = lgas.find(item => item.id === lgaId)?.name || 'Not selected';
   return <main className="page guided-report-page" id="main">
-    <header className="chat-conversation-top">
-      <span className="chat-avatar" aria-hidden="true">e</span>
-      <div className="chat-contact">
-        <h1>{feedback ? 'Share feedback' : 'Report an issue'}</h1>
-        <p>Step-by-step chat · Private preview</p>
-      </div>
-      <button type="button" className="chat-clear" onClick={reset}>Start over</button>
-    </header>
+    <h1 className="visually-hidden">{feedback ? 'Share feedback' : 'Report an issue'}</h1>
+    <div className="guided-chat-tools">
+      <button type="button" className="guided-sound-toggle" aria-pressed={soundsOn}
+        onClick={() => setSoundsOn(current => !current)}>
+        {soundsOn ? 'Chat sounds on' : 'Chat sounds off'}
+      </button>
+    </div>
 
-    <p className="guided-progress" aria-label="Reporting progress">
+    <p className="visually-hidden guided-progress" aria-label="Reporting progress">
       {step === 'saved' ? 'Private draft saved' : 'Preparing your report · ' +
         Math.max(1, ['method','category','description','location','evidence','followup','contact','review'].indexOf(step)+1) + ' of 8'}
     </p>
@@ -183,24 +242,26 @@ export default function ReportJourney() {
         {line.speaker === 'assistant' && <span className="conversation-author">Ekiti Civic</span>}
         <p>{line.text}</p>
       </div>)}
+      {typing && <div className="guided-bubble guided-assistant guided-typing" role="status"
+        aria-label="Ekiti Civic is typing"><span/><span/><span/></div>}
       <div ref={threadEnd}/>
     </div>
 
-    {step === 'method' && <section className="guided-choices" aria-label="Choose how to report">
+    {!typing && step === 'method' && <section className="guided-choices guided-method-grid" aria-label="Choose how to report">
       {(['Text','Photo','Video','Audio'] as EvidenceMethod[]).map(value =>
-        <button type="button" key={value} onClick={()=>chooseMethod(value)} className="guided-choice">
-          <strong>{value === 'Photo' ? 'Photo / camera' : value === 'Video' ? 'Video / record' : value === 'Audio' ? 'Audio note' : 'Write text'}</strong>
-          <small>{methodHelp[value]}</small>
+        <button type="button" key={value} onClick={()=>chooseMethod(value)} className="guided-choice guided-method-choice">
+          <MethodSymbol kind={value} />
+          <strong>{value === 'Photo' ? 'Photo' : value === 'Video' ? 'Video' : value === 'Audio' ? 'Audio note' : 'Write text'}</strong>
         </button>)}
-      <p className="guided-hint">Media choices are for evidence, not voice commands. Nothing is recorded or uploaded automatically.</p>
+      <p className="guided-hint">Tap a format. Photo, video and audio are report evidence, not voice commands.</p>
     </section>}
 
-    {step === 'category' && <section className="guided-choices guided-category-choices" aria-label="Choose report category">
+    {!typing && step === 'category' && <section className="guided-choices guided-category-choices" aria-label="Choose report category">
       {categories.map(value => <button className="guided-choice" key={value} type="button"
         onClick={()=>chooseCategory(value)}>{value}</button>)}
     </section>}
 
-    {step === 'description' && <form className="guided-input-form" onSubmit={event=>{event.preventDefault();nextDescription();}}>
+    {!typing && step === 'description' && <form className="guided-input-form" onSubmit={event=>{event.preventDefault();nextDescription();}}>
       <label htmlFor="guided-description">Your report</label>
       <textarea id="guided-description" rows={4} maxLength={4000} value={description}
         onChange={event=>{setDescription(event.target.value);setValidation('');}}
@@ -209,7 +270,7 @@ export default function ReportJourney() {
       <button className="primary-action" type="submit">Continue</button>
     </form>}
 
-    {step === 'location' && <form className="guided-input-form" onSubmit={event=>{event.preventDefault();nextLocation();}}>
+    {!typing && step === 'location' && <form className="guided-input-form" onSubmit={event=>{event.preventDefault();nextLocation();}}>
       <label htmlFor="guided-lga">Local government area</label>
       <select id="guided-lga" value={lgaId} required onChange={event=>{setLgaId(event.target.value);setValidation('');}}>
         <option value="">Choose one of the 16 LGAs</option>
@@ -223,21 +284,29 @@ export default function ReportJourney() {
       <button className="primary-action" type="submit">Continue</button>
     </form>}
 
-    {step === 'evidence' && <section className="guided-input-form" aria-label="Attach optional evidence">
+    {!typing && step === 'evidence' && <section className="guided-input-form" aria-label="Attach optional evidence">
       {method === 'Text' ? <p>Text-only report selected. You can proceed without media.</p> : <>
         <p>{methodHelp[method]} Choose to capture new evidence or select a saved file.</p>
-        <div className="guided-evidence-buttons">
-          <label className="guided-file-label">Capture {method.toLowerCase()}
-            <input aria-label={'Capture ' + method.toLowerCase()} type="file"
-              accept={ACCEPT[method]} capture={method === 'Audio' ? 'user' : 'environment'}
+        {(method === 'Video' || method === 'Audio') && <div className="guided-capture-choice" role="group" aria-label="Choose evidence source">
+          <button type="button" aria-pressed={captureMode === 'record'}
+            onClick={()=>setCaptureMode('record')}>Record on device</button>
+          <button type="button" aria-pressed={captureMode === 'upload'}
+            onClick={()=>setCaptureMode('upload')}>Upload existing file</button>
+        </div>}
+        {(method === 'Photo' || captureMode === 'upload') && <div className="guided-evidence-buttons">
+          {method === 'Photo' && <label className="guided-file-label">Take a photo
+            <input aria-label="Take a photo" type="file" accept={ACCEPT.Photo} capture="environment"
               onChange={event=>{selectMedia(event.target.files?.[0]);event.target.value='';}}/>
-          </label>
+          </label>}
           <label className="guided-file-label">Choose existing file
-            <input aria-label="Choose existing evidence" type="file"
-              accept={ACCEPT[method]}
+            <input aria-label="Choose existing evidence" type="file" accept={ACCEPT[method]}
               onChange={event=>{selectMedia(event.target.files?.[0]);event.target.value='';}}/>
           </label>
-        </div>
+        </div>}
+        {(method === 'Video' || method === 'Audio') && captureMode === 'record' &&
+          <React.Suspense fallback={<p role="status">Preparing device recorder…</p>}>
+            <OnDeviceRecorder kind={method} onCaptured={selectMedia}/>
+          </React.Suspense>}
         {media && <div className="guided-evidence-preview">
           <p>{media.name} · {(media.size/1_000_000).toFixed(1)} MB · Stored only in memory</p>
           {method === 'Photo' && mediaUrl && <img src={mediaUrl} alt="Local evidence preview"/>}
@@ -245,13 +314,13 @@ export default function ReportJourney() {
           {method === 'Audio' && mediaUrl && <audio controls src={mediaUrl} aria-label="Audio evidence preview"/>}
         </div>}
         {mediaError && <p className="guided-error" role="alert">{mediaError}</p>}
-        <p className="guided-hint">Original media might reveal faces, addresses or metadata. It is never uploaded or published in this preview.</p>
+        <p className="guided-hint">Original media can reveal faces, addresses or metadata. This preview does not upload or preserve recordings, even while recording. Never rely on it as emergency evidence storage.</p>
       </>}
       <button type="button" className="primary-action" onClick={()=>nextEvidence()}>{method === 'Text' ? 'Continue' : 'Continue with evidence'}</button>
       {method !== 'Text' && <button type="button" className="text-link" onClick={()=>nextEvidence(true)}>Continue without attachment</button>}
     </section>}
 
-    {step === 'followup' && <section className="guided-choices" aria-label="Choose tracking contact">
+    {!typing && step === 'followup' && <section className="guided-choices" aria-label="Choose tracking contact">
       <button className="guided-choice" type="button" onClick={()=>chooseContact('email')}>
         <strong>Email tracking link</strong><small>For a verified receipt when live submission is available</small>
       </button>
@@ -264,7 +333,7 @@ export default function ReportJourney() {
       <p className="guided-hint">Email and SMS delivery are not active. We will not send messages or generate a real tracking number during this preview.</p>
     </section>}
 
-    {step === 'contact' && <form className="guided-input-form" onSubmit={event=>{event.preventDefault();nextContact();}}>
+    {!typing && step === 'contact' && <form className="guided-input-form" onSubmit={event=>{event.preventDefault();nextContact();}}>
       <label htmlFor="guided-contact">{contactMethod === 'email' ? 'Email address' : 'Phone number (include country code)'}</label>
       <input id="guided-contact" type={contactMethod === 'email' ? 'email' : 'tel'} maxLength={160}
         autoComplete={contactMethod === 'email' ? 'email' : 'tel'} value={contact}
@@ -275,7 +344,7 @@ export default function ReportJourney() {
       <button type="submit" className="primary-action">Continue</button>
     </form>}
 
-    {step === 'review' && <section className="guided-review" aria-label="Review private report">
+    {!typing && step === 'review' && <section className="guided-review" aria-label="Review private report">
       <h2>Review your private draft</h2>
       <dl className="review-list">
         <dt>Purpose</dt><dd>{feedback ? 'Feedback' : 'Report'}</dd>
@@ -291,7 +360,7 @@ export default function ReportJourney() {
       <button type="button" className="quiet-action" onClick={()=>setStep('category')}>Change category</button>
     </section>}
 
-    {step === 'saved' && <section className="guided-review" role="status">
+    {!typing && step === 'saved' && <section className="guided-review" role="status">
       <h2>Draft saved locally</h2>
       <p>{savedNote}</p>
       <p className="privacy-notice">No report has been submitted. There is no tracking ID or email/SMS receipt, and nothing has been placed on the public map.</p>

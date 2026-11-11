@@ -4,9 +4,9 @@ test('welcome gateway gives distinct report, feedback, post, explore, listing an
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Welcome to Ekiti Civic' })).toBeVisible();
   await expect(page.getByText('Your mobile gateway to Ekiti State.')).toBeVisible();
-  await expect(page.locator('.welcome-action')).toHaveCount(6);
+  await expect(page.locator('.welcome-action')).toHaveCount(5);
   await expect(page.locator('#home-ask-input')).toHaveCount(0);
-  for(const route of ['/report','/report?kind=feedback','/post','/explore','/listings/new','/ask']) {
+  for(const route of ['/report','/report?kind=feedback','/explore','/listings/new','/ask']) {
     await expect(page.locator('.welcome-action[href="'+route+'"]')).toHaveCount(1);
   }
 });
@@ -46,7 +46,7 @@ test('capture is evidence only: photo preview, optional email and no upload/noti
     if(request.method() !== 'GET') sent.push(request.url());
   });
   await page.goto('/report');
-  await page.getByRole('button',{name:/Photo \/ camera/}).click();
+  await page.getByRole('button',{name:'Photo'}).click();
   await page.getByRole('button',{name:'Water'}).click();
   await page.locator('#guided-description').fill('The water pipe is broken near the town library, leaving the street flooded.');
   await page.getByRole('button',{name:'Continue'}).click();
@@ -78,14 +78,11 @@ test('emergency category clearly states this project cannot dispatch help', asyn
   await expect(page.getByText(/does not dispatch help/)).toBeVisible();
 });
 
-test('feedback, community post and listing routes offer real editable drafts without publishing', async ({ page }) => {
+test('feedback and listings remain editable drafts without a public forum', async ({ page }) => {
   await page.goto('/report?kind=feedback');
-  await expect(page.getByRole('heading',{name:'Share feedback'})).toBeVisible();
+  await expect(page.getByText(/Welcome\. We can prepare your feedback together/)).toBeVisible();
   await page.goto('/post');
-  await page.locator('#post-title').fill('Community clean-up day');
-  await page.locator('#post-body').fill('Local volunteers are preparing a clean-up event for the weekend in our neighbourhood.');
-  await page.getByRole('button',{name:'Review community post'}).click();
-  await expect(page.getByText(/Prepared locally, not posted or shared/)).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Page not found'})).toBeVisible();
   await page.goto('/listings/new');
   await page.locator('#listing-name').fill('Example community tailor');
   await page.locator('#listing-category').selectOption('Hairdressers');
@@ -94,7 +91,7 @@ test('feedback, community post and listing routes offer real editable drafts wit
   await page.getByRole('button',{name:'Review listing draft'}).click();
   await expect(page.getByRole('heading',{name:'Listing preview prepared'})).toBeVisible();
   await expect(page.getByText(/Not published or submitted/)).toBeVisible();
-  await page.getByRole('link',{name:'Browse Ekiti Yellow Pages'}).click();
+  await page.getByRole('link',{name:'Browse Ekiti'}).click();
   await expect(page).toHaveURL(/\/explore$/);
 });
 
@@ -102,13 +99,13 @@ for (const width of [280,320,390,768,1280]) {
   test('gateway and guided chat fit without horizontal scrolling at '+width+'px', async ({ page }) => {
     await page.setViewportSize({ width, height:800 });
     await page.goto('/');
-    await expect(page.locator('.welcome-action')).toHaveCount(6);
+    await expect(page.locator('.welcome-action')).toHaveCount(5);
     const home = await page.evaluate(()=>({doc:document.documentElement.scrollWidth,view:innerWidth}));
     expect(home.doc).toBeLessThanOrEqual(home.view);
     if ([280,390,1280].includes(width))
       await page.screenshot({path:'test-results/citizen-journeys/home-'+width+'.png',fullPage:true});
     await page.goto('/report');
-    await expect(page.getByRole('heading',{name:'Report an issue'})).toBeVisible();
+    await expect(page.getByText(/Welcome\. I will guide you through a report/)).toBeVisible();
     const report=await page.evaluate(()=>({doc:document.documentElement.scrollWidth,view:innerWidth}));
     expect(report.doc).toBeLessThanOrEqual(report.view);
     if ([280,390,1280].includes(width))

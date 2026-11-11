@@ -8,7 +8,7 @@ test('a natural-language report request goes into private report chat and never 
   await page.locator('#ask-input').fill(narrative);
   await page.getByRole('button', { name: 'Send' }).click();
   await expect(page).toHaveURL(/\/report/);
-  await expect(page.getByRole('heading', { name: 'Report an issue' })).toBeVisible();
+  await expect(page.getByText(/Welcome\. I will guide you through a report/)).toBeVisible();
   await page.getByRole('button', { name: /Write text/ }).click();
   await page.getByRole('button', { name: 'Roads' }).click();
   await expect(page.locator('#guided-description')).toHaveValue(narrative);
