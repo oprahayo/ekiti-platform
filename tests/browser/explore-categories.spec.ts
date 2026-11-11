@@ -160,9 +160,11 @@ test('light and dark themes keep category drawings and the shared civic accent',
     };
   });
   expect(theme.directory).toBe(theme.civic);
-  await page.getByRole('button', { name: 'Switch to dark mode' }).click();
+  await page.getByLabel(/Appearance settings/).click();
+  await page.getByRole('button',{name:'Dark',exact:true}).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   await expect(page.locator('.directory-category-tile')).toHaveCount(24);
-  await page.getByRole('button', { name: 'Switch to light mode' }).click();
+  await page.getByLabel(/Appearance settings/).click();
+  await page.getByRole('button',{name:'Light',exact:true}).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
 });

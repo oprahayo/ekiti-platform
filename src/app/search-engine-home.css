@@ -181,3 +181,7 @@
   .search-shell .wordmark {font-size:22px}
   .search-shell .header-controls {gap:1px}
 }
+
+/* The global mobile shell was originally capped at 740px. This more specific
+   search-only rule wins regardless of Vite CSS concatenation order. */
+.app-shell.search-shell{max-width:none;width:100%;border-inline:0}

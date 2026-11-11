@@ -36,7 +36,7 @@ test('menu opens directory map only on request and keeps ordinary browsing acces
   await page.goto('/');
   expect(requests.some(url=>/maplibre|lga-/.test(url))).toBe(false);
   await page.getByLabel('Open Ekiti Civic menu').click();
-  await page.getByRole('link',{name:/Ekiti map/}).click();
+  await page.locator('.civic-products-panel').getByRole('link',{name:/Ekiti map/}).click();
   await expect(page).toHaveURL(/\/explore\?map=1$/);
   await expect(page.locator('.directory-review-map-canvas')).toBeVisible();
   await expect(page.getByText(/16 local government boundaries/)).toBeVisible();

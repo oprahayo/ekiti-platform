@@ -1,13 +1,13 @@
 import { test, expect } from '@playwright/test';
 
-test('welcome gateway gives distinct report, feedback, post, explore, listing and ask routes', async ({ page }) => {
+test('search gateway keeps civic workflows accessible from the products menu',async({page})=>{
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Welcome to Ekiti Civic' })).toBeVisible();
-  await expect(page.getByText('Your mobile gateway to Ekiti State.')).toBeVisible();
-  await expect(page.locator('.welcome-action')).toHaveCount(5);
-  await expect(page.locator('#home-ask-input')).toHaveCount(0);
-  for(const route of ['/report','/report?kind=feedback','/explore','/listings/new','/ask']) {
-    await expect(page.locator('.welcome-action[href="'+route+'"]')).toHaveCount(1);
+  await expect(page.getByRole('heading',{name:'Welcome to Ekiti Civic'})).toBeVisible();
+  await expect(page.getByRole('searchbox',{name:'Search Ekiti State'})).toBeVisible();
+  await expect(page.locator('.welcome-action')).toHaveCount(0);
+  await page.getByLabel('Open Ekiti Civic menu').click();
+  for(const route of ['/report','/report?kind=feedback','/explore','/listings/new','/search']){
+    await expect(page.locator('.civic-products-panel a[href="'+route+'"]')).toHaveCount(1);
   }
 });
 
@@ -101,7 +101,7 @@ for (const width of [280,320,390,768,1280]) {
   test('gateway and guided chat fit without horizontal scrolling at '+width+'px', async ({ page }) => {
     await page.setViewportSize({ width, height:800 });
     await page.goto('/');
-    await expect(page.locator('.welcome-action')).toHaveCount(5);
+    await expect(page.getByRole('searchbox',{name:'Search Ekiti State'})).toBeVisible();
     const home = await page.evaluate(()=>({doc:document.documentElement.scrollWidth,view:innerWidth}));
     expect(home.doc).toBeLessThanOrEqual(home.view);
     if ([280,390,1280].includes(width))

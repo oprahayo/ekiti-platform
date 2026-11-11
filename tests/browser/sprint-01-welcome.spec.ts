@@ -42,12 +42,12 @@ test('all civic services live in the compact header product launcher',async({pag
   for(const [href,label] of links){
     await expect(page.getByRole('link',{name:new RegExp(label)}).first()).toHaveAttribute('href',href);
   }
-  await page.getByRole('link',{name:/Civic report/}).click();
+  await page.locator('.civic-products-panel').getByRole('link',{name:/Civic report/}).click();
   await expect(page).toHaveURL(/\/report$/);
   await expect(page.getByText(/Welcome\. I will guide you through a report/)).toBeVisible();
   await page.goto('/');
   await page.getByLabel('Open Ekiti Civic menu').click();
-  await page.getByRole('link',{name:/Explore Ekiti/}).click();
+  await page.locator('.civic-products-panel').getByRole('link',{name:/Explore Ekiti/}).click();
   await expect(page).toHaveURL(/\/explore$/);
   await expect(page.getByRole('heading',{name:'Browse Categories'})).toBeVisible();
 });
@@ -57,7 +57,8 @@ test('Yoruba and appearance settings remain usable from the search homepage',asy
   await page.getByLabel(/Appearance settings/).click();
   await page.getByRole('button',{name:'Dark',exact:true}).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme','dark');
-  await page.getByRole('button',{name:'YOR'}).click();
+  await page.getByLabel('Open Ekiti Civic menu').click();
+  await page.locator('.civic-products-language').getByRole('button',{name:'Yorùbá'}).click();
   await expect(page.getByRole('heading',{name:'Káàbọ̀ sí Ekiti Civic'})).toBeVisible();
   await page.getByRole('searchbox',{name:'Search Ekiti State'}).focus();
   await expect(page.getByRole('searchbox',{name:'Search Ekiti State'})).toBeFocused();
