@@ -28,7 +28,7 @@ test('public search queries only approved existing directory and knowledge reade
     },
   };
   const response=await searchReviewedEkiti(db,{query:'Ekiti',limit:7});
-  assert.deepEqual(response,{query:'Ekiti',reviewedOnly:true,places,knowledge});
+  assert.deepEqual(response,{query:'Ekiti',reviewedOnly:true,places,knowledge,localityHint:null,locationScope:'none'});
   assert.equal(calls.length,2);
   assert.deepEqual(calls[0].values,[null,null,'Ekiti',7]);
   assert.deepEqual(calls[1].values,['Ekiti',7]);
