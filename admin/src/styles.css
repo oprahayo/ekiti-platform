@@ -292,3 +292,27 @@
  .alerts-filter-row{grid-template-columns:1fr}
  .alerts-sound-controls{grid-template-columns:1fr}
 }
+
+
+/* Per-LGA demo queue and on-demand reference map. */
+.admin-lga-filter{display:grid;gap:6px;padding:0 19px 14px;
+ font-size:11px;font-weight:700;color:#648075}
+.admin-lga-filter select{min-height:39px;width:100%;border:1px solid #d8e4dc;
+ border-radius:8px;background:#fff;color:#284c3b;padding:6px 11px;font-size:12px}
+.admin-atlas-teaser{display:flex;align-items:center;justify-content:space-between;gap:18px;
+ padding:18px 22px;border:1px solid #dfe8e1;background:#fff;
+ border-radius:12px;margin:24px 0 8px}
+.admin-atlas-teaser strong{font-size:14px;color:#214537}
+.admin-atlas-teaser p{font-size:12px;line-height:1.55;color:#718477;margin-top:6px;max-width:500px}
+.admin-atlas-teaser button{flex:none;min-height:39px;padding:8px 13px;
+ border:1px solid #cce0d1;border-radius:8px;background:#eef6ef;
+ color:#215e44;font-size:12px;font-weight:700}
+.admin-atlas-panel{padding:12px 0 4px}
+.admin-atlas-panel .ekiti-map-canvas{height:320px;width:100%;border:1px solid #d7e7dc;
+ border-radius:11px;background:#e9f1e8;overflow:hidden}
+.admin-atlas-panel .map-region .note,
+.admin-atlas-panel .map-region .metadata{font-size:11px;line-height:1.6;margin-top:9px;
+ color:#788a80}
+.admin-atlas-panel .map-region{margin:0 0 8px}
+@media(max-width:760px){.admin-atlas-teaser{align-items:flex-start;flex-direction:column;
+ padding:15px}.admin-atlas-teaser button{width:100%}}
