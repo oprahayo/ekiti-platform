@@ -65,13 +65,17 @@ export function planPublicSearch(input:UnifiedSearchFilters):PublicSearchPlan {
     :tokens.some(t=>schoolWords.test(t))?'Schools'
     :tokens.some(t=>officeWords.test(t))?'Offices':null;
   let residual=' '+normalized+' ';
+  let matchedAlias:string|null=null;
   if(place) {
     // Only remove aliases actually present in the query. Longer names win.
     const names=[...place.aliases].sort((a,b)=>b.length-a.length);
     for(const alias of names) {
       const name=normaliseEkitiText(alias);
       const where=residual.indexOf(' '+name+' ');
-      if(where!==-1){residual=residual.slice(0,where)+' '+residual.slice(where+name.length+2);break;}
+      if(where!==-1){
+        matchedAlias=alias;
+        residual=residual.slice(0,where)+' '+residual.slice(where+name.length+2);break;
+      }
     }
   }
   const terms=residual.trim().split(/\s+/u).filter(t=>
@@ -81,11 +85,11 @@ export function planPublicSearch(input:UnifiedSearchFilters):PublicSearchPlan {
   // For coarse categories, locality name is the useful verified address
   // text; a full natural sentence would not match the existing safe SQL API.
   if(category && place && !directoryQuery) {
-    directoryQuery=place.aliases[0]||place.name;
+    directoryQuery=matchedAlias||place.name;
   }
   // Generic place-only queries can use its address, not the full sentence.
   if(!category && place && !directoryQuery)
-    directoryQuery=place.aliases[0]||place.name;
+    directoryQuery=matchedAlias||place.name;
   if(!directoryQuery && !category) directoryQuery=input.query;
   return {
     directory:{
