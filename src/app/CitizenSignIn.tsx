@@ -73,7 +73,7 @@ export default function CitizenSignIn({ onClose }: { onClose: () => void }) {
             <label htmlFor="citizen-phone">Mobile number including country code</label>
             <input id="citizen-phone" type="tel" required autoComplete="tel" inputMode="tel"
               maxLength={16} value={phone} disabled={busy||sent}
-              pattern="\\+[1-9][0-9]{7,14}" onChange={event=>setPhone(event.target.value)}
+              pattern="\+[1-9][0-9]{7,14}" onChange={event=>setPhone(event.target.value)}
               placeholder="+2348012345678"/>
             <p className="note">SMS sign-in is optional and must be explicitly enabled with an approved
               delivery provider and privacy policy. Message charges may apply.</p>
