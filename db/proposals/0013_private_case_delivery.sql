@@ -33,7 +33,8 @@ CREATE TABLE civic_private.case_link_release(
     AND review_id IS NOT NULL AND length(review_id) BETWEEN 8 AND 160))
 );
 INSERT INTO civic_private.case_link_release(singleton,enabled) VALUES(true,false);
-ALTER TABLE civic_private.case_link_release OWNER TO ekiti_case_link_owner;
+-- Keep this release-control table owned by the privileged migration role.
+-- The function owner gets SELECT only, never implicit owner UPDATE rights.
 ALTER TABLE civic_private.case_link_release ENABLE ROW LEVEL SECURITY;
 ALTER TABLE civic_private.case_link_release FORCE ROW LEVEL SECURITY;
 REVOKE ALL ON civic_private.case_link_release FROM PUBLIC,anon,authenticated;
