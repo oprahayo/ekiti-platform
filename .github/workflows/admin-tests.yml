@@ -60,7 +60,8 @@ jobs:
         run: node --experimental-strip-types --test tests/admin-intake-postgis.mjs
       - name: Verify fictional admin demo browser UI
         run: |
-          npx playwright install --with-deps chromium
+          # GitHub hosted runner already provides Chromium system libraries; avoid flaky apt mirror.
+          npx playwright install chromium
           npm run test:admin:browser
       - name: Preserve admin visual review
         if: always()
