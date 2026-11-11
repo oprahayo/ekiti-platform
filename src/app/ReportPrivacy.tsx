@@ -124,6 +124,28 @@ export default function ReportPrivacy() {
         and no case message is being delivered.</p>
     </section>
     <section className="preview-privacy-section">
+      <h2>Private platform timelines and notification preferences</h2>
+      <p>Detailed linked-case history is a separate, currently disabled feature.
+        If independently approved, verified account holders may request the real
+        platform events for reports they deliberately linked using their
+        private receipt. Events are labelled as independent-platform actions,
+        not official office delivery, viewing, response or acknowledgement.
+        Closing a platform case is not independent proof of resolution.</p>
+      <p>The optional contact preference stores only an allowed channel
+        (off, verified account email, or verified account SMS), a digest
+        of the currently confirmed account contact and the consent timestamp.
+        It does not send, queue or deliver a message. Provider setup,
+        actual delivery, preference changes after a contact update, consent
+        withdrawal, deletion and notification privacy require separate review.</p>
+      <p>Residents may also create limited requests for correction review
+        or suspected duplication, without uploading a new allegation or
+        changing the original report. The platform does not promise that
+        staff will see or respond to a request until a real moderation queue
+        has been approved and deployed. All preferences and review requests
+        are deleted when their explicit account-case link is removed
+        or their report is actually deleted.</p>
+    </section>
+    <section className="preview-privacy-section">
       <h2>Delete saved local drafts</h2>
       <p>Delete saved guided and legacy text drafts from this browser. This does not delete downloaded copies,
         content you have shared elsewhere, data held by another device or active text still on a different open tab.
