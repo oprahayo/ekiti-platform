@@ -30,6 +30,8 @@ jobs:
           npm ci
           npm run check:admin
           npm run build:admin
+      - name: Validate static-only admin Worker without Cloudflare credentials
+        run: npx wrangler deploy --config wrangler.admin-demo.staging.jsonc --dry-run --outdir .wrangler/admin-staging-check
       - name: Run admin unit/security tests
         run: node --experimental-strip-types --test tests/admin-*.test.mjs
       - name: Prepare disposable admin-only PostGIS schema
