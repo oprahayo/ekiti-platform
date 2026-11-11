@@ -58,6 +58,7 @@ export default function PrivateIntakeQueue({client,token,identity,onSessionExpir
     if(kind==='assignment_review'&&!canAssign)return;
     const targetLgaId=kind==='assignment_review'?(target[row.id]||''):null;
     if(kind==='assignment_review'&&(!targetLgaId||
+       !proposedLgaValid(targetLgaId)||
        (identity.role!=='platform_admin'&&!identity.allowedLgaIds.includes(targetLgaId)))){
       setError('Select an authorized verified LGA.');return;
     }
@@ -84,8 +85,11 @@ export default function PrivateIntakeQueue({client,token,identity,onSessionExpir
     <h1>Admin intake</h1>
     <p role="status">This staff role has no private intake or case-review permission.</p>
   </section>;
-  const lgOptions=identity.role==='platform_admin'
-    ?identity.allowedLgaIds:identity.allowedLgaIds;
+  // Platform administrators have statewide read scope but normally carry
+  // an empty LGA array. Let them type a prospective LGA ID; the SERVER
+  // and verified geo.areas registry still reject any unreviewed slug.
+  const lgOptions=identity.allowedLgaIds;
+  const proposedLgaValid=(id:string)=>/^[a-z0-9][a-z0-9-]{1,63}$/.test(id);
   return <section className="staff-content staff-intake" aria-label="Admin intake">
     <div className="staff-section-head"><div>
       <h1>Private intake</h1>
@@ -146,7 +150,16 @@ export default function PrivateIntakeQueue({client,token,identity,onSessionExpir
           </select>
           {intent[item.id]==='assignment_review'&&canAssign&&<>
             <label htmlFor={'intake-target-'+item.id}>Proposed LGA (not a transfer)</label>
-            {lgOptions.length>0?<select id={'intake-target-'+item.id}
+            {identity.role==='platform_admin'?<>
+              <input id={'intake-target-'+item.id} type="text"
+                maxLength={64} pattern="[a-z0-9][a-z0-9-]{1,63}"
+                placeholder="Verified LGA slug (e.g. ado-ekiti)"
+                spellCheck={false} autoComplete="off" disabled={busy}
+                value={target[item.id]||''}
+                onChange={event=>setTarget({...target,[item.id]:event.target.value})}/>
+              <small>The database independently verifies this LGA before
+                accepting any proposed assignment review.</small>
+            </>:lgOptions.length>0?<select id={'intake-target-'+item.id}
               value={target[item.id]||''} disabled={busy}
               onChange={event=>setTarget({...target,[item.id]:event.target.value})}>
               <option value="">Select reviewed LGA</option>
@@ -154,7 +167,8 @@ export default function PrivateIntakeQueue({client,token,identity,onSessionExpir
             </select>:<p>No reviewed LGA target is configured in your staff profile.</p>}
           </>}
           <button type="button" disabled={busy||!intent[item.id]||
-            (intent[item.id]==='assignment_review'&&(!canAssign||!target[item.id]))}
+            (intent[item.id]==='assignment_review'&&(!canAssign||
+              !proposedLgaValid(target[item.id]||'')))}
             onClick={()=>void propose(item)}>Record proposal only</button>
         </div>
       </li>)}
