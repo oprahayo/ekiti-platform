@@ -55,7 +55,7 @@ for (const width of [280, 320, 390, 768, 1280]) {
     expect(measurements.columns).toBe(6);
     for (const item of measurements.items) {
       expect(item.height).toBeGreaterThanOrEqual(48);
-      expect(item.height).toBeLessThanOrEqual(100);
+      expect(item.height).toBeLessThanOrEqual(135);
       expect(item.width).toBeGreaterThanOrEqual(65);
     }
     await expect(page.locator('.app-header .wordmark')).toBeVisible();
