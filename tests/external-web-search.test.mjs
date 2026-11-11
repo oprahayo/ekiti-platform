@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import worker from '../src/server/worker.ts';
 import {
   parseExternalQuery,ExternalQueryError,fetchEkitiWebResults,
-  fetchEkitiWikipediaResults,
+  fetchEkitiWikipediaResults,ekitiResultRelevance,
 } from '../src/server/external-web-search.ts';
 
 const goodHeaders={'Content-Type':'application/json'};
@@ -38,7 +38,7 @@ test('Brave query scoped to Ekiti, constrained count, safe links and token not r
   const results=await fetchEkitiWebResults('education policy','example-test-secret',fake);
   assert.equal(new URL(captured.url).origin,'https://api.search.brave.com');
   assert.equal(new URL(captured.url).searchParams.get('q'),'Ekiti State Nigeria education policy');
-  assert.equal(new URL(captured.url).searchParams.get('count'),'8');
+  assert.equal(new URL(captured.url).searchParams.get('count'),'16');
   assert.equal(captured.options.headers['X-Subscription-Token'],'example-test-secret');
   assert.equal(results.results.length,2);
   assert.equal(results.results[0].description,'Ekiti update');
@@ -97,4 +97,38 @@ test('external source API fetches only after enabled public request, without Pos
     assert.equal(response.headers.get('Referrer-Policy'),'no-referrer');
     assert.equal(calls,1);
   } finally {globalThis.fetch=original;}
+});
+
+
+test('Ekiti-specific web relevance rejects unrelated results even from an Ekiti-scoped query',async()=>{
+  const captured=await fetchEkitiWebResults('jobs','mock-key',async()=>mock({
+    web:{results:[
+      {title:'Jobs in Lagos',description:'Jobs across Lagos and Abuja',
+        url:'https://jobs.example.org/lagos'},
+      {title:'Ekiti State employment notice',description:'New opportunities in Ado-Ekiti',
+        url:'https://www.ekitistate.gov.ng/employment'},
+      {title:'Ikogosi resort guide',description:'Tourism in Ikogosi, Ekiti State',
+        url:'https://news.example.org/ikogosi-tourism'},
+      {title:'World politics',description:'National and international coverage',
+        url:'https://news.example.org/global'},
+    ]},
+  }));
+  assert.equal(captured.results.length,2);
+  assert.deepEqual(captured.results.map(value=>value.title),
+    ['Ekiti State employment notice','Ikogosi resort guide']);
+  assert.ok(ekitiResultRelevance(captured.results[0])>ekitiResultRelevance(captured.results[1]));
+  assert.equal(ekitiResultRelevance({
+    title:'Results for jobs',description:'Jobs in Lagos',
+    url:'https://example.org/not-ekiti',domain:'example.org',
+  }),0);
+});
+test('Wikipedia fallback also excludes pages with no Ekiti evidence',async()=>{
+  const result=await fetchEkitiWikipediaResults('public health',async()=>mock({
+    pages:[
+      {title:'Ekiti State',key:'Ekiti_State',description:'State of Nigeria'},
+      {title:'London',key:'London',description:'Capital of England'},
+    ],
+  }));
+  assert.equal(result.results.length,1);
+  assert.equal(result.results[0].title,'Ekiti State');
 });
