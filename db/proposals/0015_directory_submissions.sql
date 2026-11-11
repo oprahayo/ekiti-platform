@@ -34,7 +34,9 @@ CREATE UNIQUE INDEX directory_submission_pending_unique
   WHERE status IN ('pending','under_review');
 
 ALTER TABLE civic.directory_submissions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE civic.directory_submissions FORCE ROW LEVEL SECURITY;
+-- The owner-only SECURITY DEFINER RPC is intentionally able to bypass RLS;
+-- callers have neither direct table privileges nor any public policy.
+-- Do NOT FORCE RLS here: that would block the reviewed owner RPCs too.
 -- No client table access. Strict, audited SECURITY DEFINER RPC only.
 REVOKE ALL ON civic.directory_submissions FROM PUBLIC,anon,authenticated;
 REVOKE ALL ON ALL SEQUENCES IN SCHEMA civic FROM PUBLIC,anon,authenticated;
