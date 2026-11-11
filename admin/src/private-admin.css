@@ -79,3 +79,48 @@
 .staff-stats{grid-template-columns:1fr}
 .staff-section-head{align-items:flex-start;flex-direction:column}}
 @media(prefers-reduced-motion:reduce){.staff-workspace *{scroll-behavior:auto!important;transition:none!important}}
+
+/* Sprint 13: scoped intake queue. The fictional public demo remains separate. */
+.staff-intake-warning{padding:13px 15px;border:1px solid #e2d7b1;background:#fffaf0;
+ color:#5f4b24;border-radius:9px;font-size:13px;line-height:1.55;margin:0 0 18px}
+.staff-intake-filters{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+ minmax(0,1fr) auto;gap:10px;align-items:end;background:#fff;
+ padding:16px;border:1px solid #dce4e9;border-radius:11px}
+.staff-intake-filters label{display:block;grid-row:1;font-size:12px;font-weight:700;color:#365566}
+.staff-intake-filters label[for="intake-lga"]{grid-column:1}
+.staff-intake-filters label[for="intake-type"]{grid-column:2}
+.staff-intake-filters label[for="intake-state"]{grid-column:3}
+.staff-intake-filters select,.staff-intake-proposal select{min-height:44px;width:100%;
+ min-width:0;max-width:100%;border:1px solid #c3d0d9;
+ background:#fff;border-radius:8px;padding:8px;color:#19374c}
+.staff-intake-filters button,.staff-intake-proposal button{min-height:44px;border:0;
+ background:#155a49;color:white;border-radius:8px;padding:10px 13px;
+ font-size:13px;font-weight:700;white-space:normal}
+.staff-intake-filters button:disabled,.staff-intake-proposal button:disabled{opacity:.6}
+.staff-intake-notice{padding:12px;color:#225748!important;background:#edf7f3;
+ border:1px solid #c9e3d7;border-radius:9px}
+.staff-intake-results{margin:20px 0;padding:0;list-style:none;display:grid;gap:13px}
+.staff-intake-results li{background:#fff;border:1px solid #dce4e9;
+ border-radius:12px;padding:17px;min-width:0;overflow-wrap:anywhere}
+.staff-intake-results h2{font-size:17px;margin:0 0 8px}
+.staff-intake-results p{margin:7px 0;font-size:13px}
+.staff-intake-locked{background:#f6f5f0;padding:10px;border-radius:8px;
+ border:1px solid #e1dccc;color:#5b5347!important}
+.staff-intake-proposal{display:flex;flex-direction:column;gap:7px;margin-top:15px}
+.staff-intake-proposal label{font-size:12px;color:#405768;font-weight:700}
+.staff-intake-proposal button{align-self:start;max-width:100%}
+.staff-intake-footer{font-size:12px;line-height:1.55}
+@media(max-width:900px){
+ .staff-sidebar nav{grid-template-columns:repeat(5,minmax(0,1fr))}
+ .staff-intake-filters{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .staff-intake-filters button{grid-column:1/-1}
+}
+@media(max-width:510px){
+ .staff-intake-filters{grid-template-columns:1fr}
+ .staff-intake-filters label,.staff-intake-filters label[for="intake-lga"],
+ .staff-intake-filters label[for="intake-type"],
+ .staff-intake-filters label[for="intake-state"]{grid-column:1;grid-row:auto}
+ .staff-intake-filters button{grid-column:1}
+ .staff-sidebar nav{grid-template-columns:repeat(5,minmax(0,1fr))}
+ .staff-sidebar nav button{font-size:11px;overflow-wrap:anywhere}
+}
