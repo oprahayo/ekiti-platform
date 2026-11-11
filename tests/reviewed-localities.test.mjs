@@ -40,7 +40,7 @@ test('cross-LGA place mentions are ambiguous and never arbitrarily assigned',()=
 });
 test('search plan understands verified places and coarse types without invented distance',()=>{
   assert.deepEqual(planPublicSearch({query:'Find hotels in Ikogosi',limit:8}),{
-    directory:{category:'Hotels',lga:'ekiti-west',query:'Ikogosi Ekiti',limit:8},
+    directory:{category:'Hotels',lga:'ekiti-west',query:'Ikogosi',limit:8},
     knowledge:{query:'Find hotels in Ikogosi',limit:8},
     localityHint:{
       name:'Ikogosi-Ekiti',lgaId:'ekiti-west',lgaName:'Ekiti West',
