@@ -12,6 +12,10 @@ export function phoneOtpEnabled():boolean {
   const env=(import.meta as ImportMeta & { env?:Record<string,string|undefined> }).env;
   return Boolean(configuredAuth()&&env?.VITE_CITIZEN_SMS_OTP_ENABLED==='true');
 }
+export function listingSubmissionsEnabled():boolean {
+  const env=(import.meta as ImportMeta & {env?:Record<string,string|undefined>}).env;
+  return Boolean(configuredAuth()&&env?.VITE_DIRECTORY_SUBMISSIONS_ENABLED==='true');
+}
 export function privateHistoryEnabled():boolean {
   const env=(import.meta as ImportMeta & { env?:Record<string,string|undefined> }).env;
   return Boolean(configuredAuth()&&env?.VITE_CITIZEN_REPORT_LINKING_ENABLED==='true');
@@ -173,7 +177,8 @@ export async function authorizedRpc<T>(config: PublicAuthConfig,session: Citizen
   procedure: 'civic_submit_review' | 'civic_request_claim' | 'civic_my_reviews' | 'civic_my_claims' |
     'civic_link_private_report' | 'civic_my_private_reports' | 'civic_unlink_private_report' |
     'civic_request_case_link' | 'civic_redeem_case_link' |
-    'civic_my_case_timeline' | 'civic_set_case_notice_preference' | 'civic_request_case_review',
+    'civic_my_case_timeline' | 'civic_set_case_notice_preference' | 'civic_request_case_review' |
+    'civic_submit_directory_listing' | 'civic_my_directory_submissions' | 'civic_withdraw_directory_submission',
   body: Record<string,unknown>, fetcher: typeof fetch = fetch): Promise<T> {
   const value = await authenticateSession(config,session,fetcher);
   saveTabSession(value);
