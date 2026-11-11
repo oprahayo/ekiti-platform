@@ -32,6 +32,14 @@ bash scripts/deploy-integration-staging.sh
 ```
 
 The single reviewed script:
+
+**Version verification:** before upload it writes a public, secret-free
+`/staging-build.json` manifest to each Vite output with the exact Git SHA,
+integration branch and build type. Both post-deployment smoke tests compare
+that manifest with the local `git rev-parse HEAD` value, and **fail** if a
+stale `main` deployment remains at either URL. You can open
+`https://ekiti-platform-staging.inekitikete.workers.dev/staging-build.json`
+after successful deployment to verify the same SHA yourself.
 - Refuses any branch except the integration branch or a dirty tracked working tree.
 - Explicitly overrides any local Vite account/private mode settings with guest-only, no real staff Auth.
 - Runs `npm ci`, both TypeScript checks, all unit tests, citizen staging Worker dry-run and independent admin build/dry-run.
