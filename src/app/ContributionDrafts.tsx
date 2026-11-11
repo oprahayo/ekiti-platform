@@ -112,8 +112,11 @@ export default function ListingDraft() {
           {auth.listingSubmissionsAvailable&&auth.account?<button type="button"
             className="primary-action" disabled={busy} onClick={()=>void submit()}>
               {busy?'Submitting…':'Submit for independent review'}
-            </button>:<p className="note">Online listing submission is not yet activated.
-              You can save a private draft and return when verified accounts and moderation are connected.</p>}
+            </button>:auth.listingSubmissionsAvailable?<p className="note">
+              <Link to="/profile">Sign in with a verified email code</Link> to submit your business to moderation.
+              Your browser draft remains available here.</p>:<p className="note">
+              Online listing submission is not yet activated. You can save a private draft;
+              no data is sent to a moderator.</p>}
           <button type="button" className="text-link" onClick={()=>setPreview(null)}>Edit details</button>
         </div>
       </section>}
