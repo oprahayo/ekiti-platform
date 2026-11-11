@@ -61,6 +61,11 @@ GRANT SELECT (id,public_reference,tracking_secret_digest,kind,received_at,delete
 GRANT SELECT (id,report_id,kind,created_at)
   ON civic_private.case_events TO ekiti_citizen_link_owner;
 GRANT EXECUTE ON FUNCTION auth.uid() TO ekiti_citizen_link_owner;
+-- Authentication is not enough: a Supabase anonymous/unconfirmed account
+-- must never gain private case history solely from having an auth.uid().
+-- Only these confirmation columns are exposed to the NOLOGIN function owner.
+GRANT SELECT (id,email_confirmed_at,phone_confirmed_at)
+  ON auth.users TO ekiti_citizen_link_owner;
 CREATE POLICY citizen_link_report_select ON civic_private.reports
   FOR SELECT TO ekiti_citizen_link_owner USING(true);
 CREATE POLICY citizen_link_event_select ON civic_private.case_events
@@ -79,7 +84,11 @@ BEGIN
     WHERE singleton=true AND enabled=true AND approved_at IS NOT NULL
       AND review_id IS NOT NULL) THEN RETURN false; END IF;
   _citizen:=auth.uid();
-  IF _citizen IS NULL OR _reference IS NULL OR _secret IS NULL
+  IF _citizen IS NULL OR NOT EXISTS(
+    SELECT 1 FROM auth.users u WHERE u.id=_citizen AND
+      (u.email_confirmed_at IS NOT NULL OR u.phone_confirmed_at IS NOT NULL)
+  ) THEN RETURN false; END IF;
+  IF _reference IS NULL OR _secret IS NULL
     OR _secret !~ '^[0-9a-f]{64}$' THEN RETURN false; END IF;
   -- Never persist a receipt secret, only its verified digest already held
   -- by the existing private report gateway.
@@ -116,6 +125,8 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $$
     WHERE singleton=true AND enabled=true AND approved_at IS NOT NULL
       AND review_id IS NOT NULL)
     AND auth.uid() IS NOT NULL AND l.citizen_id=auth.uid()
+    AND EXISTS(SELECT 1 FROM auth.users u WHERE u.id=auth.uid()
+      AND (u.email_confirmed_at IS NOT NULL OR u.phone_confirmed_at IS NOT NULL))
     AND r.delete_at>now()
   ORDER BY r.received_at DESC,r.public_reference
   LIMIT 30;
