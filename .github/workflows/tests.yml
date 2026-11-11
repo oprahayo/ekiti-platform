@@ -29,6 +29,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - run: npm ci && npm run test:all
       - name: Create isolated geographic database
         run: |
@@ -36,7 +39,9 @@ jobs:
           psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f db/migrations/0001_geography.sql -f db/migrations/0002_location.sql -f db/migrations/0003_location_directory.sql -f db/seeds/0001_ekiti_lgas.sql
       - name: Import and verify the pinned INEC directory
         run: |
-          command -v pdftotext || (sudo apt-get update && sudo apt-get install -y poppler-utils)
+          # Use pinned, table-aware Python extraction: avoid flaky Ubuntu apt mirror.
+          # Import still rejects changed PDF SHA, wrong parent LGA or !=177 ward rows.
+          python3 -m pip install --disable-pip-version-check --no-input pdfplumber==0.11.10
           curl --fail --location --silent --show-error --retry 3 --max-time 60 \
             https://inecnigeria.org/documents/resources/rac/EKITI.pdf -o "$RUNNER_TEMP/ekiti.pdf"
           python3 scripts/import_geo.py --inec-pdf "$RUNNER_TEMP/ekiti.pdf"
@@ -78,7 +83,7 @@ jobs:
         run: |
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "CREATE ROLE location_browser LOGIN PASSWORD 'ci'; GRANT ekiti_location_reader TO location_browser"
           npm run staging:check
-          npx playwright install --with-deps chromium
+          npx playwright install chromium
           npm run test:browser
 
       - name: Preserve Sprint 02 centered homepage and conversation screenshots
