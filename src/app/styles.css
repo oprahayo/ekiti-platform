@@ -1261,3 +1261,17 @@ button { min-height: 44px; border-radius: var(--radius-input); font-size: 14px; 
 @media(prefers-reduced-motion:reduce){
   .guided-typing span{animation:none;opacity:.8}
 }
+
+/* Visual review: prevent split-word service names on compact mobile tiles. */
+@media(max-width:420px){
+  .directory-page .directory-grid,
+  .directory-page .directory-grid-selected{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .directory-page .directory-category-tile>span{
+    overflow-wrap:break-word;
+    word-break:normal;
+    font-size:11px;
+  }
+}
+@media(max-width:350px){
+  .directory-page .directory-category-tile>span{font-size:9.7px}
+}
