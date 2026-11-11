@@ -1,18 +1,24 @@
 import * as React from 'react';
 import {
   authenticateSession, authorizedRpc, configuredAuth, readTabSession, refreshSession,
-  requestEmailCode, saveTabSession, signOutSession, verifyEmailCode,
+  requestEmailCode, requestSmsCode, verifySmsCode, phoneOtpEnabled, privateHistoryEnabled,
+  saveTabSession, signOutSession, verifyEmailCode,
   type CitizenSession,
 } from './auth-api.ts';
 
 interface AuthState {
   available: boolean;
   restoring: boolean;
-  account: { id: string; email: string } | null;
+  account: { id: string; email: string; phone?:string } | null;
+  phoneAvailable:boolean;
+  reportHistoryAvailable:boolean;
   requestCode(email: string): Promise<void>;
   verifyCode(email: string, code: string): Promise<void>;
+  requestPhoneCode(phone:string):Promise<void>;
+  verifyPhoneCode(phone:string,code:string):Promise<void>;
   signOut(): Promise<void>;
-  rpc<T>(name: 'civic_submit_review'|'civic_request_claim'|'civic_my_reviews'|'civic_my_claims',
+  rpc<T>(name: 'civic_submit_review'|'civic_request_claim'|'civic_my_reviews'|'civic_my_claims' |
+    'civic_link_private_report'|'civic_my_private_reports'|'civic_unlink_private_report',
     body: Record<string,unknown>): Promise<T>;
 }
 const AuthContext = React.createContext<AuthState | null>(null);
@@ -47,6 +53,15 @@ export function CitizenAuthProvider({ children }: { children: React.ReactNode })
     const value = await verifyEmailCode(config,email,code);
     saveTabSession(value); setSession(value);
   };
+  const requestPhoneCode=async(phone:string)=>{
+    if(!config||!phoneOtpEnabled())throw new Error('Phone verification is not active.');
+    await requestSmsCode(config,phone);
+  };
+  const verifyPhoneCode=async(phone:string,code:string)=>{
+    if(!config||!phoneOtpEnabled())throw new Error('Phone verification is not active.');
+    const value=await verifySmsCode(config,phone,code);
+    saveTabSession(value);setSession(value);
+  };
   const signOut = async () => {
     const old = session;
     saveTabSession(null); setSession(null);
@@ -54,6 +69,8 @@ export function CitizenAuthProvider({ children }: { children: React.ReactNode })
   };
   const rpc: AuthState['rpc'] = async (name,body) => {
     if (!config || !session) throw new Error('Sign in to send this request.');
+    if(name.startsWith('civic_')&&name.includes('private_report')&&!privateHistoryEnabled())
+      throw new Error('Linked private reports have not been activated.');
     try {
       // The direct, authenticated PostgREST RPC verifies its own JWT and role.
       const result = await authorizedRpc<unknown>(config,session,name,body);
@@ -70,7 +87,8 @@ export function CitizenAuthProvider({ children }: { children: React.ReactNode })
   };
   const value: AuthState = {
     available: Boolean(config),restoring,account: session?.identity ?? null,
-    requestCode,verifyCode,signOut,rpc,
+    phoneAvailable:phoneOtpEnabled(),reportHistoryAvailable:privateHistoryEnabled(),
+    requestCode,verifyCode,requestPhoneCode,verifyPhoneCode,signOut,rpc,
   };
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

@@ -56,6 +56,8 @@ jobs:
           psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -c "CREATE ROLE report_ci LOGIN PASSWORD 'ci'; GRANT ekiti_report_api TO report_ci"
       - name: Test the real private gateway transaction and RLS on disposable PostGIS
         run: node --experimental-strip-types --test tests/private-report-postgis.mjs
+      - name: Verify citizen receipt-to-account SQL under disposable PostGIS and Auth roles
+        run: node --experimental-strip-types --test tests/citizen-report-links-postgis.mjs
       - run: npm run test:postgis
       - run: psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f scripts/coverage.sql
 
