@@ -6,10 +6,11 @@ import {
 } from './case-model.ts';
 import { makeDemoCases } from './demo-cases.ts';
 import { ModerationWorkspace, RoutingWorkspace } from './OperationsModules.tsx';
-import { OpsAlerts, deriveDemoAlerts } from './OpsAlerts.tsx';
-const EkitiOpsMap=React.lazy(()=>import('./EkitiOpsMap.tsx'));
+import { deriveDemoAlerts } from './OpsAlerts.tsx';
+import { OperationsDashboard } from './OperationsDashboard.tsx';
 import { adminViewUrl, isCaseView, readAdminView, type AdminView } from './navigation.ts';
 import './admin-refinement.css';
+import './precision-operations.css';
 
 type View = AdminView;
 
@@ -57,15 +58,15 @@ function Sidebar({ view, onViewChange, counts }: {
 }) {
   const total = Object.values(counts).reduce((a, b) => a + b, 0);
   const items = [
+    { key: 'analytics', icon: 'analytics', label: 'Overview' },
     { key: 'all', icon: 'cases', label: 'Cases', count: total },
     { key: 'moderation', icon: 'moderation', label: 'Moderation' },
     { key: 'routing', icon: 'routing', label: 'Routing' },
-    { key: 'analytics', icon: 'analytics', label: 'Overview' },
   ] as const;
   return <aside className="sidebar">
     <div className="brand">
       <span className="brand-mark">e<span>•</span></span>
-      <div><strong>Ekiti Civic</strong><small>Operations workspace</small></div>
+      <div><strong>Ekiti Civic</strong><small>inEkiti Official · Operations</small></div>
     </div>
     <div className="sidebar-section-label">WORKSPACE</div>
     <nav className="main-nav" aria-label="Primary admin navigation">
@@ -264,61 +265,11 @@ function CaseDetails({
   </section>;
 }
 
-function Analytics({ cases, onNavigate, onOpenCase, onArea }: {
-  cases: AdminCase[]; onNavigate: (next: View) => void;
-  onOpenCase:(id:string)=>void;onArea:(area:string)=>void;
-}) {
-  const counts = queueCounts(cases);
-  const total = cases.length;
-  const kindCounts = ['Complaint', 'Issue', 'Commendation'].map(kind =>
-    ({ kind, count: cases.filter(item => item.kind === kind).length }));
-  return <main className="analytics">
-    <div className="analytics-top"><p className="eyebrow">OPERATIONS / DEMO</p>
-      <h1>Workspace overview</h1>
-      <p>Numbers below refer only to fictional cases in this browser session. No government performance metrics are published.</p></div>
-    <div className="ops-dashboard-grid">
-      <OpsAlerts cases={cases} onOpenCase={onOpenCase}/>
-      <React.Suspense fallback={<section className="ops-map-loading" role="status">Loading Ekiti boundaries…</section>}>
-        <EkitiOpsMap cases={cases} onSelectArea={onArea}/>
-      </React.Suspense>
-    </div>
-    <section className="attention-panel" aria-label="Next actions">
-      <div className="attention-title"><h2>Next actions</h2><span>Sample work only</span></div>
-      <div className="attention-actions">
-        <button type="button" onClick={() => onNavigate('inbox')}>
-          <strong>Review unassigned cases</strong><span>{counts.inbox} pending in sample inbox</span>
-        </button>
-        <button type="button" onClick={() => onNavigate('moderation')}>
-          <strong>Moderate contributions</strong><span>Listings, reviews and ownership claims</span>
-        </button>
-        <button type="button" onClick={() => onNavigate('routing')}>
-          <strong>Check office routing</strong><span>Review suggested jurisdiction manually</span>
-        </button>
-      </div>
-    </section>
-    <div className="analytics-metrics">
-      <div><small>All cases</small><strong>{total}</strong><span>Simulated records</span></div>
-      <div><small>Unassigned</small><strong>{counts.inbox}</strong><span>In platform inbox</span></div>
-      <div><small>Escalations</small><strong>{counts.escalated}</strong><span>Internal, not external</span></div>
-      <div><small>Platform resolved</small><strong>{counts.resolved}</strong><span>No agency outcome implied</span></div>
-    </div>
-    <div className="analytics-card"><h2>Case workflow</h2>
-      {QUEUES.map(queue => <div className="chart-row" key={queue}>
-        <span>{QUEUE_LABELS[queue]}</span><div className="chart-track"><div className={'chart-bar chart-' + queue}
-          style={{ width: total ? ((counts[queue] / total) * 100) + '%' : '0%' }} /></div>
-        <strong>{counts[queue]}</strong></div>)}
-    </div>
-    <div className="analytics-card"><h2>Report types</h2>
-      <div className="type-grid">{kindCounts.map(item => <div key={item.kind}><strong>{item.count}</strong><span>{item.kind}</span></div>)}</div>
-    </div>
-  </main>;
-}
-
 const normalizedLga = (value: string) => value.toLocaleLowerCase().replace(/[^a-z0-9]/g, '');
 
 export function AdminApp() {
   const [cases, setCases] = React.useState<AdminCase[]>(makeDemoCases);
-  const [view, setView] = React.useState<View>(() => readAdminView(window.location.search));
+  const [view, setView] = React.useState<View>(() => window.location.search ? readAdminView(window.location.search) : 'analytics');
   const [query, setQuery] = React.useState('');
   const [selectedLga, setSelectedLga] = React.useState('');
   const [selectedId, setSelectedId] = React.useState<string | null>('DEMO-1001');
@@ -332,7 +283,7 @@ export function AdminApp() {
   const selected = shown.find(item => item.id === selectedId) ?? shown[0] ?? null;
   React.useEffect(() => {
     const onPopState = () => {
-      setView(readAdminView(window.location.search));
+      setView(window.location.search ? readAdminView(window.location.search) : 'analytics');
       setSelectedId(null);
       setMobileDetail(false);
     };
@@ -375,6 +326,11 @@ export function AdminApp() {
     <div className="workspace-shell" id="workspace">
       <header className="workspace-header">
         <div className="header-title"><span className="header-mobile-brand">ekiti civic / </span><span>Operations</span><span className="header-slash">/</span><strong>{isCaseView(view) ? 'Cases' : view === 'analytics' ? 'Overview' : view === 'moderation' ? 'Moderation' : 'Routing'}</strong></div>
+        {view === 'analytics' && <label className="precision-top-search">
+          <span aria-hidden="true">⌕</span><span className="sr-only">Search sample incident reports</span>
+          <input type="search" value={query} onChange={event => setQuery(event.target.value)}
+            placeholder="Search incident, reference, LGA..." />
+        </label>}
         <div className="header-actions">
           <button className="ops-alert-shortcut" type="button" onClick={()=>changeView('analytics')}
             aria-label={'Open sample alerts, '+deriveDemoAlerts(cases).length+' items'}>
@@ -388,8 +344,10 @@ export function AdminApp() {
         <span className="notice-wide"> All cases and updates are fictional and stay in memory. Live intake, staff login, notifications and government connections are not enabled.</span>
         <span className="notice-mobile"> Sample records; no live reports or government access.</span>
       </div>
-      {view === 'analytics' ? <Analytics cases={cases} onNavigate={changeView}
-        onOpenCase={openAttentionCase} onArea={openArea}/> :
+      {view === 'analytics' ? <OperationsDashboard cases={cases} query={query} onQuery={setQuery}
+        onOpenCase={openAttentionCase} onArea={openArea}
+        onInbox={() => changeView('inbox')} onModeration={() => changeView('moderation')}
+        onRouting={() => changeView('routing')} /> :
         view === 'moderation' ? <ModerationWorkspace /> :
         view === 'routing' ? <RoutingWorkspace cases={cases} /> :
         <div className={'case-workspace ' + (mobileDetail ? 'mobile-detail-open' : '')}>
