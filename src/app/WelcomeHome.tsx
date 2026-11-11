@@ -88,11 +88,13 @@ export default function WelcomeHome(){
         An incident can be reported even if you are outside Ekiti or decline GPS.</p>
       {deviceLocation.status!=='dismissed'&&<p role="status">{deviceLocation.message}</p>}
       <div className="welcome-location-actions">
-        <button type="button" disabled={deviceLocation.status==='loading'}
-          onClick={()=>void requestDeviceLocation()}>
-          {deviceLocation.status==='loading'?'Checking…':'Use my location'}
-        </button>
-        <button type="button" onClick={dismissDeviceLocation}>Not now</button>
+        {deviceLocation.status!=='dismissed'&&<>
+          <button type="button" disabled={deviceLocation.status==='loading'}
+            onClick={()=>void requestDeviceLocation()}>
+            {deviceLocation.status==='loading'?'Checking…':'Use my location'}
+          </button>
+          <button type="button" onClick={dismissDeviceLocation}>Not now</button>
+        </>}
         <Link to="/explore">Choose an area instead</Link>
       </div>
     </details>
