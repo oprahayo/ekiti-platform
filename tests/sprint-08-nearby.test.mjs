@@ -16,7 +16,8 @@ const two={...one,id:'12345678-9abc-4def-8aaa-123456789abd',
 
 test('nearby search strictly validates consent, coordinates, filters, radius and request size',()=>{
   assert.deepEqual(parseNearbySearch(JSON.stringify(input)),{
-    ...input,query:'guest house',
+    latitude:7.625,longitude:5.245,confirmed:true,
+    category:'Hotels',lga:'ado-ekiti',query:'guest house',radiusKm:10,limit:12,
   });
   assert.deepEqual(parseNearbySearch(JSON.stringify({latitude:7,longitude:5,confirmed:true})),{
     latitude:7,longitude:5,confirmed:true,
