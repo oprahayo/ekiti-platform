@@ -1,0 +1,71 @@
+name: Publish reviewed guest-only integration staging
+
+# One-time bootstrap trigger when this workflow is added to the
+# integration branch; future releases can be explicitly run via
+# GitHub Actions > Run workflow. Never deploy on pull_request/main.
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - integration/staging-citizen-admin-sprints-03-12
+    paths:
+      - .github/workflows/deploy-unified-staging.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-ekiti-integration-staging
+  cancel-in-progress: false
+
+jobs:
+  deploy-staging:
+    if: github.ref == 'refs/heads/integration/staging-citizen-admin-sprints-03-12'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: staging
+    env:
+      # GitHub's masked repository/environment secret; must be preconfigured
+      # by the project owner. No token, database password or staff identity
+      # is written to source code, artifacts or workflow logs.
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      STAGING_HYPERDRIVE_ID: 312d8dc4d1494bc2856606899c8313a8
+      VITE_SUPABASE_URL: ''
+      VITE_SUPABASE_PUBLISHABLE_KEY: ''
+      VITE_CITIZEN_SMS_OTP_ENABLED: 'false'
+      VITE_CITIZEN_REPORT_LINKING_ENABLED: 'false'
+      VITE_CITIZEN_CASE_LINKS_ENABLED: 'false'
+      VITE_CITIZEN_TIMELINE_ENABLED: 'false'
+      VITE_ADMIN_MODE: 'demo'
+      VITE_STAFF_AUTH_URL: ''
+      VITE_STAFF_PUBLISHABLE_KEY: ''
+    steps:
+      - name: Refuse to deploy without existing scoped Cloudflare credentials
+        run: |
+          if [[ -z "$CLOUDFLARE_API_TOKEN" || -z "$CLOUDFLARE_ACCOUNT_ID" ]]; then
+            echo 'BLOCKED: configure GitHub staging secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID. Nothing was deployed.'
+            exit 1
+          fi
+          if [[ ! "$CLOUDFLARE_ACCOUNT_ID" =~ ^[a-f0-9]{32}$ ]]; then
+            echo 'BLOCKED: invalid Cloudflare account ID format. Nothing was deployed.'
+            exit 1
+          fi
+      - uses: actions/checkout@v4
+        with:
+          ref: integration/staging-citizen-admin-sprints-03-12
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Build, deploy fixed staging Workers and verify exact commit
+        shell: bash
+        run: bash scripts/deploy-integration-staging.sh
+      - name: Report exact integrated preview commit
+        if: success()
+        run: |
+          printf 'Citizen preview: https://ekiti-platform-staging.inekitikete.workers.dev\n'
+          printf 'Fictional admin preview: https://ekiti-admin-demo-staging.inekitikete.workers.dev\n'
+          printf 'Verified integration commit: '
+          git rev-parse HEAD
