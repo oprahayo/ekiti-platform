@@ -1275,3 +1275,61 @@ button { min-height: 44px; border-radius: var(--radius-input); font-size: 14px; 
 @media(max-width:350px){
   .directory-page .directory-category-tile>span{font-size:9.7px}
 }
+
+/* Sprint 02 visual polish: place the primary welcome conversation gateway
+   in the usable central viewport, not immediately below the sticky header.
+   Location consent and honest service disclosure remain below. */
+.welcome-gateway{
+  display:flex;
+  flex-direction:column;
+  padding-top:0;
+  padding-bottom:calc(var(--nav-height) + env(safe-area-inset-bottom) + 28px);
+}
+.welcome-primary{
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  justify-content:center;
+  min-height:clamp(410px,calc(100svh - 215px),710px);
+  padding:35px 0 28px;
+}
+.welcome-heading h1{font-size:clamp(27px,5.7vw,37px);letter-spacing:-.042em}
+.welcome-heading>.welcome-subtitle{margin-top:7px;font-size:14px}
+.welcome-activities{margin-top:clamp(35px,7vw,52px)}
+.welcome-dice-list{max-width:408px;gap:11px}
+.welcome-dice-list>.welcome-action{
+  position:relative;
+  min-height:115px;
+  padding:10px 4px 12px;
+  gap:6px;
+  border-radius:19px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  box-shadow:0 7px 19px color-mix(in srgb,var(--text-primary) 6%,transparent);
+}
+.welcome-dice-list>.welcome-action:hover{
+  box-shadow:0 8px 21px color-mix(in srgb,var(--text-primary) 12%,transparent);
+}
+.welcome-dice-list .welcome-action-icon{
+  display:block;
+  width:54px;
+  height:54px;
+  flex:0 0 54px;
+  color:unset;
+  filter:drop-shadow(0 4px 5px rgb(20 35 52 / 12%));
+}
+.welcome-dice-list .welcome-action strong{font-size:12px}
+.welcome-location{margin-top:6px}
+.welcome-footer{margin-top:17px}
+@media(max-width:350px){
+  .welcome-primary{min-height:clamp(355px,calc(100svh - 190px),600px);padding:27px 0 21px}
+  .welcome-dice-list{gap:7px}
+  .welcome-dice-list>.welcome-action{min-height:100px;padding:8px 2px;gap:5px}
+  .welcome-dice-list .welcome-action-icon{width:47px;height:47px;flex-basis:47px}
+}
+@media(max-height:620px){
+  .welcome-primary{min-height:355px}
+}
+@media(prefers-reduced-motion:reduce){
+  .welcome-dice-list>.welcome-action{transition:none}
+}
