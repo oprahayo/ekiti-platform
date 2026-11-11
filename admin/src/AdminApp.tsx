@@ -10,6 +10,7 @@ import { adminViewUrl, isCaseView, readAdminView, type AdminView } from './navig
 import AdminAlerts from './AdminAlerts.tsx';
 import {deriveDemoAlerts,playDemoChime} from './alert-model.ts';
 
+const BoundaryMap=React.lazy(()=>import('../../src/app/MapLocation.tsx'));
 type View = AdminView;
 
 const ACTION_LABELS: Record<Action, string> = {
@@ -88,11 +89,15 @@ function Sidebar({ view, onViewChange, counts }: {
 
 function CaseList({
   view, cases, query, onQuery, onQueueChange, counts, selectedId, onSelect,
+  areaOptions,selectedLga,onLgaChange,
 }: {
   view: Queue | 'all';
   cases: AdminCase[];
   onQueueChange: (next: Queue | 'all') => void;
   counts: Record<Queue, number>;
+  areaOptions:readonly string[];
+  selectedLga:string;
+  onLgaChange:(area:string)=>void;
   query: string;
   onQuery: (query: string) => void;
   selectedId: string | null;
@@ -116,6 +121,13 @@ function CaseList({
         </option>)}
       </select>
     </div>
+    <label className="admin-lga-filter">LGA
+      <select aria-label="Filter cases by LGA" value={selectedLga}
+        onChange={event=>onLgaChange(event.target.value)}>
+        <option value="">All sample LGAs</option>
+        {areaOptions.map(area=><option key={area} value={area}>{area}</option>)}
+      </select>
+    </label>
     <label className="search-box">
       <span aria-hidden="true">⌕</span>
       <span className="sr-only">Search cases by title, reference, category or LGA</span>
@@ -257,6 +269,7 @@ function CaseDetails({
 }
 
 function Analytics({ cases, onNavigate }: { cases: AdminCase[]; onNavigate: (next: View) => void }) {
+  const [mapOpen,setMapOpen]=React.useState(false);
   const counts = queueCounts(cases);
   const total = cases.length;
   const kindCounts = ['Complaint', 'Issue', 'Commendation'].map(kind =>
@@ -279,6 +292,20 @@ function Analytics({ cases, onNavigate }: { cases: AdminCase[]; onNavigate: (nex
         </button>
       </div>
     </section>
+    <section className="admin-atlas-teaser">
+      <div><strong>Explore Ekiti's LGAs</strong>
+        <p>Boundary reference for geographic review. There are no fictional case pins,
+          no real emergency locations and no verified office dispatch here.</p></div>
+      <button type="button" aria-expanded={mapOpen}
+        onClick={()=>setMapOpen(v=>!v)}>
+        {mapOpen?'Hide Ekiti map':'View Ekiti boundary map'}
+      </button>
+    </section>
+    {mapOpen&&<div className="admin-atlas-panel">
+      <React.Suspense fallback={<p role="status">Loading geographic reference…</p>}>
+        <BoundaryMap mode="public"/>
+      </React.Suspense>
+    </div>}
     <div className="analytics-metrics">
       <div><small>All cases</small><strong>{total}</strong><span>Simulated records</span></div>
       <div><small>Unassigned</small><strong>{counts.inbox}</strong><span>In platform inbox</span></div>
@@ -301,6 +328,7 @@ export function AdminApp() {
   const [cases, setCases] = React.useState<AdminCase[]>(makeDemoCases);
   const [view, setView] = React.useState<View>(() => readAdminView(window.location.search));
   const [query, setQuery] = React.useState('');
+  const [selectedLga,setSelectedLga]=React.useState('');
   const [selectedId, setSelectedId] = React.useState<string | null>('DEMO-1001');
   const [mobileDetail, setMobileDetail] = React.useState(false);
   const [alertsOpen,setAlertsOpen] = React.useState(false);
@@ -309,8 +337,11 @@ export function AdminApp() {
   const [browserAlerts,setBrowserAlerts] = React.useState(false);
   const alerts=React.useMemo(()=>deriveDemoAlerts(cases),[cases]);
   const counts = React.useMemo(() => queueCounts(cases), [cases]);
+  const areaOptions=React.useMemo(()=>[...new Set(cases.map(c=>c.lga))].sort(),[cases]);
   const shown = React.useMemo(() =>
-    view === 'analytics' || view === 'moderation' || view === 'routing' ? [] : filterCases(cases, view, query), [cases, view, query]);
+    view === 'analytics' || view === 'moderation' || view === 'routing' ? [] :
+      filterCases(cases,view,query).filter(c=>!selectedLga||c.lga===selectedLga),
+    [cases,view,query,selectedLga]);
   const selected = shown.find(item => item.id === selectedId) ?? shown[0] ?? null;
   React.useEffect(() => {
     const onPopState = () => {
@@ -348,7 +379,8 @@ export function AdminApp() {
     setSelectedId(id);
   };
   const reset = () => {
-    setCases(makeDemoCases()); setView('all'); setQuery(''); setSelectedId('DEMO-1001');
+    setCases(makeDemoCases()); setView('all'); setQuery(''); setSelectedLga('');
+    setSelectedId('DEMO-1001');
     setMobileDetail(false);setAlertsOpen(false);
     window.history.replaceState(null, '', adminViewUrl('all', window.location.pathname));
   };
@@ -391,6 +423,7 @@ export function AdminApp() {
         view === 'routing' ? <RoutingWorkspace cases={cases} /> :
         <div className={'case-workspace ' + (mobileDetail ? 'mobile-detail-open' : '')}>
           <CaseList view={view} cases={shown} query={query} onQuery={setQuery}
+            areaOptions={areaOptions} selectedLga={selectedLga} onLgaChange={setSelectedLga}
             onQueueChange={changeView} counts={counts}
             selectedId={selected?.id || null}
             onSelect={id => { setSelectedId(id); setMobileDetail(true); }} />
