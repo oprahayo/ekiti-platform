@@ -1,0 +1,63 @@
+name: Operational pilot - citizen/admin private schema coexistence
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/pilot-schema-coexistence.yml'
+      - 'db/**'
+      - 'tests/pilot-private-role-isolation.sql'
+  push:
+    branches: [feat/operational-pilot-schema-compat]
+    paths:
+      - '.github/workflows/pilot-schema-coexistence.yml'
+      - 'db/**'
+      - 'tests/pilot-private-role-isolation.sql'
+
+# No secrets, cloud credentials, Supabase connection or deployment permissions.
+permissions:
+  contents: read
+
+jobs:
+  disposable-postgis:
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgis/postgis:16-3.5
+        env:
+          POSTGRES_PASSWORD: ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 5s
+          --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgres://postgres:ci@127.0.0.1:5432/ekiti_pilot_ci
+    steps:
+      - uses: actions/checkout@v4
+      - name: Construct isolated database with verified Ekiti geography
+        run: |
+          psql postgres://postgres:ci@127.0.0.1:5432/postgres -X -v ON_ERROR_STOP=1 \
+            -c 'CREATE DATABASE ekiti_pilot_ci TEMPLATE template0'
+          psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 \
+            -f db/migrations/0001_geography.sql \
+            -f db/migrations/0002_location.sql \
+            -f db/migrations/0003_location_directory.sql \
+            -f db/seeds/0001_ekiti_lgas.sql
+          python3 scripts/import_geo.py
+          psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f tests/bootstrap-citizen-auth.sql
+      - name: Install BOTH reviewed-in-CI-only private stacks
+        run: |
+          psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 \
+            -c "SET SESSION ekiti.report_policy_approved='yes'" \
+            -f db/proposals/0004_reporting_private.sql
+          psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 \
+            -c "SET SESSION ekiti.report_policy_approved='yes'" \
+            -c "SET SESSION ekiti.private_gateway_reviewed='yes'" \
+            -f db/proposals/0006_private_gateway.sql
+          psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 \
+            -c "SET SESSION ekiti.admin_policy_approved='yes'" \
+            -f db/proposals/0006_admin_private.sql
+          psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 \
+            -c "SET SESSION ekiti.admin_repository_approved='yes'" \
+            -f db/proposals/0007_admin_repository.sql
+      - name: Reject public access and cross-role private RPC grants
+        run: psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f tests/pilot-private-role-isolation.sql
