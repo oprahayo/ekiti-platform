@@ -91,7 +91,7 @@ test('feedback and listings remain editable drafts without a public forum', asyn
   await page.getByRole('button',{name:'Review listing draft'}).click();
   await expect(page.getByRole('heading',{name:'Listing preview prepared'})).toBeVisible();
   await expect(page.getByText(/Not published or submitted/)).toBeVisible();
-  await page.getByRole('link',{name:'Browse Ekiti Yellow Pages'}).click();
+  await page.getByRole('link',{name:'Browse Ekiti'}).click();
   await expect(page).toHaveURL(/\/explore$/);
 });
 
