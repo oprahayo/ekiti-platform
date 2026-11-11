@@ -8,7 +8,7 @@
     "test": "node --experimental-strip-types --test tests/*.test.mjs",
     "check": "tsc --noEmit",
     "test:all": "npm run check && npm test",
-    "test:postgis": "node --experimental-strip-types --test tests/postgis.mjs && node --experimental-strip-types --test tests/evidence-postgis.mjs",
+    "test:postgis": "node --experimental-strip-types --test tests/postgis.mjs && node --experimental-strip-types --test tests/evidence-postgis.mjs && node --experimental-strip-types --test tests/nearby-postgis.mjs",
     "build": "vite build",
     "dev": "wrangler dev",
     "test:browser": "playwright test",
