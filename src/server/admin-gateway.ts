@@ -317,7 +317,7 @@ export function createAdminGateway(options: AdminGatewayOptions): (request: Requ
         if(result.result==='not_available')return notFound();
         if(result.result==='conflict')
           return respond({error:'Proposal conflict; reload before retrying'},409);
-        if(!['queued','replayed'].includes(result.result)||
+        if((result.result!=='queued'&&result.result!=='replayed')||
           !uuid.test(result.proposalId))return serviceUnavailable();
         return respond({proposalId:result.proposalId,
           reviewOnly:true,officeNotified:false,caseChanged:false,
