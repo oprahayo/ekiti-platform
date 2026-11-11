@@ -21,6 +21,24 @@ BEGIN
   END IF;
 END $$;
 
+-- A separate server-side release switch, not controlled by any authenticated
+-- browser request. Deploying SQL alone MUST NOT make linking operational.
+CREATE TABLE civic_private.citizen_link_release(
+  singleton boolean PRIMARY KEY DEFAULT true CHECK(singleton=true),
+  enabled boolean NOT NULL DEFAULT false,
+  approved_at timestamptz,
+  review_id text CHECK(review_id IS NULL OR length(review_id) BETWEEN 8 AND 160),
+  CHECK(enabled=false OR (approved_at IS NOT NULL AND review_id IS NOT NULL))
+);
+INSERT INTO civic_private.citizen_link_release(singleton,enabled)
+  VALUES(true,false);
+ALTER TABLE civic_private.citizen_link_release ENABLE ROW LEVEL SECURITY;
+ALTER TABLE civic_private.citizen_link_release FORCE ROW LEVEL SECURITY;
+REVOKE ALL ON civic_private.citizen_link_release FROM PUBLIC,anon,authenticated;
+CREATE POLICY citizen_link_release_read ON civic_private.citizen_link_release
+  FOR SELECT TO ekiti_citizen_link_owner USING(true);
+GRANT SELECT ON civic_private.citizen_link_release TO ekiti_citizen_link_owner;
+
 CREATE TABLE civic_private.citizen_case_links(
   report_id uuid PRIMARY KEY REFERENCES civic_private.reports(id) ON DELETE CASCADE,
   citizen_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -57,6 +75,9 @@ RETURNS boolean LANGUAGE plpgsql VOLATILE SECURITY DEFINER
 SET search_path=pg_catalog,pg_temp AS $$
 DECLARE _citizen uuid;_report uuid;_owner uuid;
 BEGIN
+  IF NOT EXISTS(SELECT 1 FROM civic_private.citizen_link_release
+    WHERE singleton=true AND enabled=true AND approved_at IS NOT NULL
+      AND review_id IS NOT NULL) THEN RETURN false; END IF;
   _citizen:=auth.uid();
   IF _citizen IS NULL OR _reference IS NULL OR _secret IS NULL
     OR _secret !~ '^[0-9a-f]{64}$' THEN RETURN false; END IF;
@@ -91,7 +112,10 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $$
       'intake_accepted','under_review','needs_information','closed')
     ORDER BY ce.id DESC LIMIT 1
   ) e ON true
-  WHERE auth.uid() IS NOT NULL AND l.citizen_id=auth.uid()
+  WHERE EXISTS(SELECT 1 FROM civic_private.citizen_link_release
+    WHERE singleton=true AND enabled=true AND approved_at IS NOT NULL
+      AND review_id IS NOT NULL)
+    AND auth.uid() IS NOT NULL AND l.citizen_id=auth.uid()
     AND r.delete_at>now()
   ORDER BY r.received_at DESC,r.public_reference
   LIMIT 30;
@@ -120,6 +144,10 @@ REVOKE ALL ON FUNCTION public.civic_unlink_private_report(uuid) FROM PUBLIC,anon
 GRANT EXECUTE ON FUNCTION public.civic_link_private_report(uuid,text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.civic_my_private_reports() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.civic_unlink_private_report(uuid) TO authenticated;
+
+-- An approved operator must independently update civic_private.citizen_link_release
+-- after testing the real environment. No app role or function owner can UPDATE
+-- that switch; a Vite feature flag is NOT the security boundary.
 
 -- Linked reports are only a private account index. No narrative, exact GPS,
 -- media, contact, case notes, public map publishing, delivery or government
