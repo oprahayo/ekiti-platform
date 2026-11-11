@@ -172,7 +172,8 @@ export async function signOutSession(config: PublicAuthConfig,session: CitizenSe
 export async function authorizedRpc<T>(config: PublicAuthConfig,session: CitizenSession,
   procedure: 'civic_submit_review' | 'civic_request_claim' | 'civic_my_reviews' | 'civic_my_claims' |
     'civic_link_private_report' | 'civic_my_private_reports' | 'civic_unlink_private_report' |
-    'civic_request_case_link' | 'civic_redeem_case_link',
+    'civic_request_case_link' | 'civic_redeem_case_link' |
+    'civic_my_case_timeline' | 'civic_set_case_notice_preference' | 'civic_request_case_review',
   body: Record<string,unknown>, fetcher: typeof fetch = fetch): Promise<T> {
   const value = await authenticateSession(config,session,fetcher);
   saveTabSession(value);

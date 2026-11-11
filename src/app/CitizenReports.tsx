@@ -2,6 +2,7 @@ import * as React from 'react';
 import {Link} from 'react-router';
 import {useCitizenAuth} from './CitizenAuth.tsx';
 import CitizenCaseLinkRequest from './CitizenCaseLinkRequest.tsx';
+import CitizenCaseTimeline from './CitizenCaseTimeline.tsx';
 import {validateLinkedReports,validateReceiptLink,type LinkedReport} from './report-account.ts';
 
 const statusLabels:Record<LinkedReport['last_platform_event'],string>={
@@ -117,6 +118,7 @@ export default function CitizenReports(){
           <small>Received {new Date(record.received_at).toLocaleDateString('en-NG')}</small>
           <small>Reference: <code>{record.public_reference}</code></small>
           <small>No government acknowledgement recorded · Not on the public map</small>
+          <CitizenCaseTimeline reference={record.public_reference}/>
           <button type="button" disabled={busy||loading}
             onClick={()=>void unlink(record.public_reference)}>Unlink from account</button>
         </li>)}
