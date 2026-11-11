@@ -170,3 +170,14 @@
 @media (prefers-reduced-motion:reduce) {
   .search-engine-landing * {transition:none!important;animation:none!important}
 }
+
+.civic-products-language {display:flex;align-items:center;gap:7px;border-top:1px solid var(--border);margin-top:7px;padding-top:12px;}
+.civic-products-language strong {font-size:12px;margin-right:auto;}
+.civic-products-language button {min-height:36px;padding:5px 10px;border:1px solid var(--border);border-radius:7px;background:transparent;color:var(--text-primary);font-size:12px;}
+.civic-products-language button[aria-pressed="true"] {background:var(--surface-muted);border-color:var(--accent);}
+@media (max-width:380px) {
+  .search-shell .header-languages {display:none}
+  .search-shell .app-header {gap:3px}
+  .search-shell .wordmark {font-size:22px}
+  .search-shell .header-controls {gap:1px}
+}
