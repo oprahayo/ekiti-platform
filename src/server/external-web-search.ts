@@ -74,7 +74,7 @@ export async function fetchEkitiWebResults(
   const url=new URL('https://api.search.brave.com/res/v1/web/search');
   url.searchParams.set('q',/\bekiti\b/i.test(query)?query:'Ekiti State Nigeria '+query);
   url.searchParams.set('count','8');
-  url.searchParams.set('country','NG');
+  // Ekiti/Nigeria intent is in q; omit optional country filters for API compatibility.
   url.searchParams.set('search_lang','en');
   url.searchParams.set('safesearch','strict');
   let response:Response;
