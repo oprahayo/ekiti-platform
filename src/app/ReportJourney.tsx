@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { lgas } from './fixtures.ts';
+import IncidentLocationPicker from './IncidentLocationPicker.tsx';
 import { useApp } from './state.tsx';
 import {
   CHAT_SOUND_KEY, REPORT_CATEGORIES, REPORT_DRAFT_KEY, REPORT_STEPS,
@@ -77,6 +78,8 @@ export default function ReportJourney() {
   const [savedSuccessfully,setSavedSuccessfully] = React.useState(false);
   const [community, setCommunity] = React.useState('');
   const [lgaId, setLgaId] = React.useState('');
+  const [incidentPointSource,setIncidentPointSource] = React.useState<'manual'|'boundary_confirmed'>('manual');
+  const [incidentWardName,setIncidentWardName] = React.useState<string|null>(null);
   const [media, setMedia] = React.useState<File | null>(null);
   const [mediaUrl, setMediaUrl] = React.useState('');
   const [mediaError, setMediaError] = React.useState('');
@@ -158,6 +161,8 @@ export default function ReportJourney() {
     if(!savedDraft || busyRef.current) return;
     setMethod(savedDraft.method);setCategory(savedDraft.category);
     setDescription(savedDraft.description);setLgaId(savedDraft.lgaId);
+    // Restored drafts have only a self-selected LGA; no GPS/ward proof persists.
+    setIncidentPointSource('manual');setIncidentWardName(null);
     setSubcategory(savedDraft.subcategory ?? '');
     setImmediateDanger(savedDraft.immediateDanger ?? 'unknown');
     setResumedDraft(true);
@@ -213,6 +218,7 @@ export default function ReportJourney() {
       setStep('method');setHistory([]);
       setLines(initialLines(feedback,language));nextId.current=2;
       setDescription('');setLgaId('');setCommunity('');
+      setIncidentPointSource('manual');setIncidentWardName(null);
       setSubcategory('');setImmediateDanger('unknown');setResumedDraft(false);
       setSafeguardConcerns([]);setLocalSaveAcknowledged(false);setSavedSuccessfully(false);
       setMedia(null);setMediaUrl('');setContact('');setContactMethod('none');
@@ -264,7 +270,8 @@ export default function ReportJourney() {
     setMethod('Text'); setCategory(feedback ? 'Suggestion' : 'Other'); setDescription('');
     setSubcategory('');setImmediateDanger('unknown');setResumedDraft(false);
     setSafeguardConcerns([]);setLocalSaveAcknowledged(false);setSavedSuccessfully(false);
-    setCommunity(''); setLgaId(''); setMedia(null); setMediaUrl(''); setMediaError('');
+    setCommunity(''); setLgaId('');setIncidentPointSource('manual');setIncidentWardName(null);
+    setMedia(null); setMediaUrl(''); setMediaError('');
     setContactMethod('none'); setContact(''); setValidation(''); setSavedNote(''); setCaptureMode(null);
     discardDraft();
   }
@@ -474,14 +481,23 @@ export default function ReportJourney() {
 
     {!typing && step === 'location' && <form className="guided-input-form" onSubmit={event=>{event.preventDefault();nextLocation();}}>
       <label htmlFor="guided-lga">Local government area</label>
-      <select id="guided-lga" value={lgaId} required onChange={event=>{setLgaId(event.target.value);setValidation('');}}>
+      <select id="guided-lga" value={lgaId} required onChange={event=>{
+        setLgaId(event.target.value);setIncidentPointSource('manual');setIncidentWardName(null);
+        setValidation('');
+      }}>
         <option value="">Choose one of the 16 LGAs</option>
         {lgas.map(area=><option key={area.id} value={area.id}>{area.name}</option>)}
       </select>
       <label htmlFor="guided-community">Community, ward or landmark (optional)</label>
       <input id="guided-community" value={community} maxLength={180}
         onChange={event=>setCommunity(event.target.value)} placeholder="e.g. Ikere town centre" />
-      <p className="guided-hint">Exact GPS and household addresses will not be made public. After review, an approved report may appear at an approximate area on the Ekiti map.</p>
+      <p className="guided-hint">Choose where the incident happened, not where you live or where you browsed from. You can continue with the LGA alone. This private draft is not sent or published.</p>
+      <IncidentLocationPicker language={language} disabled={restrictPreviewEvidence(safeguardConcerns)}
+        onApply={(id,ward)=>{
+          setLgaId(id);setIncidentPointSource('boundary_confirmed');setIncidentWardName(ward);
+          setValidation('');
+        }}/>
+      <p className="guided-hint">A boundary suggestion is not an official incident-location verification. No raw GPS or incident coordinates are saved with your draft.</p>
       {validation && <p role="alert" className="guided-error">{validation}</p>}
       <button className="primary-action" type="submit">Continue</button>
     </form>}
@@ -565,6 +581,11 @@ export default function ReportJourney() {
         <dt>Method</dt><dd>{method}</dd>
         <dt>Description</dt><dd>{description.trim()}</dd>
         <dt>Location</dt><dd>{chosenArea}{community ? ' · ' + community : ''}</dd>
+        <dt>Area selection</dt><dd>{incidentPointSource==='boundary_confirmed'
+          ? 'Verified-boundary suggestion confirmed by you; exact coordinates not saved'
+          : 'LGA selected manually; coordinates not checked or saved'}</dd>
+        {incidentPointSource==='boundary_confirmed'&&incidentWardName&&
+          <><dt>Ward suggestion</dt><dd>{incidentWardName} (not included in stored draft)</dd></>}
         <dt>Evidence</dt><dd>{media ? media.name + ' (not uploaded)' : 'No file attached'}</dd>
         <dt>Safeguarding</dt><dd>{restrictEvidence
           ? 'Sensitive details noted in this tab only; no automatic reporting or protection'

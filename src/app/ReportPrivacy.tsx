@@ -43,6 +43,22 @@ export default function ReportPrivacy() {
         that might expose you or another person to danger.</p>
     </section>
     <section className="preview-privacy-section">
+      <h2>Incident location versus device position</h2>
+      <p>Choosing an LGA manually does not request device location. The current location used for
+        Explore is never automatically copied into a report. On the incident-location step, you can
+        optionally check coordinates you know, or request device location only when physically at
+        the incident. The browser asks permission on that action, not when the page opens.</p>
+      <p>When you select Check, the coordinates are sent to this project's first-party
+        <code>/api/resolve</code> endpoint to compare with verified Ekiti boundaries.
+        The response can be outside Ekiti, uncertain, incomplete or inconsistent;
+        the tool will not silently assign an LGA. You must confirm a suggested area yourself.
+        Raw coordinates and any matched ward are not included in saved report drafts,
+        and this check does not create or submit a report.</p>
+      <p>Precise location checks are unavailable in sensitive-report preview mode.
+        Browser and network infrastructure may still process a location request transiently;
+        avoid sending exact household or vulnerable-person locations.</p>
+    </section>
+    <section className="preview-privacy-section">
       <h2>Delete saved local drafts</h2>
       <p>Delete saved guided and legacy text drafts from this browser. This does not delete downloaded copies,
         content you have shared elsewhere, data held by another device or active text still on a different open tab.
