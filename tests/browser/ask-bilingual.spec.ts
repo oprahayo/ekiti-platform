@@ -4,25 +4,31 @@ test('English/Yoruba toggle updates centered welcome and persists across reload'
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Welcome to Ekiti Civic' })).toBeVisible();
   await expect(page.getByText('Your mobile gateway to Ekiti State.')).toBeVisible();
-  await expect(page.locator('.welcome-action')).toHaveCount(5);
-  await page.getByRole('button', { name: 'YOR' }).click();
+  await expect(page.getByRole('searchbox',{name:'Search Ekiti State'})).toBeVisible();
+  await page.getByLabel('Open Ekiti Civic menu').click();
+  await page.locator('.civic-products-language').getByRole('button',{name:'Yorùbá'}).click();
   await expect(page.getByRole('heading', { name: 'Káàbọ̀ sí Ekiti Civic' })).toBeVisible();
-  await expect(page.getByText(/Ẹnu ọ̀nà rẹ sí ìwífún/)).toBeVisible();
-  await expect(page.getByRole('button', { name: 'YOR' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByText(/Ẹnu ọ̀nà rẹ sí ìmọ̀/)).toBeVisible();
+  await page.getByLabel('Open Ekiti Civic menu').click();
+  await expect(page.locator('.civic-products-language').getByRole('button',{name:'Yorùbá'})).toHaveAttribute('aria-pressed','true');
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Káàbọ̀ sí Ekiti Civic' })).toBeVisible();
-  await page.getByRole('button', { name: 'EN', exact: true }).click();
+  await page.getByLabel('Open Ekiti Civic menu').click();
+  await page.locator('.civic-products-language').getByRole('button',{name:'English'}).click();
   await expect(page.getByRole('heading', { name: 'Welcome to Ekiti Civic' })).toBeVisible();
 });
 
-test('theme icon switches instantly without opening a settings panel', async ({ page }) => {
+test('appearance picker can override System and return to it', async ({page})=>{
   await page.goto('/');
-  await expect(page.getByRole('button', { name: 'Switch to dark mode' })).toBeVisible();
-  await page.getByRole('button', { name: 'Switch to dark mode' }).click();
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-  await page.getByRole('button', { name: 'Switch to light mode' }).click();
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
-  await expect(page.locator('.settings-panel')).toHaveCount(0);
+  await page.getByLabel(/Appearance settings/).click();
+  await page.getByRole('button',{name:'Dark',exact:true}).click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme','dark');
+  await page.getByLabel(/Appearance settings/).click();
+  await page.getByRole('button',{name:'Light',exact:true}).click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme','light');
+  await page.getByLabel(/Appearance settings/).click();
+  await page.getByRole('button',{name:'System',exact:true}).click();
+  await expect(page.getByLabel('Appearance settings · System')).toBeVisible();
 });
 
 test('home chat uses a static editable message prompt', async ({ page }) => {
@@ -46,7 +52,8 @@ test('English chat returns citations and text without audio', async ({ page }) =
 
 test('Yoruba chat returns readable Yoruba answer and a source link', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'YOR' }).click();
+  await page.getByLabel('Open Ekiti Civic menu').click();
+  await page.locator('.civic-products-language').getByRole('button',{name:'Yorùbá'}).click();
   await page.goto('/ask');
   await page.locator('#ask-input').fill('Mélòó ni ìjọba ìbílẹ̀ Èkìtì?');
   await page.locator('#ask-input').press('Enter');
@@ -67,12 +74,13 @@ for (const width of [280, 320, 360, 390, 428]) {
   test('bilingual home remains single-column without overflow at ' + width + 'px', async ({ page }) => {
     await page.setViewportSize({ width, height: 670 });
     await page.goto('/');
-    await page.getByRole('button', { name: 'YOR' }).click();
+    await page.getByLabel('Open Ekiti Civic menu').click();
+  await page.locator('.civic-products-language').getByRole('button',{name:'Yorùbá'}).click();
     const measure = await page.evaluate(() => ({
       document: document.documentElement.scrollWidth,
       viewport: window.innerWidth,
       theme: document.querySelector('.theme-switch')?.getBoundingClientRect().height,
-      action: document.querySelector('.welcome-action')?.getBoundingClientRect().height,
+      action: document.querySelector('.gateway-search-field')?.getBoundingClientRect().height,
     }));
     expect(measure.document).toBeLessThanOrEqual(measure.viewport);
     expect(measure.theme).toBeGreaterThanOrEqual(44);

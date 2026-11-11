@@ -1,5 +1,8 @@
 import * as React from 'react';
 import {Link, useNavigate, useSearchParams} from 'react-router';
+import {useApp} from './state.tsx';
+import {detectIntent} from './intents.ts';
+import type {AskResult} from '../server/ask-knowledge.ts';
 import './reviewed-search.css';
 
 interface Place {
@@ -32,6 +35,11 @@ interface SearchResponse {
   locationScope?: 'specific-place'|'lga'|'none'|'ambiguous';
 }
 type SearchState = 'idle' | 'loading' | 'ready' | 'unavailable';
+const questionPattern=/^(who|what|why|where|when|how|which|is|are|can|does|do|tell me|explain)\b/i;
+export function isPublicQuestion(value:string):boolean {
+  return questionPattern.test(value.trim()) && detectIntent(value).kind!=='report' &&
+    detectIntent(value).kind!=='track';
+}
 
 function safeSource(raw: string): string | null {
   try {
@@ -47,6 +55,9 @@ export default function ReviewedSearch() {
   const [state,setState] = React.useState<SearchState>('idle');
   const [data,setData] = React.useState<SearchResponse|null>(null);
   const [error,setError] = React.useState('');
+  const [answer,setAnswer] = React.useState<AskResult|null>(null);
+  const [answerState,setAnswerState]=React.useState<'idle'|'loading'|'ready'|'unavailable'>('idle');
+  const {language,setPendingReportText}=useApp();
   const navigate = useNavigate();
 
   React.useEffect(()=>setDraft(query),[query]);
@@ -79,6 +90,32 @@ export default function ReviewedSearch() {
     return ()=>abort.abort();
   },[query]);
 
+  React.useEffect(()=>{
+    setAnswer(null);
+    if(query.length<2||query.length>100||!isPublicQuestion(query)){
+      setAnswerState('idle');return;
+    }
+    const controller=new AbortController();
+    const timer=setTimeout(()=>controller.abort(),9000);
+    setAnswerState('loading');
+    void fetch('/api/ask',{
+      method:'POST',signal:controller.signal,cache:'no-store',
+      headers:{'Content-Type':'application/json','Accept':'application/json'},
+      body:JSON.stringify({question:query,language}),
+    }).then(async response=>{
+      if(!response.ok)throw new Error('No answer available');
+      return response.json() as Promise<AskResult>;
+    }).then(value=>{
+      if(controller.signal.aborted)return;
+      if(typeof value.answer!=='string'||!Array.isArray(value.sources))
+        throw new Error('Untrusted answer payload');
+      setAnswer(value);setAnswerState('ready');
+    }).catch(()=>{
+      if(!controller.signal.aborted)setAnswerState('unavailable');
+    }).finally(()=>clearTimeout(timer));
+    return()=>{clearTimeout(timer);controller.abort();};
+  },[query,language]);
+
   const submit=(event:React.FormEvent)=>{
     event.preventDefault();
     const value=draft.trim();
@@ -87,6 +124,12 @@ export default function ReviewedSearch() {
       return;
     }
     setError('');
+    const intent=detectIntent(value);
+    if(intent.kind==='report'){
+      setPendingReportText(value.length>=20?value:'');
+      navigate('/report');return;
+    }
+    if(intent.kind==='track'){navigate('/track');return;}
     navigate('/search?'+new URLSearchParams({q:value}).toString());
   };
 
@@ -116,6 +159,24 @@ export default function ReviewedSearch() {
     {state==='unavailable' && <p className="search-results-muted" role="alert">
       Verified search is temporarily unavailable. No sample listings are substituted.
     </p>}
+
+    {isPublicQuestion(query) && <section className="search-answer" aria-labelledby="source-answer-title">
+      <h2 id="source-answer-title">Answer from Ekiti sources</h2>
+      {answerState==='loading' && <p role="status">Checking available sources…</p>}
+      {answerState==='unavailable' && <p role="status">An answer is unavailable. You can still browse the search results below.</p>}
+      {answerState==='ready' && answer && <>
+        <p className="search-answer-text" lang={answer.language}>{answer.answer}</p>
+        <p className="search-answer-meta">{answer.confidence==='source-backed'?'Source-backed summary':'Limited source coverage'} · Checked {answer.checkedAt.slice(0,10)}</p>
+        {answer.sources.length>0 && <div className="search-answer-sources">
+          <strong>Sources</strong>
+          <ul>{answer.sources.map(source=><li key={source.url}>
+            {safeSource(source.url)?<a href={safeSource(source.url)!} target="_blank"
+              rel="noopener noreferrer">{source.title}</a>:source.title}
+          </li>)}</ul>
+        </div>}
+        {answer.limitation&&<p className="search-answer-limitation">{answer.limitation}</p>}
+      </>}
+    </section>}
     {state==='ready' && data && <div className="search-results-content">
       <p className="search-results-count" role="status">
         {data.places.length + data.knowledge.length + (data.localityHint?1:0)} reviewed result{data.places.length+data.knowledge.length+(data.localityHint?1:0)===1?'':'s'} shown for “{data.query}”
