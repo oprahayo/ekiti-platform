@@ -121,7 +121,7 @@ test('nearby transport requests GPS only upon explicit call, sends no URL coordi
   assert.equal(requests[0].init.method,'POST');
   assert.equal(requests[0].init.cache,'no-store');
   assert.equal(requests[0].init.referrerPolicy,'no-referrer');
-  assert.deepEqual(JSON.parse(requests[0].init.body),input);
+  assert.deepEqual(JSON.parse(requests[0].init.body),{...input,limit:20});
   assert.equal(requests[0].url.includes('7.625'),false);
   await assert.rejects(requestNearbyPlaces({category:null,lga:null,query:null,radiusKm:25},
     {getCurrentPosition(success,error){error({code:1});}},true,fetcher),
