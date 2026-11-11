@@ -97,7 +97,8 @@ test('saved private report can be explicitly resumed after reload without email,
 test('Yoruba prompts work and reduced motion does not delay response',async ({page})=>{
   await page.emulateMedia({reducedMotion:'reduce'});
   await page.goto('/report');
-  await page.getByRole('button',{name:'YOR'}).click();
+  await page.getByLabel('Open Ekiti Civic menu').click();
+  await page.locator('.civic-products-language').getByRole('button',{name:'Yorùbá'}).click();
   await expect(page.getByText(/Báwo ni o ṣe fẹ́ ṣàlàyé/)).toBeVisible();
   await page.getByRole('button',{name:'Write text'}).click();
   await expect(page.getByText(/Irú ìṣẹ̀lẹ̀ wo ni èyí/)).toBeVisible();
