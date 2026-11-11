@@ -7,11 +7,12 @@ interface Props {
   category:ReviewedGroup|null;
   lga:string|null;
   query:string|null;
+  unsupported:boolean;
 }
 type State={status:'idle'|'checking'|'denied'|'unavailable';data:NearbyResponse|null};
 
 /** Explicit action only. No mount-time GPS prompt or requests. */
-export default function NearbyDirectorySearch({category,lga,query}:Props){
+export default function NearbyDirectorySearch({category,lga,query,unsupported}:Props){
   const [radiusKm,setRadiusKm]=React.useState(25);
   const [state,setState]=React.useState<State>({status:'idle',data:null});
   const generation=React.useRef(0);
@@ -22,8 +23,9 @@ export default function NearbyDirectorySearch({category,lga,query}:Props){
     controller.current=null;
     setState({status:'idle',data:null});
     return ()=>{generation.current++;controller.current?.abort();controller.current=null;};
-  },[category,lga,query,radiusKm]);
+  },[category,lga,query,radiusKm,unsupported]);
   async function check(){
+    if(unsupported)return;
     const n=++generation.current;
     controller.current?.abort();
     const abort=new AbortController();
@@ -42,7 +44,7 @@ export default function NearbyDirectorySearch({category,lga,query}:Props){
   }
   return <section className="directory-nearest" aria-label="Verified nearby directory">
     <div className="directory-nearest-controls">
-      <button type="button" disabled={state.status==='checking'}
+      <button type="button" disabled={unsupported||state.status==='checking'}
         onClick={()=>void check()} className="quiet-action">
         {state.status==='checking'?'Checking reviewed places…':'Find verified places near me'}
       </button>
@@ -56,6 +58,7 @@ export default function NearbyDirectorySearch({category,lga,query}:Props){
         </select>
       </label>
     </div>
+    {unsupported&&<p role="status">This trade category has no reviewed directory classification yet. Nearby search is unavailable for this category; choose a supported category or browse manually.</p>}
     <p className="directory-nearest-disclosure">
       Optional GPS permission is requested only when you press Find.
       Distances are approximate straight-line distances from your current position,
