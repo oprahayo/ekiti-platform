@@ -37,6 +37,7 @@ test('immediate danger warning is visible without delayed emergency-response dis
   await expect(page.locator('.review-list')).toContainText('Immediate danger reported');
   await expect(page.locator('.review-list')).toContainText('manual review needed');
   await expect(page.getByText(/not monitored or dispatched/)).toBeVisible();
+  await page.getByLabel('I understand this is a local draft, not a report submission, and I choose to save it here.').check();
   await page.getByRole('button',{name:'Save private draft on this device'}).click();
   const stored=await page.evaluate(()=>sessionStorage.getItem('ekiti-guided-draft-v1')??'');
   expect(stored).toContain('"subcategory":"hazard"');
