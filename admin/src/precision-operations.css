@@ -77,6 +77,9 @@
 .precision-map-grid .ekiti-map-canvas{height:clamp(300px,30vw,430px);
   border-radius:2px;background:#596470}
 .precision-map-grid .ops-map-legend{margin:9px 0;color:#596676;font-size:10px}
+.precision-map-grid .ops-legend-none{background:#718090}
+.precision-map-grid .ops-legend-one{background:#48a37c}
+.precision-map-grid .ops-legend-many{background:#006d35}
 .precision-map-grid .ops-map-areas{grid-template-columns:repeat(4,minmax(0,1fr));
   gap:3px;max-height:94px;overflow:auto;padding:1px}
 .precision-map-grid .ops-map-areas button{border:0;border-radius:0;background:#f2f5fa;color:#455466;
