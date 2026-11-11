@@ -24,7 +24,7 @@ export interface IntakeReleaseConfig {
 
 export type IntakeReleaseStatus =
   | {ready:false;reason:'disabled'|'approval_or_configuration_missing'}
-  | {ready:true;origin:string;policyVersion:string;retentionDays:number};
+  | {ready:true;origin:string;policyVersion:string;retentionDays:number;privateConnection:string};
 
 /** No broad truthy parsing: booleans must be the exact reviewed 'true'. */
 export function assessIntakeRelease(env:IntakeReleaseConfig):IntakeReleaseStatus {
@@ -50,5 +50,6 @@ export function assessIntakeRelease(env:IntakeReleaseConfig):IntakeReleaseStatus
     !Number.isInteger(retention) || retention<1 || retention>365)
     return {ready:false,reason:'approval_or_configuration_missing'};
   return {ready:true,origin:approvedOrigin,
-    policyVersion:env.REPORTING_POLICY_VERSION,retentionDays:retention};
+    policyVersion:env.REPORTING_POLICY_VERSION,retentionDays:retention,
+    privateConnection:env.REPORTING_HYPERDRIVE.connectionString};
 }
