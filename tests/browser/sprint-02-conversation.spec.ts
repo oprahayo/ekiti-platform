@@ -92,6 +92,7 @@ test('saved private report can be explicitly resumed after reload without email,
   await page.locator('#guided-contact').fill('private.person@example.test');
   await page.getByRole('button',{name:'Continue'}).click();
   await expect(page.getByRole('heading',{name:'Review your private draft'})).toBeVisible();
+  await page.getByLabel('I understand this is a local draft, not a report submission, and I choose to save it here.').check();
   await page.getByRole('button',{name:'Save private draft on this device'}).click();
   await expect(page.getByRole('heading',{name:'Draft saved locally'})).toBeVisible();
   await page.reload();
