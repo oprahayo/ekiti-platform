@@ -9,6 +9,7 @@ test('English/Yoruba toggle updates centered welcome and persists across reload'
   await page.locator('.civic-products-language').getByRole('button',{name:'Yorùbá'}).click();
   await expect(page.getByRole('heading', { name: 'Káàbọ̀ sí Ekiti Civic' })).toBeVisible();
   await expect(page.getByText(/Ẹnu ọ̀nà rẹ sí ìmọ̀/)).toBeVisible();
+  await page.getByLabel('Open Ekiti Civic menu').click();
   await expect(page.locator('.civic-products-language').getByRole('button',{name:'Yorùbá'})).toHaveAttribute('aria-pressed','true');
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Káàbọ̀ sí Ekiti Civic' })).toBeVisible();
