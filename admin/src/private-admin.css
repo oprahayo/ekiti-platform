@@ -90,7 +90,7 @@
 .staff-intake-filters label[for="intake-lga"]{grid-column:1}
 .staff-intake-filters label[for="intake-type"]{grid-column:2}
 .staff-intake-filters label[for="intake-state"]{grid-column:3}
-.staff-intake-filters select,.staff-intake-proposal select{min-height:44px;width:100%;
+.staff-intake-filters select,.staff-intake-proposal select,.staff-intake-proposal input{min-height:44px;width:100%;
  min-width:0;max-width:100%;border:1px solid #c3d0d9;
  background:#fff;border-radius:8px;padding:8px;color:#19374c}
 .staff-intake-filters button,.staff-intake-proposal button{min-height:44px;border:0;
