@@ -1,4 +1,5 @@
 import pg from 'pg';
+import {parseExternalQuery,fetchEkitiWebResults,ExternalQueryError} from './external-web-search.ts';
 import { parseUnifiedSearch, searchReviewedEkiti, type UnifiedSearchFilters } from './unified-search.ts';
 import { handlePrivateReporting, type PrivateReportingEnv } from './private-report-routes.ts';
 import {handlePrivateEvidence,type EvidenceEnvironment} from './private-evidence-routes.ts';
@@ -16,6 +17,8 @@ interface Env extends PrivateReportingEnv, EvidenceEnvironment {
   LOCATION_LIMIT: { limit(options: { key: string }): Promise<{ success: boolean }> };
   NEARBY_DIRECTORY_ENABLED?:string;
   NEARBY_DIRECTORY_REVIEWED?:string;
+  EXTERNAL_WEB_SEARCH_ENABLED?:string;
+  BRAVE_SEARCH_API_KEY?:string;
 }
 
 function json(value: unknown, status = 200, extra: Record<string, string> = {}) {
@@ -119,13 +122,14 @@ export default {
     const ask = url.pathname === '/api/ask';
     const knowledge = url.pathname === '/api/knowledge';
     const unifiedSearch = url.pathname === '/api/search';
+    const externalWeb = url.pathname === '/api/web-search';
     const places = url.pathname === '/api/places';
     const nearby = url.pathname === '/api/places/nearby';
     if(nearby&&(env.NEARBY_DIRECTORY_ENABLED!=='true'||env.NEARBY_DIRECTORY_REVIEWED!=='true'))
       return json({error:'Unknown route'},404);
     const reviews = url.pathname.startsWith('/api/places/') && url.pathname.endsWith('/reviews');
     const place = url.pathname.startsWith('/api/places/') && !reviews && !nearby;
-    const isPublicData = knowledge || places || place || reviews || nearby || unifiedSearch;
+    const isPublicData = knowledge || places || place || reviews || nearby || unifiedSearch || externalWeb;
     if ((!directory && !ask && !isPublicData && url.pathname !== '/api/resolve') ||
       ((!isPublicData || nearby) && url.search))
       return json({ error: 'Unknown route' }, 404);
@@ -145,6 +149,7 @@ export default {
       let point = null;
       let filters: KnowledgeFilters | DirectoryFilters | null = null;
       let unifiedFilters: UnifiedSearchFilters | null = null;
+      let externalQuery: string | null = null;
       let placeId: string | null = null;
       let reviewFilters: ReviewFilters | null = null;
       let nearbyFilters:NearbySearch|null=null;
@@ -159,7 +164,8 @@ export default {
       }
       if (isPublicData && !nearby) {
         try {
-          if (unifiedSearch) unifiedFilters = parseUnifiedSearch(url.searchParams);
+          if (externalWeb) externalQuery=parseExternalQuery(url.searchParams);
+          else if (unifiedSearch) unifiedFilters = parseUnifiedSearch(url.searchParams);
           else if (knowledge) filters = parseKnowledgeFilters(url.searchParams);
           else if (places) filters = parseDirectoryFilters(url.searchParams);
           else if (reviews) reviewFilters = parsePublicReviews(url.pathname,url.searchParams);
@@ -183,6 +189,17 @@ export default {
         if (!point) return json({ error: 'Expected a confirmed, valid coordinate pair' }, 400);
       }
       if(nearby&&!nearbyFilters)return json({error:'Invalid nearby request'},400);
+      if(externalWeb){
+        if(!externalQuery)return json({error:'Invalid public web query'},400);
+        if(env.EXTERNAL_WEB_SEARCH_ENABLED!=='true'||!env.BRAVE_SEARCH_API_KEY)
+          return json({available:false,reason:'External discovery is not configured'},503,
+            {'Referrer-Policy':'no-referrer'});
+        try{
+          return json(await fetchEkitiWebResults(externalQuery,env.BRAVE_SEARCH_API_KEY),200,
+            {'Referrer-Policy':'no-referrer'});
+        }catch{return json({available:false,reason:'Web discovery temporarily unavailable'},503,
+          {'Referrer-Policy':'no-referrer'});}
+      }
       const client = new pg.Client({
         connectionString: env.HYPERDRIVE.connectionString,
         connectionTimeoutMillis: 5000,
