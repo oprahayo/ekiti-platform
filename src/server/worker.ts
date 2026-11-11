@@ -8,10 +8,13 @@ import {
   searchKnowledge, searchPlaces, getPlace, type DirectoryFilters, type KnowledgeFilters,
 } from './public-data.ts';
 import { parsePublicReviews, publicReviews, type ReviewFilters } from './reviews.ts';
+import {parseNearbySearch,searchVerifiedNearby,NearbyQueryError, type NearbySearch} from './nearby-places.ts';
 
 interface Env extends PrivateReportingEnv, EvidenceEnvironment {
   HYPERDRIVE: { connectionString: string };
   LOCATION_LIMIT: { limit(options: { key: string }): Promise<{ success: boolean }> };
+  NEARBY_DIRECTORY_ENABLED?:string;
+  NEARBY_DIRECTORY_REVIEWED?:string;
 }
 
 function json(value: unknown, status = 200, extra: Record<string, string> = {}) {
@@ -55,6 +58,27 @@ async function readPoint(request: Request) {
 }
 
 
+async function readNearbyBody(request:Request):Promise<string|null>{
+  if(request.headers.get('Content-Type')?.split(';')[0]?.trim()!=='application/json')
+    return null;
+  const length=request.headers.get('Content-Length');
+  if(length!==null&&(!/^\\d+$/.test(length)||Number(length)>650))return null;
+  if(!request.body)return null;
+  const reader=request.body.getReader();
+  const decoder=new TextDecoder('utf-8',{fatal:true});
+  let raw='',bytes=0;
+  try {
+    while(true){
+      const {done,value}=await reader.read();
+      if(done)break;
+      bytes+=value.byteLength;
+      if(bytes>650){await reader.cancel();return null;}
+      raw+=decoder.decode(value,{stream:true});
+    }
+    return raw+decoder.decode();
+  }catch{return null;}
+}
+
 async function readAsk(request: Request): Promise<{ question: string; language: 'en' | 'yo' } | null> {
   const length = Number(request.headers.get('Content-Length') || 0);
   if (length > 1500) return null;
@@ -94,17 +118,23 @@ export default {
     const ask = url.pathname === '/api/ask';
     const knowledge = url.pathname === '/api/knowledge';
     const places = url.pathname === '/api/places';
+    const nearby = url.pathname === '/api/places/nearby';
+    if(nearby&&(env.NEARBY_DIRECTORY_ENABLED!=='true'||env.NEARBY_DIRECTORY_REVIEWED!=='true'))
+      return json({error:'Unknown route'},404);
     const reviews = url.pathname.startsWith('/api/places/') && url.pathname.endsWith('/reviews');
-    const place = url.pathname.startsWith('/api/places/') && !reviews;
-    const isPublicData = knowledge || places || place || reviews;
+    const place = url.pathname.startsWith('/api/places/') && !reviews && !nearby;
+    const isPublicData = knowledge || places || place || reviews || nearby;
     if ((!directory && !ask && !isPublicData && url.pathname !== '/api/resolve') ||
-      (!isPublicData && url.search))
+      ((!isPublicData || nearby) && url.search))
       return json({ error: 'Unknown route' }, 404);
-    const method = (directory || isPublicData) ? 'GET' : 'POST';
+    const method = (directory || (isPublicData&&!nearby)) ? 'GET' : 'POST';
     if (request.method !== method)
       return json({ error: 'Unsupported method' }, 405, { Allow: method });
     const origin = request.headers.get('Origin');
-    if ((origin && origin !== url.origin) || request.headers.get('Sec-Fetch-Site') === 'cross-site')
+    if ((origin && origin !== url.origin) || request.headers.get('Sec-Fetch-Site') === 'cross-site' ||
+      (nearby && (origin !== url.origin ||
+        (request.headers.get('Sec-Fetch-Site')!==null &&
+         request.headers.get('Sec-Fetch-Site')!=='same-origin'))))
       return json({ error: 'Cross-site request denied' }, 403);
     try {
       const key = request.headers.get('CF-Connecting-IP') || 'local';
@@ -114,7 +144,17 @@ export default {
       let filters: KnowledgeFilters | DirectoryFilters | null = null;
       let placeId: string | null = null;
       let reviewFilters: ReviewFilters | null = null;
-      if (isPublicData) {
+      let nearbyFilters:NearbySearch|null=null;
+      if(nearby){
+        const raw=await readNearbyBody(request);
+        if(raw===null)return json({error:'Invalid nearby request'},400);
+        try{nearbyFilters=parseNearbySearch(raw);}
+        catch(error){
+          if(error instanceof NearbyQueryError)return json({error:'Invalid nearby request'},400);
+          return json({error:'Invalid nearby request'},400);
+        }
+      }
+      if (isPublicData && !nearby) {
         try {
           if (knowledge) filters = parseKnowledgeFilters(url.searchParams);
           else if (places) filters = parseDirectoryFilters(url.searchParams);
@@ -138,6 +178,7 @@ export default {
         point = await readPoint(request).catch(() => null);
         if (!point) return json({ error: 'Expected a confirmed, valid coordinate pair' }, 400);
       }
+      if(nearby&&!nearbyFilters)return json({error:'Invalid nearby request'},400);
       const client = new pg.Client({
         connectionString: env.HYPERDRIVE.connectionString,
         connectionTimeoutMillis: 5000,
@@ -147,6 +188,18 @@ export default {
         await client.connect();
         if (point)
           return json(await resolveIncidentLocation(client, point.latitude, point.longitude));
+        if(nearby&&nearbyFilters){
+          const location=await resolveIncidentLocation(client,nearbyFilters.latitude,nearbyFilters.longitude);
+          const status=location.stateBoundaryStatus==='outside'?'outside_ekiti':
+            location.stateBoundaryStatus!=='inside'||location.consistency==='conflict'||
+            location.lga.status!=='matched'?'uncertain_coverage':null;
+          if(status)return json({items:[],reviewedOnly:true,order:'distance',
+            status,radiusKm:nearbyFilters.radiusKm},200,{'Referrer-Policy':'no-referrer'});
+          const items=await searchVerifiedNearby(client,nearbyFilters);
+          return json({items,reviewedOnly:true,order:'distance',
+            status:'ready',radiusKm:nearbyFilters.radiusKm},200,
+            {'Referrer-Policy':'no-referrer'});
+        }
         if (knowledge)
           return json({ items: await searchKnowledge(client, filters as KnowledgeFilters),
             reviewedOnly: true });
