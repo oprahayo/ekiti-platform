@@ -25,7 +25,8 @@ export interface EvidenceUploadSnapshot {
 }
 interface PendingSegment {index:number;sha256:string;bytes:Uint8Array;}
 export class EvidenceUploadError extends Error {
-  constructor(readonly code:string) {super(code);this.name='EvidenceUploadError';}
+  readonly code:string;
+  constructor(code:string) {super(code);this.code=code;this.name='EvidenceUploadError';}
 }
 const MAX_PENDING=5;
 const createHeaders={'Content-Type':'application/json'};
@@ -51,9 +52,15 @@ export class EvidenceUploadQueue {
   private warning:string|null=null;
   private destroyed=false;
   private restored=false;
-  private constructor(private readonly sessionId:string,
-    private receiptSecret:string,private readonly fetcher:EvidenceFetch,
-    private readonly onChange?:(status:EvidenceUploadSnapshot)=>void){}
+  private readonly sessionId:string;
+  private receiptSecret:string;
+  private readonly fetcher:EvidenceFetch;
+  private readonly onChange:((status:EvidenceUploadSnapshot)=>void)|undefined;
+  private constructor(sessionId:string,receiptSecret:string,fetcher:EvidenceFetch,
+    onChange?:(status:EvidenceUploadSnapshot)=>void){
+    this.sessionId=sessionId;this.receiptSecret=receiptSecret;
+    this.fetcher=fetcher;this.onChange=onChange;
+  }
 
   static async start(args:{reference:string;secret:string;kind:EvidenceKind;
     mimeType:EvidenceMime;evidencePolicyVersion:string;fetcher?:EvidenceFetch;
