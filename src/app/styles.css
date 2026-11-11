@@ -1418,3 +1418,42 @@ button { min-height: 44px; border-radius: var(--radius-input); font-size: 14px; 
 @media(max-width:320px){
   .guided-triage-options{grid-template-columns:minmax(0,1fr)}
 }
+
+/* Sprint 04 privacy, consent and safeguarding — compact mobile-first presentation. */
+.guided-safeguard-fieldset{
+  min-width:0;margin:0 0 16px;padding:12px 13px;
+  border:1px solid var(--border);border-radius:var(--radius-card);
+  background:var(--surface-muted);
+}
+.guided-safeguard-fieldset legend{
+  max-width:100%;font-weight:700;line-height:1.5;
+  color:var(--text-primary);padding:0 5px;font-size:.92rem;
+}
+.guided-safeguard-fieldset label{
+  display:flex;align-items:flex-start;gap:10px;min-height:42px;
+  margin:5px 0;padding:6px 0;line-height:1.45;font-size:.88rem;
+}
+.guided-safeguard-fieldset input[type="checkbox"],
+.guided-local-save-consent input[type="checkbox"]{
+  flex:none;width:19px;height:19px;accent-color:var(--accent);margin:2px 0 0;
+}
+.guided-local-save-notice{
+  border:1px solid var(--border);border-radius:var(--radius-card);
+  background:var(--surface-muted);padding:14px;margin:16px 0;
+  font-size:.86rem;line-height:1.55;
+}
+.guided-local-save-notice>strong{display:block;font-size:.92rem;line-height:1.5}
+.guided-local-save-notice p{margin:7px 0 9px}
+.guided-local-save-consent{
+  display:flex;gap:10px;align-items:flex-start;
+  margin:12px 0 8px;padding:10px;border-radius:9px;
+  background:var(--surface);border:1px solid var(--border);
+  min-height:44px;line-height:1.45;cursor:pointer;
+}
+.preview-privacy-page{padding-bottom:100px}
+.preview-privacy-page .page-heading{margin-bottom:20px}
+.preview-privacy-section{padding:16px 0;border-top:1px solid var(--border)}
+.preview-privacy-section h2{font-size:1rem;margin:0 0 7px;line-height:1.35}
+.preview-privacy-section p{font-size:.89rem;line-height:1.65;margin:0 0 9px}
+.preview-privacy-section button{margin:10px 0;max-width:100%;white-space:normal;text-align:left}
+.preview-privacy-result{color:var(--positive);font-weight:650}
