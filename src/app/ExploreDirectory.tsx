@@ -33,7 +33,9 @@ export default function ExploreDirectory() {
     deviceLocation, requestDeviceLocation, selectManualArea,
   } = useApp();
   const [searchParams] = useSearchParams();
-  const [mapOpen, setMapOpen] = React.useState(() => searchParams.get('map') === '1');
+  const mapRequested=searchParams.get('map')==='1';
+  const [mapOpen, setMapOpen] = React.useState(mapRequested);
+  React.useEffect(()=>{if(mapRequested)setMapOpen(true);},[mapRequested]);
   const [places, setPlaces] = React.useState<ReviewedPlace[]>([]);
   const [loadState, setLoadState] = React.useState<LoadState>('idle');
 
