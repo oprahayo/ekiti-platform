@@ -268,3 +268,56 @@
   .civic-product-link {min-height:57px}
   .civic-product-glyph {width:36px;height:36px;flex-basis:36px;border-radius:10px}
 }
+
+
+/* One search surface, not an input nested inside a second textbox.
+   Increased specificity intentionally beats global input:not() styles. */
+.app-shell.inner-search-shell header.app-header form.inner-universal-search {
+  flex:1 1 430px;width:min(100%,720px);max-width:720px;min-width:0;
+  height:50px;padding:5px 6px 5px 17px;gap:12px;
+  border:1px solid var(--border);border-radius:999px;
+  background:var(--surface);transition:border-color 160ms ease,box-shadow 160ms ease;
+}
+.app-shell.inner-search-shell header.app-header form.inner-universal-search:focus-within {
+  border-color:var(--accent);box-shadow:0 2px 13px color-mix(in srgb,var(--accent) 12%,transparent);
+  outline:2px solid var(--focus);outline-offset:2px;
+}
+.app-shell.inner-search-shell header.app-header form.inner-universal-search > input[type="search"] {
+  display:block;flex:1 1 auto;min-width:0;width:0;max-width:none;
+  height:38px;min-height:0;margin:0;padding:0;
+  border:0!important;border-radius:0!important;outline:0!important;box-shadow:none!important;
+  color:var(--text-primary);background:transparent!important;
+  appearance:none;-webkit-appearance:none;font-size:15px;line-height:1.4;
+}
+.app-shell.inner-search-shell header.app-header form.inner-universal-search > input[type="search"]:focus {
+  outline:0!important;box-shadow:none!important;
+}
+.app-shell.inner-search-shell header.app-header form.inner-universal-search > button[type="submit"] {
+  flex:0 0 auto;min-height:38px;border-radius:999px;padding:7px 16px;
+}
+.app-shell.inner-search-shell header.app-header form.inner-universal-search > button[type="submit"]:not(:disabled) {
+  background:var(--text-primary);color:var(--surface);
+}
+@media(max-width:899px) {
+  .app-shell.inner-search-shell header.app-header form.inner-universal-search {
+    grid-column:1/-1;grid-row:2;width:100%;max-width:none;height:46px;min-height:46px;
+  }
+}
+@media(max-width:370px) {
+  .app-shell.inner-search-shell header.app-header form.inner-universal-search {gap:8px;padding-left:12px}
+  .app-shell.inner-search-shell header.app-header form.inner-universal-search > button[type="submit"] {padding-inline:10px}
+}
+/* Consistent bespoke product badges in both themes, without icon CDN cost. */
+.civic-product-glyph {
+  width:46px;height:46px;flex:0 0 46px;border-radius:14px;
+  border-color:color-mix(in srgb,var(--product-color,var(--accent)) 25%,var(--border));
+  background:color-mix(in srgb,var(--product-color,var(--accent)) 12%,var(--surface));
+}
+.civic-product-glyph svg {width:27px;height:27px;stroke-width:1.55}
+.civic-product-link {min-height:78px;transition:background-color 140ms ease,transform 140ms ease}
+.civic-product-link:hover {transform:translateY(-1px)}
+.civic-icon-emphasis {stroke:var(--product-color,var(--accent));stroke-width:2.1}
+.civic-icon-fill {fill:var(--product-color,var(--accent));stroke:none}
+.civic-product-link:focus-visible {outline:2px solid var(--focus);outline-offset:2px}
+@media(max-width:330px){.civic-product-glyph {width:38px;height:38px;flex-basis:38px}}
+@media(prefers-reduced-motion:reduce){.civic-product-link{transition:none!important;transform:none!important}}
