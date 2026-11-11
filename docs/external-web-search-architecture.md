@@ -11,6 +11,7 @@ Ekiti Civic uses one source-grounded, low-data search interface across desktop a
 - The public staging setup enables Wikimedia search through the official MediaWiki REST API without a key. All returned pages are clearly labeled unverified by Ekiti Civic, link to original Wikipedia sources and display provider attribution. Wikipedia excerpts are generally subject to CC BY-SA; consult source page licensing and revision history.
 - If a server-held BRAVE_SEARCH_API_KEY is present, Brave Search provides broader indexed web references. This is not the Google index, and Brave credits/pricing and account requirements apply.
 - Failure never fabricates content: the visitor can deliberately open Google or Brave search on their own websites.
+- After an explicit search, a compact, citation-numbered **Source highlights** panel collects up to three unmodified provider descriptions for easier reading. These are labelled **unverified excerpts**, not an AI-generated answer, with original HTTPS citations. This does not fetch, summarize, or authenticate full page contents.
 - Eight hand-drawn, bundled SVG launcher icons; no third-party font or icon CDN.
 
 ## Setup
