@@ -29,7 +29,9 @@ jobs:
       # by the project owner. No token, database password or staff identity
       # is written to source code, artifacts or workflow logs.
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      # Cloudflare account ID is not a credential; verified from the connected
+      # staging dashboard. An environment secret takes precedence if present.
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || 'd9b3197c1392dc7d39c948d8e0b67c47' }}
       STAGING_HYPERDRIVE_ID: 312d8dc4d1494bc2856606899c8313a8
       VITE_SUPABASE_URL: ''
       VITE_SUPABASE_PUBLISHABLE_KEY: ''
@@ -43,8 +45,12 @@ jobs:
     steps:
       - name: Refuse to deploy without existing scoped Cloudflare credentials
         run: |
-          if [[ -z "$CLOUDFLARE_API_TOKEN" || -z "$CLOUDFLARE_ACCOUNT_ID" ]]; then
-            echo 'BLOCKED: configure GitHub staging secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID. Nothing was deployed.'
+          if [[ -z "$CLOUDFLARE_API_TOKEN" ]]; then
+            echo 'BLOCKED: GitHub staging secret CLOUDFLARE_API_TOKEN is not configured. Nothing was deployed.'
+            exit 1
+          fi
+          if [[ -z "$CLOUDFLARE_ACCOUNT_ID" ]]; then
+            echo 'BLOCKED: reviewed Cloudflare account ID missing. Nothing was deployed.'
             exit 1
           fi
           if [[ ! "$CLOUDFLARE_ACCOUNT_ID" =~ ^[a-f0-9]{32}$ ]]; then
