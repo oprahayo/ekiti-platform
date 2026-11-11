@@ -3,7 +3,7 @@ import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
 import boundariesUrl from '../../data/grid3/lga.json?url';
-import {lgas} from '../data/areas.ts';
+import {lgas} from './fixtures.ts';
 
 export interface PublicReviewedMapPlace{
   id:string;name:string;category:string;lga_id:string;
