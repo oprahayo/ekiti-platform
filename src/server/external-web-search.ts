@@ -13,7 +13,7 @@ export interface ExternalWebResult {
 export interface ExternalWebResultSet {
   query: string;
   scope: 'ekiti-public-web';
-  provider: 'Brave Search';
+  provider: 'Brave Search' | 'Wikipedia';
   verifiedByEkitiCivic: false;
   results: ExternalWebResult[];
 }
@@ -112,4 +112,42 @@ export async function fetchEkitiWebResults(
     query,scope:'ekiti-public-web',provider:'Brave Search',
     verifiedByEkitiCivic:false,results:safe,
   };
+}
+
+/** No-key public fallback. Limited to encyclopedia references, not news or the whole web. */
+export async function fetchEkitiWikipediaResults(
+  query:string,fetchImpl:typeof fetch=fetch,
+):Promise<ExternalWebResultSet> {
+  const url=new URL('https://en.wikipedia.org/w/rest.php/v1/search/page');
+  url.searchParams.set('q',/\bekiti\b/i.test(query)?query:'Ekiti '+query);
+  url.searchParams.set('limit','6');
+  let response:Response;
+  try{
+    response=await fetchImpl(url.toString(),{
+      method:'GET',redirect:'error',signal:AbortSignal.timeout(7000),
+      headers:{Accept:'application/json',
+        'Api-User-Agent':'EkitiCivic/0.1 (https://github.com/oprahayo/ekiti-platform)'},
+    });
+  }catch{throw new ExternalProviderError('Wikipedia search unavailable');}
+  if(!response.ok)throw new ExternalProviderError('Wikipedia search unavailable');
+  const raw=await readCappedJson(response);
+  if(!raw||typeof raw!=='object'||Array.isArray(raw))
+    throw new ExternalProviderError('Unexpected Wikipedia response');
+  const pages=(raw as {pages?:unknown}).pages;
+  if(!Array.isArray(pages))throw new ExternalProviderError('Unexpected Wikipedia response');
+  const results:ExternalWebResult[]=[];
+  for(const item of pages.slice(0,6)){
+    if(!item||typeof item!=='object')continue;
+    const entry=item as Record<string,unknown>;
+    const title=textValue(entry.title,160),key=textValue(entry.key,200);
+    if(!title||!key)continue;
+    const href=verifiedWebUrl('https://en.wikipedia.org/wiki/'+encodeURIComponent(key));
+    if(!href)continue;
+    results.push({
+      title,description:textValue(entry.description||entry.excerpt,300),
+      url:href,domain:'en.wikipedia.org',
+    });
+  }
+  return {query,scope:'ekiti-public-web',provider:'Wikipedia',
+    verifiedByEkitiCivic:false,results};
 }
