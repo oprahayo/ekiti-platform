@@ -119,7 +119,7 @@ test('Ekiti-specific web relevance rejects unrelated results even from an Ekiti-
   assert.ok(ekitiResultRelevance(captured.results[0])>ekitiResultRelevance(captured.results[1]));
   assert.equal(ekitiResultRelevance({
     title:'Results for jobs',description:'Jobs in Lagos',
-    url:'https://example.org/not-ekiti',domain:'example.org',
+    url:'https://example.org/jobs',domain:'example.org',
   }),0);
 });
 test('Wikipedia fallback also excludes pages with no Ekiti evidence',async()=>{
