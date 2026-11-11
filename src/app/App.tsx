@@ -7,6 +7,7 @@ import { AppProvider, useApp } from './state.tsx';
 import { CitizenAuthProvider } from './CitizenAuth.tsx';
 
 const Report = React.lazy(() => import('./ReportJourney.tsx'));
+const ReportPrivacy = React.lazy(() => import('./ReportPrivacy.tsx'));
 const LegacyReport = React.lazy(() => import('./Report.tsx'));
 const ListingDraft = React.lazy(() => import('./ContributionDrafts.tsx'));
 const Track = React.lazy(() => import('./TrackConversation.tsx'));
@@ -121,6 +122,7 @@ function Shell() {
           <Route path="/ask" element={<Ask />} />
           <Route path="/explore" element={<Explore />} />
           <Route path="/report" element={<Report />} />
+          <Route path="/privacy" element={<ReportPrivacy />} />
           <Route path="/report/text-draft" element={<LegacyReport />} />
           <Route path="/listings/new" element={<ListingDraft />} />
           <Route path="/track" element={<Track />} />
