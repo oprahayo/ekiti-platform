@@ -1,5 +1,9 @@
 name: Publish reviewed guest-only integration staging
 
+# Owner-authorized staging publish request: map-led admin dashboard PR #46,
+# 11 November 2026. This one-time audited workflow edit triggers push deploy.
+# Keep every private feature and agency connection in demo/disabled mode.
+# Subsequent releases require an explicit Run workflow action.
 # One-time bootstrap trigger when this workflow is added to the
 # integration branch; future releases can be explicitly run via
 # GitHub Actions > Run workflow. Never deploy on pull_request/main.
