@@ -29,6 +29,8 @@ config.vars={
   EVIDENCE_ENABLED:'false',
   NEARBY_DIRECTORY_ENABLED:'false',
   NEARBY_DIRECTORY_REVIEWED:'false',
+  // Public, user-initiated, rate-limited Wikimedia discovery. No private input.
+  EXTERNAL_WEB_SEARCH_ENABLED:'true',
 };
 const path = fileURLToPath(
   new URL(dryRun ? 'wrangler.dry-run.local.json' : 'wrangler.staging.local.json', root),
