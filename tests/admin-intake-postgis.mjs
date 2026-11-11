@@ -143,7 +143,8 @@ test('Sprint 13 scoped private intake proposal is opt-in, default-off, audited a
       assert.equal(other.result,'queued');
       assert.equal((await propose(actor,caseA,'assignment_review','ado-ekiti',2)).result,'conflict');
       const cases=await db.query('SELECT id,revision,lga_id FROM civic_private.reports ORDER BY id');
-      assert.ok(cases.rows.every(x=>x.revision===1));
+      assert.ok(cases.rows.every(x=>Number(x.revision)===1),
+        'Proposal-only writes must not modify a report revision');
       assert.deepEqual(cases.rows.find(x=>x.id===caseA).lga_id,'ado-ekiti',
         'proposal must not transfer geography');
       const proposals=await db.query('SELECT * FROM civic_private.admin_intake_review_proposals');
