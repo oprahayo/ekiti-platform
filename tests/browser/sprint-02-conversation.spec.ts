@@ -5,6 +5,7 @@ test('central civic welcome uses five distinctive colour-layered digital icons, 
   await page.goto('/');
   await expect(page.getByRole('heading',{name:'Welcome to Ekiti Civic'})).toBeVisible();
   await expect(page.locator('.welcome-primary')).toBeVisible();
+  await expect(page.getByRole('searchbox',{name:'Search Ekiti State'})).toBeVisible();
   await expect(page.locator('.welcome-action-icon')).toHaveCount(5);
   await expect(page.locator('.welcome-action-icon[data-icon="report"]')).toHaveCount(1);
   await expect(page.locator('.welcome-action-icon[data-icon="feedback"]')).toHaveCount(1);
@@ -28,7 +29,7 @@ test('central civic welcome uses five distinctive colour-layered digital icons, 
       primaryCenter:primary.top+primary.height/2,viewport:innerHeight,
       docWidth:document.documentElement.scrollWidth,viewWidth:innerWidth};
   });
-  expect(measurements.titleTop-measurements.headerBottom).toBeGreaterThan(60);
+  expect(measurements.titleTop-measurements.headerBottom).toBeGreaterThan(30);
   expect(measurements.primaryCenter/measurements.viewport).toBeGreaterThan(.34);
   expect(measurements.primaryCenter/measurements.viewport).toBeLessThan(.68);
   expect(measurements.docWidth).toBeLessThanOrEqual(measurements.viewWidth);
