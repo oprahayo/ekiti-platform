@@ -73,7 +73,7 @@ export async function requestNearbyPlaces(
   if(signal?.aborted)throw new NearbyDirectoryError('unavailable');
   try{
     const response=await fetcher('/api/places/nearby',{
-      method:'POST',signal,cache:'no-store',referrerPolicy:'no-referrer',
+      method:'POST',signal:signal??null,cache:'no-store',referrerPolicy:'no-referrer',
       credentials:'same-origin',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
         latitude:point.latitude,longitude:point.longitude,confirmed:true,
