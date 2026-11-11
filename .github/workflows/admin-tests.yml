@@ -1,0 +1,61 @@
+name: Admin checks (isolated database)
+on:
+  push:
+  pull_request:
+
+jobs:
+  admin:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgis/postgis:16-3.5
+        env:
+          POSTGRES_PASSWORD: ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 5s
+          --health-timeout 5s --retries 10
+    env:
+      # Separate GitHub Actions job, separate disposable PostgreSQL instance.
+      # Citizen and admin SQL proposals must never share a staging database.
+      DATABASE_URL: postgres://postgres:ci@localhost:5432/ekiti_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install and type-check administrative build
+        run: |
+          npm ci
+          npm run check:admin
+          npm run build:admin
+      - name: Run admin unit/security tests
+        run: node --experimental-strip-types --test tests/admin-*.test.mjs
+      - name: Prepare disposable admin-only PostGIS schema
+        run: |
+          psql postgres://postgres:ci@localhost:5432/postgres -v ON_ERROR_STOP=1 -c 'CREATE DATABASE ekiti_test TEMPLATE template0'
+          psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f db/migrations/0001_geography.sql -f db/migrations/0002_location.sql -f db/migrations/0003_location_directory.sql -f db/seeds/0001_ekiti_lgas.sql
+          psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f tests/bootstrap-citizen-auth.sql
+      - name: Install guarded admin proposal only in disposable admin CI
+        run: psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f tests/install-admin-proposals.sql
+      - name: Verify private admin tables and isolated roles
+        run: node --experimental-strip-types --test tests/admin-private-postgis.mjs
+      - name: Install guarded repository functions only in disposable admin CI
+        run: psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f tests/install-admin-repository.sql
+      - name: Verify role-restricted repository and audit
+        run: node --experimental-strip-types --test tests/admin-repository-postgis.mjs
+      - name: Verify Sprint 12 dual-control and revocation
+        run: node --experimental-strip-types --test tests/admin-staff-lifecycle-postgis.mjs
+      - name: Verify fictional admin demo browser UI
+        run: |
+          npx playwright install --with-deps chromium
+          npm run test:admin:browser
+      - name: Preserve admin visual review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: admin-staging-integration-visuals
+          path: test-results/admin-review/
+          if-no-files-found: ignore
+          retention-days: 5
