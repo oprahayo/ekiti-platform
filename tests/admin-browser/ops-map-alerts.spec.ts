@@ -14,9 +14,15 @@ test('clean operations overview shows tailored alerts, 16 LGA selectors and clea
   await expect(map.getByRole('button',{name:/Show sample cases in/})).toHaveCount(16);
   await expect(map.getByText(/not incident coordinates, danger zones/i)).toBeVisible();
   await map.getByRole('button',{name:'Show sample cases in Ikere'}).click();
-  await expect(page.getByRole('searchbox')).toHaveValue('Ikere');
+  await expect(page.getByRole('searchbox')).toHaveValue('');
+  await expect(page.getByRole('status').filter({hasText:'Showing sample cases in Ikere'})).toBeVisible();
   await expect(page.locator('.case-list-item')).toHaveCount(1);
   await expect(page.locator('.case-list-item').first()).toContainText('DEMO-1002');
+  await page.getByRole('searchbox').fill('road signage');
+  await expect(page.locator('.case-list-item')).toHaveCount(0);
+  await page.getByRole('searchbox').fill('');
+  await page.getByRole('button',{name:'Clear area'}).click();
+  await expect(page.locator('.case-list-item')).toHaveCount(6);
 });
 
 test('sounds are silent by default and only triggered by an explicit test action',async({page})=>{
@@ -57,4 +63,16 @@ test('overview, alerts and map remain usable without horizontal scrolling on 280
   await expect(page.getByRole('button',{name:'Show sample cases in Ado-Ekiti'})).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(281);
   await page.screenshot({path:'test-results/admin-review/clean-overview-280.png',fullPage:true});
+});
+
+
+test('map LGA filtering uses canonical area equality, not a loose keyword match',async({page})=>{
+  await page.goto('/?view=analytics');
+  const map=page.getByRole('region',{name:'Ekiti LGA map and sample report counts'});
+  await map.getByRole('button',{name:'Show sample cases in Ado-Ekiti'}).click();
+  await expect(page.getByRole('searchbox')).toHaveValue('');
+  await expect(page.locator('.case-list-item')).toHaveCount(1);
+  await expect(page.locator('.case-list-item').first()).toContainText('DEMO-1001');
+  await page.getByRole('button',{name:'Clear area'}).click();
+  await expect(page.locator('.case-list-item')).toHaveCount(6);
 });
