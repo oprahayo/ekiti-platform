@@ -1,5 +1,7 @@
 import * as React from 'react';
 import type {ExternalWebResultSet} from '../server/external-web-search.ts';
+import type {PublicWebAnswer} from '../server/public-web-answer.ts';
+import {useApp} from './state.tsx';
 import {CivicProductIcon} from './CivicProductIcon.tsx';
 
 function safeLink(value:string):string|null {
@@ -34,13 +36,18 @@ function SourceHighlights({items}:{items:ExternalWebResultSet['results']}) {
 export default function ExternalWebResults({query}:{query:string}) {
   const [state,setState]=React.useState<'idle'|'loading'|'ready'|'unavailable'>('idle');
   const [data,setData]=React.useState<ExternalWebResultSet|null>(null);
+  const {language}=useApp();
+  const [answer,setAnswer]=React.useState<PublicWebAnswer|null>(null);
+  const [answerState,setAnswerState]=React.useState<'idle'|'loading'|'ready'|'unavailable'>('idle');
+  const answerAbort=React.useRef<AbortController|null>(null);
   const abort=React.useRef<AbortController|null>(null);
   React.useEffect(()=>{
     abort.current?.abort();
     abort.current=null;
     setData(null);setState('idle');
-    return()=>abort.current?.abort();
-  },[query]);
+    answerAbort.current?.abort();setAnswer(null);setAnswerState('idle');
+    return()=>{abort.current?.abort();answerAbort.current?.abort();};
+  },[query,language]);
 
   const search=()=>{
     abort.current?.abort();
@@ -62,6 +69,27 @@ export default function ExternalWebResults({query}:{query:string}) {
       if(!controller.signal.aborted){setData(null);setState('unavailable');}
     });
   };
+  const readSources=()=>{
+    answerAbort.current?.abort();
+    const controller=new AbortController();
+    answerAbort.current=controller;
+    setAnswer(null);setAnswerState('loading');
+    void fetch('/api/web-answer?'+new URLSearchParams({q:query,lang:language}),{
+      headers:{Accept:'application/json'},signal:controller.signal,
+    }).then(async response=>{
+      if(!response.ok)throw new Error('Source reader unavailable');
+      return response.json() as Promise<PublicWebAnswer>;
+    }).then(value=>{
+      if(controller.signal.aborted)return;
+      if(value.query!==query||value.language!==language||
+        value.reviewedFirst!==true||!Array.isArray(value.claims)||
+        !Array.isArray(value.sources)||!['grounded-ai','source-excerpts','unavailable'].includes(value.mode))
+        throw new Error('Unexpected source answer');
+      setAnswer(value);setAnswerState('ready');
+    }).catch(()=>{
+      if(!controller.signal.aborted){setAnswer(null);setAnswerState('unavailable');}
+    });
+  };
   const publicQuery=/\bekiti\b/i.test(query)?query:'Ekiti State Nigeria '+query;
   const google='https://www.google.com/search?'+new URLSearchParams({q:publicQuery});
   const brave='https://search.brave.com/search?'+new URLSearchParams({q:publicQuery});
@@ -73,8 +101,48 @@ export default function ExternalWebResults({query}:{query:string}) {
         <p>News, public websites and other platforms mentioning Ekiti.</p>
       </div>
     </div>
-    <p className="search-web-privacy">Search terms are shared with an external provider only when you choose to search.
+    <p className="search-web-privacy">Only when you click a source action will your public query be sent to outside providers.
+      If optional AI summaries are configured, selected public excerpts may also be sent to an AI provider.
       Do not enter private reports, names, phone numbers or confidential details here.</p>
+    <div className="search-web-actions">
+      <button type="button" className="search-web-action search-web-read" onClick={readSources}
+        disabled={answerState==='loading'}>
+        {answerState==='loading'?'Reading public sources…':'Read sources & explain'}
+      </button>
+      <span>Reviewed Ekiti Civic records are considered first.</span>
+    </div>
+    {answerState==='unavailable'&&<p role="status" className="search-results-muted">
+      A cited answer is unavailable right now. You can still search public web links below.
+    </p>}
+    {answerState==='ready'&&answer&&<section className="search-grounded-answer"
+      aria-labelledby="search-grounded-heading">
+      <div className="search-grounded-heading">
+        <h3 id="search-grounded-heading">Answer from public sources</h3>
+        <small>{answer.mode==='grounded-ai'?'AI-generated · linked evidence':
+          answer.mode==='source-excerpts'?'Attributed source excerpts':'No public sources available'}</small>
+      </div>
+      {answer.claims.length>0
+        ? <div className="search-grounded-claims">{answer.claims.map((claim,index)=>
+            <p key={index}>{claim.text}{claim.sourceIds.map(id=>{
+              const citation=answer.sources.find(source=>source.id===id);
+              const url=citation&&safeLink(citation.url);
+              return url?<a key={id} href={url} target="_blank" rel="noopener noreferrer"
+                aria-label={'Citation '+id+': '+citation.title}>[{id}]</a>:null;
+            })}</p>)}</div>
+        : <p className="search-results-muted">No reliable source text was returned for this topic.</p>}
+      {answer.sources.length>0&&<div className="search-grounded-citations">
+        <strong>Sources · Ekiti Civic records first</strong>
+        <ol>{answer.sources.map(source=><li key={source.id}>
+          <a href={safeLink(source.url)||'#'} target="_blank" rel="noopener noreferrer">
+            [{source.id}] {source.title}
+          </a>
+          <span>{source.origin==='ekiti-civic'?'Reviewed Ekiti Civic source':
+            source.evidence==='read-public-page'?'External · public page read':'External · search excerpt'}
+            {' · '}{source.publisher}</span>
+        </li>)}</ol>
+      </div>}
+      <p className="search-web-highlights-note">{answer.limitation}</p>
+    </section>}
     {state==='idle' && <button type="button" className="search-web-action" onClick={search}>
       Find public web sources
     </button>}

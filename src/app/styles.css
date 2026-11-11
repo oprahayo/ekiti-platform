@@ -1683,3 +1683,68 @@ button { min-height: 44px; border-radius: var(--radius-input); font-size: 14px; 
   font-size:14px;font-weight:500;
 }
 .guided-optional-safety > fieldset {margin-top:8px;}
+
+
+/* Lightweight, purposeful chat feedback. No animation libraries or media. */
+.guided-chat-stage {
+  display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 12px;
+  align-items:center;padding:4px 2px 14px;margin:0 0 9px;
+  color:var(--text-secondary);font-size:11px;
+}
+.guided-stage-title {font-weight:650;color:var(--text-primary)}
+.guided-stage-step {text-align:right;color:var(--text-tertiary)}
+.guided-stage-meter {
+  display:block;grid-column:1/-1;height:3px;overflow:hidden;
+  border-radius:99px;background:var(--surface-muted);
+}
+.guided-stage-meter>span {
+  display:block;height:100%;max-width:100%;border-radius:99px;
+  background:var(--positive);transition:width 260ms ease;
+}
+.guided-report-page .guided-thread {gap:12px}
+.guided-report-page .guided-bubble,
+.track-page .conversation-turn {
+  animation:civic-message-enter 210ms cubic-bezier(.2,.7,.2,1) both;
+  transform-origin:bottom left;
+}
+.guided-report-page .guided-user,.track-page .turn-user {transform-origin:bottom right}
+.guided-report-page .guided-assistant {
+  box-shadow:0 2px 9px color-mix(in srgb,var(--text-primary) 5%,transparent);
+  border-color:var(--chat-bot-border);
+}
+.guided-report-page .guided-user {
+  box-shadow:0 2px 9px color-mix(in srgb,var(--positive) 9%,transparent);
+}
+.guided-report-page .guided-bubble .conversation-author {
+  display:flex;align-items:center;gap:6px;font-weight:700;
+}
+.guided-report-page .guided-bubble .conversation-author::before {
+  content:"";width:6px;height:6px;border-radius:50%;
+  background:var(--positive);flex-shrink:0;
+}
+.guided-report-page .guided-choice,
+.track-page .conversation-shortcut {
+  transition:transform 140ms ease,background-color 140ms ease,
+    border-color 140ms ease;
+}
+.guided-report-page .guided-choice:active {transform:scale(.985)}
+.guided-report-page .guided-choice:focus-visible {
+  outline:2px solid var(--focus);outline-offset:2px;
+}
+.guided-report-page .guided-typing {animation:none}
+.track-page .track-typing {display:inline-flex;gap:5px;align-items:center;min-height:36px}
+.track-page .track-typing span {
+  width:6px;height:6px;border-radius:50%;background:var(--text-tertiary);
+  animation:guided-dot 1.1s ease-in-out infinite;
+}
+.track-page .track-typing span:nth-child(2) {animation-delay:.14s}
+.track-page .track-typing span:nth-child(3) {animation-delay:.28s}
+@keyframes civic-message-enter {
+  from {opacity:0;transform:translateY(7px) scale(.985)}
+  to {opacity:1;transform:translateY(0) scale(1)}
+}
+@media(prefers-reduced-motion:reduce) {
+  .guided-stage-meter>span,.guided-report-page .guided-choice,
+  .guided-report-page .guided-bubble,.track-page .conversation-turn,
+  .track-page .track-typing span {animation:none!important;transition:none!important;transform:none!important}
+}

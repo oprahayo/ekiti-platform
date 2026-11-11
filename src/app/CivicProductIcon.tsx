@@ -3,22 +3,71 @@ import * as React from 'react';
 export type CivicProductIconName =
   'search'|'report'|'feedback'|'explore'|'map'|'business'|'track'|'account'|'web';
 
-/** Crisp, consistent line icons, bundled as SVG; no network icon package. */
+/**
+ * Nine purpose-drawn Ekiti Civic product emblems. Different visual metaphors,
+ * a shared 24px geometry and no external icon/fonts to download.
+ */
 export function CivicProductIcon({name,size=24}:{name:CivicProductIconName;size?:number}) {
   const artwork:Record<CivicProductIconName,React.ReactNode>={
-    search:<><circle cx="10.9" cy="10.9" r="7"/><path d="m16.1 16.1 4.9 4.9"/><circle cx="10.9" cy="10.9" r="2.1" className="civic-icon-mark"/></>,
-    report:<><path d="M12 2.5 2.6 20h18.8L12 2.5Z"/><path d="M12 9v5.3"/><circle cx="12" cy="17.2" r=".9" className="civic-icon-mark"/></>,
-    feedback:<><path d="M20.5 11.5c0 5-3.8 8.5-9 8.5-1.5 0-3-.3-4.2-1L3 20l1.2-4C3.4 14.7 3 13.2 3 11.5 3 6.7 6.8 3 11.5 3s9 3.7 9 8.5Z"/><path d="M7.5 10.6h8M7.5 14h5"/><circle cx="18.2" cy="4.6" r="1.4" className="civic-icon-mark"/></>,
-    explore:<><circle cx="12" cy="12" r="9"/><path d="m15.7 8.3-2.3 5.1-5.1 2.3 2.3-5.1 5.1-2.3Z"/><circle cx="12" cy="12" r=".8" className="civic-icon-mark"/></>,
-    map:<><path d="M3 6.2 9.3 3l5.3 2.5L21 2.7v15.1L14.7 21l-5.3-2.5L3 21V6.2Z"/><path d="M9.3 3v15.5M14.7 5.5V21"/><circle cx="17.4" cy="11.7" r="1.4" className="civic-icon-mark"/></>,
-    business:<><path d="M4 9.5V21h16V9.5M3 5h18l-1.2 5.2c-.3 1.1-1.2 1.8-2.2 1.8-1.1 0-1.8-.4-2.4-1.3-.4.9-1.4 1.3-2.4 1.3s-1.8-.4-2.4-1.3c-.5.9-1.4 1.3-2.4 1.3s-1.9-.7-2.2-1.8L3 5Z"/><path d="M9 21v-6h6v6"/><circle cx="19" cy="5" r="1.1" className="civic-icon-mark"/></>,
-    track:<><path d="M8 4.5H5A2 2 0 0 0 3 6.5V21h18V6.5a2 2 0 0 0-2-2h-3"/><rect x="8" y="2.5" width="8" height="4" rx="1"/><path d="m8 14 2.4 2.4L16 10.7"/><circle cx="18.6" cy="17.5" r="1.1" className="civic-icon-mark"/></>,
-    account:<><circle cx="12" cy="12" r="9"/><circle cx="12" cy="9" r="3.2"/><path d="M5.5 18.2c1.3-3 3.4-4.3 6.5-4.3s5.2 1.3 6.5 4.3"/><circle cx="18.8" cy="5.2" r="1.2" className="civic-icon-mark"/></>,
-    web:<><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c-3.1 3.3-3.1 14.7 0 18M12 3c3.1 3.3 3.1 14.7 0 18"/><circle cx="17.6" cy="7.2" r="1.2" className="civic-icon-mark"/></>,
+    search:<>
+      <circle cx="10.4" cy="10.2" r="6.5"/>
+      <path d="m15.2 15.2 5.1 5.1" className="civic-icon-emphasis"/>
+      <path d="m8.1 10.2 1.6 1.6 3.4-3.5" className="civic-icon-emphasis"/>
+      <circle cx="18.5" cy="4.7" r="1.1" className="civic-icon-fill"/>
+    </>,
+    report:<>
+      <path d="M5 3.2h9.7L19 7.6V21H5z"/>
+      <path d="M14.7 3.2v4.5H19"/>
+      <path d="M8 11h7M8 14.3h4.8"/>
+      <path d="M15.7 15.4v4.4M13.5 17.6h4.4" className="civic-icon-emphasis"/>
+    </>,
+    feedback:<>
+      <path d="M3.2 5.3h13.5a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H9l-4.8 3v-3.1h-1a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2Z"/>
+      <path d="M6.3 9.6h7.3M6.3 12.9h4.2"/>
+      <circle cx="18.4" cy="5.5" r="3.1" fill="var(--surface)" className="civic-icon-emphasis"/>
+      <path d="m17.2 5.5.9 1 1.6-2" className="civic-icon-emphasis"/>
+    </>,
+    explore:<>
+      <circle cx="12" cy="12" r="9"/>
+      <path d="m15.6 8.4-2.4 4.8-4.8 2.4 2.4-4.8z" className="civic-icon-emphasis"/>
+      <path d="M12 3v2M12 19v2M3 12h2M19 12h2"/>
+      <circle cx="12" cy="12" r="1" className="civic-icon-fill"/>
+    </>,
+    map:<>
+      <path d="m2.7 6.1 6.1-3 6.2 2.6 6.3-2.6v14.8L15 21l-6.2-2.6-6.1 2.7V6.1Z"/>
+      <path d="M8.8 3.1v15.3M15 5.7V21"/>
+      <path d="M17.3 7.4a3 3 0 0 0-3 3c0 2 3 5.1 3 5.1s3-3.1 3-5.1a3 3 0 0 0-3-3Z" fill="var(--surface)" className="civic-icon-emphasis"/>
+      <circle cx="17.3" cy="10.4" r=".7" className="civic-icon-fill"/>
+    </>,
+    business:<>
+      <path d="M4 10.7V21h16V10.7"/>
+      <path d="M3 5h18l-1 5.3c-.4 2-2.5 2.5-4.1.9-1.1 1.5-3.2 1.5-4.3 0-1.1 1.5-3.2 1.5-4.3 0C5.7 12.8 3.4 12.3 3 10.3L3 5Z"/>
+      <path d="M8.3 21v-5.9h7.4V21"/>
+      <path d="M5.5 5V2.9h13V5" className="civic-icon-emphasis"/>
+    </>,
+    track:<>
+      <path d="M5.1 3.4h13.8v17.2H5.1z"/>
+      <circle cx="9" cy="8" r="1.1" className="civic-icon-fill"/>
+      <path d="M12 8h4.2M9 11.1v4.6" strokeDasharray="2.5 2.1"/>
+      <circle cx="9" cy="16.7" r="1.1"/>
+      <path d="m12 16.7 1.9 1.9 3.4-4.1" className="civic-icon-emphasis"/>
+    </>,
+    account:<>
+      <circle cx="11.3" cy="8.6" r="3.2"/>
+      <path d="M4.6 20.5c.2-4.5 2.5-6.8 6.7-6.8 2.1 0 3.8.6 5 2"/>
+      <path d="m17.9 12.5 4 1.5v3.2c0 2.3-1.8 3.6-4 4.6-2.2-1-4-2.3-4-4.6V14z" className="civic-icon-emphasis"/>
+      <path d="m16.5 17 1.1 1.1 2-2.2" className="civic-icon-emphasis"/>
+    </>,
+    web:<>
+      <circle cx="12" cy="12" r="9"/>
+      <path d="M3 12h18M12 3c-3.2 3.4-3.2 14.6 0 18M12 3c3.2 3.4 3.2 14.6 0 18"/>
+      <circle cx="17.8" cy="6.7" r="1.8" fill="var(--surface)" className="civic-icon-emphasis"/>
+      <circle cx="6.2" cy="17.4" r="1" className="civic-icon-fill"/>
+    </>,
   };
   return <svg width={size} height={size} viewBox="0 0 24 24"
-    fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"
-    strokeLinejoin="round" aria-hidden="true" focusable="false">
+    fill="none" stroke="currentColor" strokeWidth="1.65"
+    strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
     {artwork[name]}
   </svg>;
 }
