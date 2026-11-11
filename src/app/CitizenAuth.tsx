@@ -1,4 +1,5 @@
 import * as React from 'react';
+import {caseTimelineEnabled} from './case-timeline.ts';
 import {
   authenticateSession, authorizedRpc, configuredAuth, readTabSession, refreshSession,
   requestEmailCode, requestSmsCode, verifySmsCode, phoneOtpEnabled, privateHistoryEnabled, caseLinkEnabled,
@@ -13,6 +14,7 @@ interface AuthState {
   phoneAvailable:boolean;
   reportHistoryAvailable:boolean;
   caseLinksAvailable:boolean;
+  caseTimelineAvailable:boolean;
   requestCode(email: string): Promise<void>;
   verifyCode(email: string, code: string): Promise<void>;
   requestPhoneCode(phone:string):Promise<void>;
@@ -20,7 +22,8 @@ interface AuthState {
   signOut(): Promise<void>;
   rpc<T>(name: 'civic_submit_review'|'civic_request_claim'|'civic_my_reviews'|'civic_my_claims' |
     'civic_link_private_report'|'civic_my_private_reports'|'civic_unlink_private_report'|
-    'civic_request_case_link'|'civic_redeem_case_link',
+    'civic_request_case_link'|'civic_redeem_case_link'|
+    'civic_my_case_timeline'|'civic_set_case_notice_preference'|'civic_request_case_review',
     body: Record<string,unknown>): Promise<T>;
 }
 const AuthContext = React.createContext<AuthState | null>(null);
@@ -75,6 +78,10 @@ export function CitizenAuthProvider({ children }: { children: React.ReactNode })
       throw new Error('Linked private reports have not been activated.');
     if((name==='civic_request_case_link'||name==='civic_redeem_case_link')&&!caseLinkEnabled())
       throw new Error('Private case message links are not active.');
+    if((name==='civic_my_case_timeline'||name==='civic_set_case_notice_preference'||
+       name==='civic_request_case_review')&&
+       (!privateHistoryEnabled()||!caseTimelineEnabled()))
+      throw new Error('Private case timeline is not active.');
     try {
       // The direct, authenticated PostgREST RPC verifies its own JWT and role.
       const result = await authorizedRpc<unknown>(config,session,name,body);
@@ -93,6 +100,7 @@ export function CitizenAuthProvider({ children }: { children: React.ReactNode })
     available: Boolean(config),restoring,account: session?.identity ?? null,
     phoneAvailable:phoneOtpEnabled(),reportHistoryAvailable:privateHistoryEnabled(),
     caseLinksAvailable:caseLinkEnabled(),
+    caseTimelineAvailable:privateHistoryEnabled()&&caseTimelineEnabled(),
     requestCode,verifyCode,requestPhoneCode,verifyPhoneCode,signOut,rpc,
   };
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
