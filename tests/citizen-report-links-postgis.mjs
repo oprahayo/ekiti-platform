@@ -70,6 +70,10 @@ test('Sprint 09 receipt-to-account proposal is opt-in, least privileged and cros
       FROM civic_private.reports WHERE id=$2`,[secret,id])).rows[0].matches,true);
 
     await t.test('guest cannot link, wrong secret fails and correct secret links only to explicit account',async()=>{
+      // Emulate a separate anonymous request: JWT claim GUCs must not
+      // accidentally survive across simulated transactions in one CI session.
+      await db.query("SELECT set_config('request.jwt.claim.sub','',true)");
+      assert.equal((await db.query('SELECT auth.uid() AS uid')).rows[0].uid,null);
       const guest=await db.query('SELECT public.civic_link_private_report($1,$2) AS linked',
         [reference,secret]);
       assert.equal(guest.rows[0].linked,false);
