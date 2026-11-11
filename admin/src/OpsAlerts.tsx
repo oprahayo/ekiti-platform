@@ -11,7 +11,7 @@ export function deriveDemoAlerts(cases:readonly AdminCase[]):OpsAlert[]{
    (item.priority==='high'||caseQueue(item)==='escalated'))
    .map(item=>({
      id:'alert-'+item.id,caseId:item.id,title:item.title,area:item.lga,
-     severity:item.priority==='high'?'priority':'attention',
+     severity:(item.priority==='high'?'priority':'attention') as OpsAlert['severity'],
      reason:item.priority==='high'?'Marked high priority in sample data':
        'Escalated for internal sample review',
    }))
