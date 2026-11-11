@@ -27,7 +27,7 @@ test('Explore shows compact categories without Yellow Pages branding', async ({ 
     });
     return { columns, tiles, color: computed.backgroundColor };
   });
-  expect(grid.columns).toHaveLength(6);
+  expect(grid.columns).toHaveLength(4);
   expect(grid.tiles[0].y).toBe(grid.tiles[1].y);
   expect(grid.tiles[1].y).toBe(grid.tiles[2].y);
   expect(grid.tiles[0].x).toBeLessThan(grid.tiles[1].x);
