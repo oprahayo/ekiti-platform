@@ -92,6 +92,12 @@ export default function ExploreDirectory() {
     return () => controller.abort();
   }, [activeCategory, browseOnly, exploreLga, query]);
 
+  const mapPins=React.useMemo(()=>places.flatMap(place=>{
+    if(typeof place.latitude!=='number'||typeof place.longitude!=='number')return [];
+    return [{id:place.id,name:place.name,category:place.category,
+      lga:lgas.find(x=>x.id===place.lga_id)?.name||'Ekiti',
+      latitude:place.latitude,longitude:place.longitude}];
+  }),[places]);
   const preview = React.useMemo(() => demoPlaces.filter(place => {
     if (activeCategory && (!activeCategory.group || place.category !== activeCategory.group)) return false;
     if (exploreLga && place.lgaId !== exploreLga) return false;
@@ -246,12 +252,15 @@ export default function ExploreDirectory() {
     </section>}
 
     <div className="directory-secondary">
+      <Link to="/map" className="quiet-action atlas-open-link">Open Ekiti interactive map</Link>
       <button type="button" className="quiet-action" onClick={() => setMapOpen(value => !value)}>
         {mapOpen ? 'Hide Ekiti map' : 'View LGA boundaries on map'}
       </button>
       {mapOpen && <React.Suspense fallback={<p role="status" className="note">Loading map only now…</p>}>
-        <MapLocation onPoint={() => { /* No business points unless individually verified. */ }} />
-        <p className="note">The map shows verified LGA boundaries. Illustrative places are not geocoded or pinned.</p>
+        <MapLocation mode="directory" pins={mapPins}/>
+        <p className="note">The map uses Ekiti's GRID3 LGA reference geometry.
+          Only reviewed directory records with usable coordinates appear as pins.
+          Sample businesses and unverified claims are never plotted. Illustrative places are not geocoded or pinned.</p>
       </React.Suspense>}
       <h2>Can’t find what you need?</h2>
       <Link to="/ask?focus=1" className="text-link" onClick={() => setAskDraft('Find a business in Ekiti')}>

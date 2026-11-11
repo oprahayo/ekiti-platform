@@ -1,5 +1,6 @@
 import * as React from 'react';
 import {lgas} from './fixtures.ts';
+const MapLocation=React.lazy(()=>import('./MapLocation.tsx'));
 import {acquireDevicePosition,assessIncidentCoverage,parseManualPoint,
   resolveVerifiedPoint,PositionError,type IncidentCoverage} from './verified-location.ts';
 
@@ -17,7 +18,8 @@ interface IncidentLocationPickerProps {
 export default function IncidentLocationPicker({
   disabled,language,onApply,
 }:IncidentLocationPickerProps){
-  const [mode,setMode]=React.useState<'none'|'device'|'coordinates'>('none');
+  const [mode,setMode]=React.useState<'none'|'device'|'coordinates'|'map'>('none');
+  const [mapPoint,setMapPoint]=React.useState<{latitude:number;longitude:number}|null>(null);
   const [latitude,setLatitude]=React.useState('');
   const [longitude,setLongitude]=React.useState('');
   const [status,setStatus]=React.useState<'idle'|'checking'|'denied'|'unavailable'|'invalid'>('idle');
@@ -32,13 +34,13 @@ export default function IncidentLocationPicker({
   React.useEffect(()=>{
     if(disabled) {
       generation.current++;
-      setMode('none');setLatitude('');setLongitude('');
+      setMode('none');setLatitude('');setLongitude('');setMapPoint(null);
       setCoverage(null);setStatus('idle');setApplied(false);
     }
   },[disabled]);
-  function switchMode(next:'none'|'device'|'coordinates'){
+  function switchMode(next:'none'|'device'|'coordinates'|'map'){
     generation.current++;
-    setMode(next);setLatitude('');setLongitude('');
+    setMode(next);setLatitude('');setLongitude('');setMapPoint(null);
     setCoverage(null);setStatus('idle');setApplied(false);
   }
   async function check(point:{latitude:number;longitude:number}){
@@ -89,6 +91,10 @@ export default function IncidentLocationPicker({
           onClick={()=>switchMode(mode==='device'?'none':'device')}>
           {t?'Mo wà níbi ìṣẹ̀lẹ̀ náà':'I am at the incident'}
         </button>
+        <button type="button" aria-pressed={mode==='map'}
+          onClick={()=>switchMode(mode==='map'?'none':'map')}>
+          {t?'Yan ibi lori maapu Ekiti':'Choose on Ekiti map'}
+        </button>
         <button type="button" aria-pressed={mode==='coordinates'}
           onClick={()=>switchMode(mode==='coordinates'?'none':'coordinates')}>
           {t?'Ṣàyẹ̀wò àwọn kóódínéètì':'Check known coordinates'}
@@ -99,6 +105,23 @@ export default function IncidentLocationPicker({
           Your browser will request permission; your position will not be reused from Explore.</p>
         <button type="button" className="quiet-action" disabled={status==='checking'}
           onClick={()=>void fromDevice()}>Check this incident position</button>
+      </div>}
+      {mode==='map'&&<div className="guided-point-panel">
+        <p className="guided-hint">This GRID3 Ekiti boundary map makes no third-party tile request.
+          Tap only where the incident took place. Your selected point stays in memory
+          until you press Check; it is never automatically added to a report.</p>
+        <React.Suspense fallback={<p role="status">Loading Ekiti boundary map…</p>}>
+          <MapLocation mode="incident" onPoint={(latitude,longitude)=>{
+            generation.current++;
+            setMapPoint({latitude,longitude});setCoverage(null);
+            setStatus('idle');setApplied(false);
+          }}/>
+        </React.Suspense>
+        {mapPoint&&<div className="guided-point-actions">
+          <p role="status">Map point selected locally. No report was sent.</p>
+          <button type="button" className="quiet-action" disabled={status==='checking'}
+            onClick={()=>void check(mapPoint)}>Check this incident point</button>
+        </div>}
       </div>}
       {mode==='coordinates'&&<div className="guided-point-panel">
         <p className="guided-hint">Enter coordinates of the incident, not your home. Up to six decimal places.

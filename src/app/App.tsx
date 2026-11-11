@@ -12,6 +12,7 @@ const LegacyReport = React.lazy(() => import('./Report.tsx'));
 const ListingDraft = React.lazy(() => import('./ContributionDrafts.tsx'));
 const Track = React.lazy(() => import('./TrackConversation.tsx'));
 const Explore = React.lazy(() => import('./ExploreDirectory.tsx'));
+const Atlas = React.lazy(() => import('./EkitiAtlas.tsx'));
 const PlaceDetails = React.lazy(() => import('./PlaceDetails.tsx'));
 const CitizenProfile = React.lazy(() => import('./CitizenProfile.tsx'));
 const CaseLinkClaim = React.lazy(() => import('./CaseLinkClaim.tsx'));
@@ -122,6 +123,7 @@ function Shell() {
           <Route path="/" element={<WelcomeHome />} />
           <Route path="/ask" element={<Ask />} />
           <Route path="/explore" element={<Explore />} />
+          <Route path="/map" element={<Atlas />} />
           <Route path="/report" element={<Report />} />
           <Route path="/privacy" element={<ReportPrivacy />} />
           <Route path="/report/text-draft" element={<LegacyReport />} />
