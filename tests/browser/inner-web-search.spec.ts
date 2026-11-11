@@ -78,3 +78,34 @@ test('Global inner search enters public lookup; private incident stays in report
   await expect(page).toHaveURL(/\/report$/);
   expect(requests).toEqual([]);
 });
+
+
+test('Source highlights cite original links without claiming generated or verified answers',async({page})=>{
+  await page.route('**/api/search?**',route=>route.fulfill({
+    status:200,contentType:'application/json',
+    body:JSON.stringify({query:'Ekiti tourism',reviewedOnly:true,places:[],knowledge:[]}),
+  }));
+  await page.route('**/api/web-search?**',route=>route.fulfill({
+    status:200,contentType:'application/json',
+    body:JSON.stringify({query:'Ekiti tourism',scope:'ekiti-public-web',
+      provider:'Brave Search',verifiedByEkitiCivic:false,results:[
+        {title:'Ikogosi Warm Springs',description:'Public visitor information about Ikogosi',
+          url:'https://example.org/ikogosi',domain:'example.org'},
+        {title:'Tourism in Ekiti',description:'Public overview of tourism in Ekiti State',
+          url:'https://example.net/tourism',domain:'example.net'},
+      ]}),
+  }));
+  await page.setViewportSize({width:320,height:760});
+  await page.goto('/search?q=Ekiti+tourism');
+  await page.getByRole('tab',{name:'Wider web'}).click();
+  await expect(page.getByRole('heading',{name:'Source highlights'})).toHaveCount(0);
+  await page.getByRole('button',{name:'Find public web sources'}).click();
+  await expect(page.getByRole('heading',{name:'Source highlights'})).toBeVisible();
+  await expect(page.getByRole('link',{name:/Source 1: Ikogosi Warm Springs/}))
+    .toHaveAttribute('href','https://example.org/ikogosi');
+  await expect(page.getByRole('link',{name:/Source 2: Tourism in Ekiti/}))
+    .toHaveAttribute('href','https://example.net/tourism');
+  await expect(page.getByText(/not an AI-generated answer/)).toBeVisible();
+  const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth);
+  expect(overflow).toBeLessThanOrEqual(0);
+});
