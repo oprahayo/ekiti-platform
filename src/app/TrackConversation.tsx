@@ -13,6 +13,8 @@ export default function TrackConversation() {
     { id: 1, role: 'assistant', text: 'I can explain how report tracking will work. Online reporting is not active, so there are no real cases to retrieve yet. Do you have a report reference?' },
   ]);
   const [demo, setDemo] = React.useState(false);
+  const [typing,setTyping]=React.useState(false);
+  const replyTimer=React.useRef<ReturnType<typeof setTimeout>|null>(null);
   const [hasDraft, setHasDraft] = React.useState(false);
   const editor = React.useRef<HTMLTextAreaElement>(null);
   const end = React.useRef<HTMLDivElement>(null);
@@ -32,24 +34,36 @@ export default function TrackConversation() {
           text: 'Here is a fictional case timeline to show the future experience. It is NOT evidence of a report being sent, acknowledged, or resolved.' }]);
     }
   }, [publicId]);
-  React.useEffect(() => { end.current?.scrollIntoView({ block: 'nearest' }); }, [messages.length, demo]);
+  React.useEffect(() => { end.current?.scrollIntoView({ block: 'nearest' }); }, [messages.length, demo,typing]);
+  React.useEffect(()=>()=>{if(replyTimer.current)clearTimeout(replyTimer.current);},[]);
 
   const reply = (value: string) => {
-    setMessages(current => [...current,
-      { id: current.length + 1, role: 'user', text: value },
-      { id: current.length + 2, role: 'assistant',
-        text: 'There is no live case database yet, so I cannot look up or confirm ' +
-          'any real report reference. You can view a clearly labeled fictional tracking example below or continue your draft.' },
-    ]);
+    if(typing)return;
+    setMessages(current => [...current,{id:current.length+1,role:'user',text:value}]);
+    setTyping(true);
+    const explain=/how|when|help|tracking work/i.test(value);
+    const append=()=>{
+      setMessages(current => [...current,{
+        id:current.length+1,role:'assistant',
+        text:explain
+          ? 'When verified report intake is available, a case reference can show a timeline of platform actions. This preview does not connect to a live case database or a government office.'
+          : 'There is no live case database yet, so I cannot look up or confirm any real report reference. You can view the clearly labeled fictional tracking example below or continue your draft.',
+      }]);
+      setTyping(false);replyTimer.current=null;
+    };
+    const reduce=typeof window.matchMedia==='function'&&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if(reduce)append();else replyTimer.current=setTimeout(append,420);
   };
   const send = () => {
     const text = input.trim().slice(0, 160);
-    if (!text) return;
+    if (!text || typing) return;
     setInput('');
     if (/^demo$/i.test(text) || text === DEMO) showDemo();
     else reply(text);
   };
   const showDemo = () => {
+    if(replyTimer.current){clearTimeout(replyTimer.current);replyTimer.current=null;setTyping(false);}
     setDemo(true);
     setMessages(current => [...current, {
       id: current.length + 1, role: 'assistant',
@@ -70,8 +84,12 @@ export default function TrackConversation() {
         {message.role === 'assistant' && <span className="conversation-author">Ekiti Civic</span>}
         <p>{message.text}</p>
       </div>)}
+      {typing&&<div className="conversation-turn turn-assistant track-typing" role="status"
+        aria-label="Ekiti Civic is preparing a reply"><span/><span/><span/></div>}
       <div ref={end} />
     </div>
+    {!demo&&!typing&&<button type="button" className="text-link conversation-shortcut"
+      onClick={()=>reply('How will tracking work?')}>How will tracking work?</button>}
     {hasDraft && <p className="saved-draft-note">
       A private draft may be saved on this browser. It is not a submitted case. <Link to="/report">Continue the draft</Link>
     </p>}
@@ -98,7 +116,7 @@ export default function TrackConversation() {
               event.preventDefault(); send();
             }
           }} placeholder="Type a reference or message…" />
-        <button type="submit" className="conversation-send" disabled={!input.trim()}>Send</button>
+        <button type="submit" className="conversation-send" disabled={!input.trim()||typing}>Send</button>
       </div>
       <span className="metadata chat-save-status">No case details sent to a server</span>
     </form>
