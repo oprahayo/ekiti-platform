@@ -185,3 +185,86 @@
 /* The global mobile shell was originally capped at 740px. This more specific
    search-only rule wins regardless of Vite CSS concatenation order. */
 .app-shell.search-shell{max-width:none;width:100%;border-inline:0}
+
+
+/* Search-consistent inner pages: wide desktop chrome, readable bounded content. */
+.app-shell.inner-search-shell {max-width:none;width:100%;border-inline:0}
+.inner-search-shell .app-header {
+  max-width:none;padding-inline:clamp(16px,3vw,46px);
+  justify-content:flex-start;gap:clamp(10px,2vw,28px);
+}
+.inner-search-shell .app-header .header-controls {margin-left:auto}
+.inner-universal-search {
+  display:flex;align-items:center;gap:11px;min-width:0;
+  width:min(45vw,670px);height:49px;flex-shrink:1;
+  padding:4px 7px 4px 18px;background:var(--surface);
+  border:1px solid var(--border);border-radius:28px;
+  box-shadow:0 2px 10px color-mix(in srgb,var(--text-primary) 4%,transparent);
+}
+.inner-universal-search:focus-within {outline:2px solid var(--focus);outline-offset:2px}
+.inner-universal-search > svg {flex:0 0 auto;color:var(--text-tertiary)}
+.inner-universal-search input[type="search"] {
+  min-height:38px;min-width:0;flex:1;width:100%;padding:0;
+  border:0;background:transparent;box-shadow:none;outline:0;font-size:15px;
+}
+.inner-universal-search input[type="search"]:focus {outline:0}
+.inner-universal-search button {
+  min-height:37px;border:0;border-radius:20px;
+  background:var(--surface-muted);color:var(--text-primary);
+  padding:6px 14px;font-size:13px;font-weight:550;
+}
+.inner-search-shell .screen {padding-bottom:28px}
+@media(min-width:900px) {
+  .inner-search-shell .bottom-nav {display:none}
+  .inner-search-shell .page {max-width:1100px;width:100%;padding-inline:clamp(22px,4vw,54px)}
+  .inner-search-shell .guided-report-page,
+  .inner-search-shell .ask-page,.inner-search-shell .track-page {max-width:860px}
+  .inner-search-shell .directory-page {max-width:1160px}
+  .inner-search-shell .directory-place-page {max-width:1030px}
+}
+@media(max-width:899px) {
+  .inner-search-shell .app-header {
+    display:grid;grid-template-columns:minmax(110px,1fr) auto auto;
+    grid-template-rows:58px 54px;gap:0 5px;
+    height:auto;min-height:112px;padding:0 12px 7px;
+  }
+  .inner-search-shell .app-header > .wordmark {grid-column:1;grid-row:1}
+  .inner-search-shell .app-header > .header-controls {
+    grid-column:2;grid-row:1;margin-left:0;
+  }
+  .inner-search-shell .app-header > .header-profile-link {grid-column:3;grid-row:1}
+  .inner-search-shell .inner-universal-search {
+    grid-column:1/-1;grid-row:2;
+    width:100%;min-width:0;height:46px;
+  }
+  .inner-search-shell .screen {padding-bottom:calc(var(--nav-height) + env(safe-area-inset-bottom) + 18px)}
+}
+@media(max-width:370px) {
+  .inner-search-shell .header-languages {display:none}
+  .inner-search-shell .wordmark {font-size:22px}
+  .inner-universal-search button {padding-inline:9px}
+  .inner-universal-search {gap:7px;padding-left:12px}
+}
+/* Digital product icons: one visual language with quiet category accents. */
+.civic-product-link {align-items:center;gap:12px;border:1px solid transparent;min-height:77px}
+.civic-product-link:hover,.civic-product-link:focus-visible {border-color:var(--border)}
+.civic-product-glyph {
+  width:43px;height:43px;flex:0 0 43px;
+  border-radius:13px;color:var(--product-color,var(--accent));
+  border:1px solid color-mix(in srgb,var(--product-color,var(--accent)) 17%,var(--border));
+  background:color-mix(in srgb,var(--product-color,var(--accent)) 10%,var(--surface));
+}
+.civic-product-glyph svg {display:block}
+.civic-icon-mark {fill:currentColor;stroke:none;opacity:.8}
+.civic-product-search {--product-color:var(--accent)}
+.civic-product-report {--product-color:var(--danger)}
+.civic-product-feedback {--product-color:var(--chart-1)}
+.civic-product-explore {--product-color:var(--chart-4)}
+.civic-product-map {--product-color:var(--chart-3)}
+.civic-product-business {--product-color:var(--chart-2)}
+.civic-product-track {--product-color:var(--chart-5)}
+.civic-product-account {--product-color:var(--text-secondary)}
+@media(max-width:330px){
+  .civic-product-link {min-height:57px}
+  .civic-product-glyph {width:36px;height:36px;flex-basis:36px;border-radius:10px}
+}
