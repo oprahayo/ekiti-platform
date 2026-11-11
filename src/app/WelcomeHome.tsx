@@ -22,7 +22,7 @@ export default function WelcomeHome() {
     const value=search.trim();
     if(!value)return;
     setExploreQuery(value);
-    navigate('/explore');
+    navigate('/search?' + new URLSearchParams({q:value}).toString());
   };
   const ask=()=>{
     const value=search.trim();
