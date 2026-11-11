@@ -31,7 +31,8 @@ export default function WelcomeHome(){
     }
     if(intent.kind==='track'){navigate('/track');return;}
     setExploreQuery(value);
-    navigate('/search?'+new URLSearchParams({q:value}).toString());
+    // The explicit public Search action also requests reviewed-first web sources.
+    navigate('/search?'+new URLSearchParams({q:value,web:'1'}).toString());
   };
   return <main id="main" className="page welcome-gateway search-engine-landing">
     <div className="welcome-primary">
@@ -66,13 +67,13 @@ export default function WelcomeHome(){
           <button type="submit" disabled={!search.trim()}>Search Ekiti</button>
         </div>
         <p className="gateway-search-note">
-          Ask a question, find a professional, discover a town or search reviewed public information.
+          Searches show reviewed Ekiti Civic records first, then cited public web sources. Public search terms may be sent to external search providers; do not enter confidential information.
         </p>
       </form>
       <nav className="gateway-quick-links" aria-label="Suggested searches">
         <span>Try:</span>
         {examples.map(item=><Link key={item}
-          to={'/search?'+new URLSearchParams({q:item}).toString()}>{item}</Link>)}
+          to={'/search?'+new URLSearchParams({q:item,web:'1'}).toString()}>{item}</Link>)}
       </nav>
       <p className="gateway-civic-links">
         <Link to="/report">Civic report</Link>

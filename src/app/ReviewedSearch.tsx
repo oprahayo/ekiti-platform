@@ -132,13 +132,13 @@ export default function ReviewedSearch() {
       navigate('/report');return;
     }
     if(intent.kind==='track'){navigate('/track');return;}
-    navigate('/search?'+new URLSearchParams({q:value}).toString());
+    navigate('/search?'+new URLSearchParams({q:value,web:'1'}).toString());
   };
 
   return <main className="page search-results-page" id="main">
     <div className="search-results-intro">
       <h1>Search Ekiti</h1>
-      <p>Ekiti's public directory, source-backed answers and wider web references.</p>
+      <p>Reviewed Ekiti Civic information first, then Ekiti-relevant public websites with original references.</p>
     </div>
     <form className="search-results-form" role="search" onSubmit={submit}>
       <label className="visually-hidden" htmlFor="ekiti-unified-search">Search Ekiti</label>
@@ -245,7 +245,7 @@ export default function ReviewedSearch() {
     </div>}
     {tab==='all'&&query.length>=2&&query.length<=90&&
       <React.Suspense fallback={<p role="status">Loading web tools…</p>}>
-        <ExternalWebResults query={query}/>
+        <ExternalWebResults query={query} autoRead={params.get('web')==='1'}/>
       </React.Suspense>}
     <p className="search-results-disclosure">
       In-platform results use reviewed public records. Wider-web links are external and not independently verified.

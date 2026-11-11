@@ -178,3 +178,75 @@ test('Tailored product symbols keep distinct artwork and report progression visi
   await page.getByRole('button',{name:/Write text/}).click();
   await expect(page.getByText(/Step 2 · Topic/)).toBeVisible();
 });
+
+
+test('Homepage, chat, directory and header search inputs have one visual border surface',async({page})=>{
+  for(const width of [280,390,1280]){
+    await page.setViewportSize({width,height:820});
+    for(const [route,selector] of [
+      ['/','.gateway-search-field input[type="search"]'],
+      ['/explore','.inner-universal-search input[type="search"]'],
+      ['/explore','.directory-search input[type="search"]'],
+      ['/ask','.ask-bar input[type="search"]'],
+    ]){
+      await page.goto(route);
+      const visual=await page.locator(selector).evaluate(input=>{
+        const style=getComputedStyle(input);
+        return {border:style.borderTopWidth,background:style.backgroundColor,
+          scroll:document.documentElement.scrollWidth,viewport:innerWidth};
+      });
+      expect(visual.border,route+' '+selector+' '+width).toBe('0px');
+      expect(visual.background,route+' '+selector+' '+width).toBe('rgba(0, 0, 0, 0)');
+      expect(visual.scroll,route+' '+selector+' '+width).toBeLessThanOrEqual(width);
+    }
+  }
+});
+test('Explicit homepage search automatically reads Ekiti public sources with reviewed citations first',async({page})=>{
+  let calls=0;
+  await page.route('**/api/search?**',route=>route.fulfill({
+    status:200,contentType:'application/json',body:JSON.stringify({
+      query:'Ekiti education',reviewedOnly:true,places:[],knowledge:[{
+        id:'k1',title:'Ekiti education source',summary_en:'Reviewed local details',
+        subject:'Education',framing:'fact',publisher:'Ekiti Civic',
+        source_url:'https://www.ekitistate.gov.ng/education'}],
+    }),
+  }));
+  await page.route('**/api/web-answer?**',route=>{
+    calls++;
+    return route.fulfill({status:200,contentType:'application/json',
+      body:JSON.stringify({
+        query:'Ekiti education',language:'en',mode:'source-excerpts',provider:'Wikipedia',
+        reviewedFirst:true,claims:[{text:'Reviewed local information',sourceIds:[1]}],
+        sources:[
+          {id:1,title:'Ekiti education source',excerpt:'Reviewed local information',
+            url:'https://www.ekitistate.gov.ng/education',publisher:'Ekiti Civic',
+            origin:'ekiti-civic',evidence:'reviewed-record'},
+          {id:2,title:'Ekiti State',excerpt:'Public overview',
+            url:'https://en.wikipedia.org/wiki/Ekiti_State',publisher:'Wikipedia',
+            origin:'external-web',evidence:'search-snippet'},
+        ],
+        limitation:'These are attributed source excerpts, not a generated AI answer.',
+      })});
+  });
+  await page.goto('/');
+  await page.getByRole('searchbox',{name:'Search Ekiti State'}).fill('Ekiti education');
+  await page.getByRole('button',{name:'Submit search'}).click();
+  await expect(page).toHaveURL(/\/search\?q=Ekiti\+education&web=1/);
+  await expect(page.getByRole('heading',{name:'Ekiti knowledge and public information'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Answer from public sources'})).toBeVisible();
+  await expect(page.getByRole('link',{name:'Citation 1: Ekiti education source'}))
+    .toHaveAttribute('href','https://www.ekitistate.gov.ng/education');
+  const items=await page.locator('.search-grounded-citations li').allTextContents();
+  expect(items[0]).toContain('Reviewed Ekiti Civic source');
+  expect(items[1]).toContain('External · search excerpt');
+  expect(calls).toBe(1);
+});
+test('Opening an ordinary results URL does not automatically contact an external source',async({page})=>{
+  let requests=0;
+  await page.route('**/api/web-answer?**',route=>{
+    requests++;return route.fulfill({status:503,body:'{}'});
+  });
+  await page.goto('/search?q=Ekiti+education');
+  await expect(page.getByRole('button',{name:'Read sources & explain'})).toBeVisible();
+  expect(requests).toBe(0);
+});

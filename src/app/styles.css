@@ -98,7 +98,10 @@ button:disabled { opacity: .55; cursor: not-allowed; }
 .page-heading { margin-bottom: var(--s-6); }
 .page-heading .help-text { margin-top: var(--s-2); }
 .body-emphasis { font-size: 16px; font-weight: 500; }
-input:not([type="checkbox"]):not([type="file"]),textarea,select {
+/* Component-specific fields must be able to override the global native-control
+   defaults. :where() prevents an input from drawing a second textbox inside an
+   already bordered search/composer control (home, inner, directory and chat). */
+:where(input:not([type="checkbox"]):not([type="file"]),textarea,select) {
   min-height: 48px; width: 100%; border: 1px solid var(--border);
   color: var(--text-primary); background: var(--surface);
   border-radius: var(--radius-input); padding: var(--s-3);

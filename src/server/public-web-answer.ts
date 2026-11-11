@@ -1,5 +1,5 @@
 import type {ExternalWebResultSet} from './external-web-search.ts';
-import {parseExternalQuery} from './external-web-search.ts';
+import {parseExternalQuery,hasEkitiContext} from './external-web-search.ts';
 
 export type AnswerLanguage='en'|'yo';
 export interface AnswerCitation {
@@ -98,6 +98,10 @@ export const PUBLIC_CRAWL_HOSTS=new Set([
   'en.wikipedia.org','www.premiumtimesng.com','premiumtimesng.com',
   'www.channelstv.com','channelstv.com',
   'www.thecable.ng','thecable.ng',
+  // Additional established Nigerian outlets; still subject to per-site robots.txt.
+  'guardian.ng','www.guardian.ng',
+  'www.punchng.com','punchng.com',
+  'tribuneonlineng.com','www.tribuneonlineng.com',
 ]);
 export function eligibleCrawlUrl(raw:string):URL|null {
   const safe=safeUrl(raw);
@@ -192,18 +196,23 @@ export async function readAllowedPublicPage(
 export async function enrichPublicSources(
   sources:AnswerCitation[],fetchImpl:typeof fetch=fetch,
 ):Promise<AnswerCitation[]>{
-  let crawled=0;
-  const next:AnswerCitation[]=[];
+  // Concurrent bounded reads avoid multiplying latency on slow connections.
+  // Source order is preserved; all outside page fetches remain robots-aware.
+  let budget=3;
+  const toRead=new Set<string>();
   for(const source of sources){
-    if(source.origin!=='external-web'||!eligibleCrawlUrl(source.url)||crawled>=2){
-      next.push(source);continue;
+    if(budget>0&&source.origin==='external-web'&&eligibleCrawlUrl(source.url)){
+      toRead.add(source.url);budget--;
     }
-    crawled++;
-    const excerpt=await readAllowedPublicPage(source.url,fetchImpl);
-    next.push(excerpt?{...source,excerpt:plain(excerpt,400),
-      evidence:'read-public-page'}:source);
   }
-  return next;
+  return Promise.all(sources.map(async source=>{
+    if(!toRead.has(source.url))return source;
+    const excerpt=await readAllowedPublicPage(source.url,fetchImpl);
+    // Do not promote unrelated boilerplate to evidence of an Ekiti claim.
+    return excerpt&&hasEkitiContext(excerpt)
+      ? {...source,excerpt:plain(excerpt,400),evidence:'read-public-page' as const}
+      : source;
+  }));
 }
 function extractiveClaims(sources:AnswerCitation[]):GroundedClaim[]{
   return sources.slice(0,3).map(s=>({
