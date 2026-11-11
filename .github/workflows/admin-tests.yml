@@ -3,6 +3,11 @@ on:
   push:
   pull_request:
 
+# Superseded integration commits are not worth running to completion.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   admin:
     runs-on: ubuntu-latest
