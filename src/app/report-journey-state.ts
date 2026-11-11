@@ -1,4 +1,5 @@
 import type { Language } from '../server/ask-knowledge.ts';
+import { hasValidTaxonomyChoice, type DangerAnswer } from './incident-taxonomy.ts';
 
 export type JourneyStep = 'method' | 'category' | 'description' | 'location' | 'evidence'
   | 'followup' | 'contact' | 'review' | 'saved';
@@ -63,6 +64,9 @@ export interface SavedJourneyDraft {
   description:string;
   lgaId:string;
   community:string;
+  /** Optional for backwards-compatible drafts created before Sprint 03. */
+  subcategory?:string;
+  immediateDanger?:DangerAnswer;
   savedAt:string;
 }
 
@@ -81,12 +85,17 @@ export function readJourneyDraft(raw:string | null, purpose:'report'|'feedback',
         typeof o.description !== 'string' || o.description.length < 20 || o.description.length > 4000 ||
         typeof o.lgaId !== 'string' || !validLgas.includes(o.lgaId) ||
         typeof o.community !== 'string' || o.community.length > 180 ||
-        typeof o.savedAt !== 'string') return null;
+        typeof o.savedAt !== 'string' ||
+        (o.subcategory !== undefined && (typeof o.subcategory !== 'string' ||
+          !hasValidTaxonomyChoice(o.category as ReportCategory,o.subcategory))) ||
+        (o.immediateDanger !== undefined && !['unknown','yes','no'].includes(String(o.immediateDanger)))) return null;
     const when=Date.parse(o.savedAt);
     if (!Number.isFinite(when) || when > now+60000 || now-when > 24*60*60*1000) return null;
     return {
       purpose, method:o.method as EvidenceMethod, category:o.category as ReportCategory,
       description:o.description, lgaId:o.lgaId, community:o.community, savedAt:o.savedAt,
+      ...(typeof o.subcategory === 'string' ? {subcategory:o.subcategory} : {}),
+      ...(typeof o.immediateDanger === 'string' ? {immediateDanger:o.immediateDanger as DangerAnswer} : {}),
     };
   } catch { return null; }
 }
