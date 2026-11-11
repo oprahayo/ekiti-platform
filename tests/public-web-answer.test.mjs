@@ -4,6 +4,7 @@ import worker from '../src/server/worker.ts';
 import {
   parsePublicAnswerQuery,PublicAnswerQueryError,collectSourceCitations,
   eligibleCrawlUrl,robotsAllows,readAllowedPublicPage,buildPublicWebAnswer,
+  enrichPublicSources,
   synthesizePublicClaims,
 } from '../src/server/public-web-answer.ts';
 
@@ -147,4 +148,49 @@ test('public answer works with external provider despite no private/database cre
     assert.equal(result.sources[0].url,'https://en.wikipedia.org/wiki/Ekiti_State');
     assert.equal(response.headers.get('Cache-Control'),'no-store');
   }finally{globalThis.fetch=original;}
+});
+
+
+test('bounded crawler reads at most three permitted public sources in parallel and keeps source order',async()=>{
+  const origins=[
+    'https://guardian.ng/news/ekiti','https://www.punchng.com/news/ekiti',
+    'https://www.thecable.ng/news/ekiti','https://tribuneonlineng.com/news/ekiti',
+  ];
+  const sources=origins.map((url,index)=>({
+    id:index+1,title:'Ekiti public story '+(index+1),url,
+    publisher:new URL(url).hostname,excerpt:'Public web search excerpt',
+    origin:'external-web',evidence:'search-snippet',
+  }));
+  const fetchedPages=[];
+  const fake=async(url)=>{
+    if(url.endsWith('/robots.txt'))return new Response('User-agent: *\nDisallow:',{
+      headers:{'Content-Type':'text/plain'},
+    });
+    fetchedPages.push(url);
+    return new Response('<p>Ekiti State government and residents are discussing services and public information in this source. Readers should check the original article for details.</p>',{
+      headers:{'Content-Type':'text/html'},
+    });
+  };
+  const actual=await enrichPublicSources(sources,fake);
+  assert.deepEqual(actual.map(item=>item.id),[1,2,3,4]);
+  assert.equal(fetchedPages.length,3);
+  assert.equal(actual.filter(item=>item.evidence==='read-public-page').length,3);
+  assert.equal(actual[3].evidence,'search-snippet');
+});
+test('crawler does not promote off-topic page paragraphs into Ekiti evidence',async()=>{
+  const fake=async(url)=>{
+    if(url.endsWith('/robots.txt'))return new Response('User-agent: *\nDisallow:',{
+      headers:{'Content-Type':'text/plain'},
+    });
+    return new Response('<p>A general newsletter and subscription notice with no information about the geographic area mentioned in the search result at all.</p>',{
+      headers:{'Content-Type':'text/html'},
+    });
+  };
+  const result=await enrichPublicSources([{
+    id:1,title:'Ekiti headline',url:'https://guardian.ng/sample',
+    publisher:'Guardian',excerpt:'The original Ekiti search snippet',
+    origin:'external-web',evidence:'search-snippet',
+  }],fake);
+  assert.equal(result[0].evidence,'search-snippet');
+  assert.equal(result[0].excerpt,'The original Ekiti search snippet');
 });
