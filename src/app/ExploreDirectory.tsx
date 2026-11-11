@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 import { demoPlaces, lgas } from './fixtures.ts';
 import { DirectoryIcon, categoryForGroup, directoryCategories } from './DirectoryCategories.tsx';
 import { useApp } from './state.tsx';
+import NearbyDirectorySearch from './NearbyDirectorySearch.tsx';
 
 const MapLocation = React.lazy(() => import('./MapLocation.tsx'));
 
@@ -144,6 +145,7 @@ export default function ExploreDirectory() {
           <span>{deviceLocation.status === 'loading' ? 'Checking' : 'Near me'}</span>
         </button>
       </div>
+      <p className="directory-geo-clarification">“Near me” filters by verified LGA, not distance. Use the separate verified nearby search for straight-line ranking.</p>
       <p className={'directory-location-summary directory-location-' + deviceLocation.status} role="status">
         {deviceLocation.status === 'prompt'
           ? 'Enable location to browse your verified Ekiti area, or explore freely.'
@@ -160,6 +162,10 @@ export default function ExploreDirectory() {
           </select>
         </div>
       </details>
+      <NearbyDirectorySearch
+        category={activeCategory?.group??null}
+        lga={exploreLga||null}
+        query={query||null}/>
     </section>
     {activeCategory && <button type="button" className="directory-back" onClick={allCategories}>
       <span aria-hidden="true">←</span> Browse all categories
