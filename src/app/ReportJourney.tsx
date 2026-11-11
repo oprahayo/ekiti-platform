@@ -409,10 +409,16 @@ export default function ReportJourney() {
       </button>
     </div>
 
-    <p className="visually-hidden guided-progress" aria-label="Reporting progress">
-      {step === 'saved' ? 'Private draft saved' : 'Preparing your report · ' +
-        Math.max(1, ['method','category','description','location','evidence','followup','contact','review'].indexOf(step)+1) + ' of 8'}
-    </p>
+    <div className="guided-chat-stage" role="status" aria-label="Reporting progress">
+      <span className="guided-stage-title">{feedback ? 'Feedback conversation' : 'Civic report conversation'}</span>
+      <span className="guided-stage-step">{step==='saved' ? 'Local draft ready' :
+        `Step ${REPORT_STEPS.indexOf(step)+1} · ${step==='method'?'Choose a format':
+          step==='category'?'Topic':step==='description'?'Explain':step==='location'?'Location':
+          step==='evidence'?'Evidence':step==='followup'?'Follow-up':step==='contact'?'Contact':'Review'}`}</span>
+      <span className="guided-stage-meter" aria-hidden="true"><span style={{
+        width:(step==='saved'?100:Math.max(8,((REPORT_STEPS.indexOf(step)+1)/REPORT_STEPS.length)*100))+'%'
+      }}/></span>
+    </div>
     {step==='method' && savedDraft && !typing && <aside className="guided-resume">
       <div><strong>Saved private draft</strong>
         <p>Continue your text draft in this tab. Media and contact information were not stored.</p></div>
