@@ -36,8 +36,12 @@ test('Sprint 09 receipt-to-account proposal is opt-in, least privileged and cros
       assert.deepEqual(p,{schema:false,cases:false,links:false,enable_links:false,anon_links:false,
         link_rpc:true,anon_history:false,owner_create:false});
     });
-    await db.query('INSERT INTO auth.users(id,email) VALUES ($1,$2),($3,$4)',
+    await db.query(`INSERT INTO auth.users(id,email,email_confirmed_at)
+      VALUES($1,$2,now()),($3,$4,now())`,
       [userA,'ci-a@tests.example',userB,'ci-b@tests.example']);
+    const unverified='cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+    await db.query('INSERT INTO auth.users(id,email) VALUES($1,$2)',
+      [unverified,'ci-unconfirmed@tests.example']);
     const digest=await secretDigestHex(secret);
     const report=await db.query(`INSERT INTO civic_private.reports
       (request_id,request_fingerprint,tracking_secret_digest,kind,
@@ -69,6 +73,17 @@ test('Sprint 09 receipt-to-account proposal is opt-in, least privileged and cros
     assert.equal((await db.query(`SELECT tracking_secret_digest=extensions.digest(convert_to($1,'UTF8'),'sha256') AS matches
       FROM civic_private.reports WHERE id=$2`,[secret,id])).rows[0].matches,true);
 
+    await t.test('an unverified authenticated user cannot link or read a private case',async()=>{
+      await db.query('SET LOCAL ROLE authenticated');
+      await db.query("SELECT set_config('request.jwt.claim.sub',$1,true)",[unverified]);
+      assert.equal((await db.query('SELECT auth.uid() AS uid')).rows[0].uid,unverified);
+      const denied=await db.query('SELECT public.civic_link_private_report($1,$2) AS linked',
+        [reference,secret]);
+      assert.equal(denied.rows[0].linked,false);
+      assert.equal((await db.query('SELECT * FROM public.civic_my_private_reports()')).rowCount,0);
+      await db.query('SET LOCAL ROLE postgres');
+      await db.query("SELECT set_config('request.jwt.claim.sub','',true)");
+    });
     await t.test('guest cannot link, wrong secret fails and correct secret links only to explicit account',async()=>{
       // Emulate a separate anonymous request: JWT claim GUCs must not
       // accidentally survive across simulated transactions in one CI session.
