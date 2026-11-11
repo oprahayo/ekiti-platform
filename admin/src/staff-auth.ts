@@ -28,6 +28,19 @@ export interface PrivateCase {
   receivedAt: string;
   updatedAt: string;
 }
+export interface PrivateIntakeCase extends PrivateCase {
+  evidenceAccess:'blocked_pending_safeguarding';
+}
+export type PrivateIntakeKind='safeguarding_review'|'possible_duplicate'|'assignment_review';
+export interface PrivateIntakeFilters {
+  lgaId:string|null;
+  kind:PrivateCase['kind']|null;
+  state:PrivateCase['currentState']|null;
+}
+export interface PrivateIntakeProposalResult {
+  result:'queued'|'replayed';proposalId:string;
+  reviewOnly:true;officeNotified:false;caseChanged:false;
+}
 export interface PrivateCaseEvent {
   id: string;
   kind: string;
@@ -137,6 +150,13 @@ export function createStaffAuthClient(config: StaffAuthConfig, fetcher: typeof f
     responseJson(await fetcher(config.adminOrigin + '/admin/api/' + path, {
       ...common, method:'GET', headers:{ Authorization:'Bearer ' + tokenValue(bearer) },
     }));
+  const apiPost = async (path:string,bearer:string,body:unknown) =>
+    responseJson(await fetcher(config.adminOrigin+'/admin/api/'+path,{
+      ...common,method:'POST',
+      headers:{Authorization:'Bearer '+tokenValue(bearer),
+        'Content-Type':'application/json'},
+      body:JSON.stringify(body),
+    }));
   return {
     async signIn(email: string, password: string): Promise<StaffSignInStep> {
       if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
@@ -195,6 +215,53 @@ export function createStaffAuthClient(config: StaffAuthConfig, fetcher: typeof f
       const payload = await apiGet('cases?limit=20',token);
       if (!Array.isArray(payload.items) || payload.items.length > 20) throw new StaffRequestError();
       return payload.items.map(caseRecord);
+    },
+    async listIntake(token:string,filters:PrivateIntakeFilters):
+      Promise<readonly PrivateIntakeCase[]>{
+      const {lgaId,kind,state}=filters;
+      if((lgaId!==null&&!slug.test(lgaId))||
+        (kind!==null&&!kinds.has(kind))||
+        (state!==null&&!states.has(state)))throw new StaffRequestError();
+      const query=new URLSearchParams({limit:'20'});
+      if(lgaId!==null)query.set('lga',lgaId);
+      if(kind!==null)query.set('kind',kind);
+      if(state!==null)query.set('state',state);
+      const body=await apiGet('intake?'+query.toString(),token);
+      if(!Array.isArray(body.items)||body.items.length>20||
+        body.paginationAvailable!==false||
+        body.scope!=='independent_platform_only')
+        throw new StaffRequestError();
+      return body.items.map(raw=>{
+        const rec=obj(raw);
+        if(rec.evidenceAccess!=='blocked_pending_safeguarding')
+          throw new StaffRequestError();
+        const item=caseRecord(raw);
+        if((lgaId!==null&&item.lgaId!==lgaId)||
+          (kind!==null&&item.kind!==kind)||
+          (state!==null&&item.currentState!==state))
+          throw new StaffRequestError();
+        return {...item,evidenceAccess:'blocked_pending_safeguarding' as const};
+      });
+    },
+    async proposeIntake(token:string,caseId:string,kind:PrivateIntakeKind,
+      targetLgaId:string|null,expectedRevision:number):
+      Promise<PrivateIntakeProposalResult>{
+      if(!id.test(caseId)||
+        !['safeguarding_review','possible_duplicate','assignment_review'].includes(kind)||
+        !Number.isSafeInteger(expectedRevision)||expectedRevision<1||
+        (kind==='assignment_review'?targetLgaId===null||!slug.test(targetLgaId):
+          targetLgaId!==null))
+        throw new StaffRequestError();
+      const body=await apiPost('intake/'+caseId+'/proposals',token,{
+        kind,targetLgaId,expectedRevision,
+      });
+      if(!['queued','replayed'].includes(String(body.result))||
+        typeof body.proposalId!=='string'||!id.test(body.proposalId)||
+        body.reviewOnly!==true||body.officeNotified!==false||
+        body.caseChanged!==false)
+        throw new StaffRequestError();
+      return {result:body.result as 'queued'|'replayed',
+        proposalId:body.proposalId,reviewOnly:true,officeNotified:false,caseChanged:false};
     },
     async events(token: string, caseId: string): Promise<readonly PrivateCaseEvent[]> {
       if (!id.test(caseId)) throw new StaffRequestError();
