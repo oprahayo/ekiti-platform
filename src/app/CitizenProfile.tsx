@@ -101,7 +101,7 @@ export default function CitizenProfile() {
           <circle cx="24" cy="15" r="8" /><path d="M9 41c0-9 6-14 15-14s15 5 15 14"/>
         </svg>
       </div>
-      <h1>My Ekiti Civic Dashboard</h1>
+      <p className="eyebrow">My Ekiti Civic Dashboard</p><h1>Citizen Profile</h1>
       <p>{auth.account ? (auth.account.email?'Email':'Phone')+'-verified account · Not government identity verification' : 'Guest browsing · Your device only'}</p>
       <button type="button" className="profile-signin" onClick={() => setPopup('signin')}>{auth.account ? 'Account: ' + (auth.account.email||auth.account.phone||'Verified') : 'Sign in or create an account'}</button>
     </div>
