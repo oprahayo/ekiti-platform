@@ -9,10 +9,10 @@ const products:[{
 },...{href:string;label:string;description:string;icon:CivicProductIconName}[]]=[
   {href:'/search',label:'Search Ekiti',description:'Answers, services and public sources',icon:'search'},
   {href:'/report',label:'Civic report',description:'Prepare a civic incident report',icon:'report'},
-  {href:'/report?kind=feedback',label:'Government feedback',description:'Prepare feedback for a verified office',icon:'feedback'},
+  {href:'/report?kind=feedback',label:'Government feedback',description:'Draft feedback; delivery is not yet active',icon:'feedback'},
   {href:'/explore',label:'Explore Ekiti',description:'Businesses, professionals and places',icon:'explore'},
   {href:'/explore?map=1',label:'Ekiti map',description:'Ekiti boundaries and public listings',icon:'map'},
-  {href:'/listings/new',label:'List a business',description:'Submit a listing draft for review',icon:'business'},
+  {href:'/listings/new',label:'List a business',description:'Prepare a business or service listing',icon:'business'},
   {href:'/track',label:'Track a report',description:'Follow a report when intake is live',icon:'track'},
   {href:'/profile',label:'My account',description:'Account and saved places',icon:'account'},
 ];
