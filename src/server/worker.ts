@@ -1,5 +1,6 @@
 import pg from 'pg';
 import {parseExternalQuery,fetchEkitiWebResults,fetchEkitiWikipediaResults} from './external-web-search.ts';
+import {parsePublicAnswerQuery,buildPublicWebAnswer} from './public-web-answer.ts';
 import { parseUnifiedSearch, searchReviewedEkiti, type UnifiedSearchFilters } from './unified-search.ts';
 import { handlePrivateReporting, type PrivateReportingEnv } from './private-report-routes.ts';
 import {handlePrivateEvidence,type EvidenceEnvironment} from './private-evidence-routes.ts';
@@ -19,6 +20,10 @@ interface Env extends PrivateReportingEnv, EvidenceEnvironment {
   NEARBY_DIRECTORY_REVIEWED?:string;
   EXTERNAL_WEB_SEARCH_ENABLED?:string;
   BRAVE_SEARCH_API_KEY?:string;
+  PUBLIC_SOURCE_ANSWER_ENABLED?:string;
+  GROUNDED_AI_ENABLED?:string;
+  OPENAI_API_KEY?:string;
+  SEARCH_ANSWER_MODEL?:string;
 }
 
 function json(value: unknown, status = 200, extra: Record<string, string> = {}) {
@@ -123,13 +128,14 @@ export default {
     const knowledge = url.pathname === '/api/knowledge';
     const unifiedSearch = url.pathname === '/api/search';
     const externalWeb = url.pathname === '/api/web-search';
+    const publicAnswer = url.pathname === '/api/web-answer';
     const places = url.pathname === '/api/places';
     const nearby = url.pathname === '/api/places/nearby';
     if(nearby&&(env.NEARBY_DIRECTORY_ENABLED!=='true'||env.NEARBY_DIRECTORY_REVIEWED!=='true'))
       return json({error:'Unknown route'},404);
     const reviews = url.pathname.startsWith('/api/places/') && url.pathname.endsWith('/reviews');
     const place = url.pathname.startsWith('/api/places/') && !reviews && !nearby;
-    const isPublicData = knowledge || places || place || reviews || nearby || unifiedSearch || externalWeb;
+    const isPublicData = knowledge || places || place || reviews || nearby || unifiedSearch || externalWeb || publicAnswer;
     if ((!directory && !ask && !isPublicData && url.pathname !== '/api/resolve') ||
       ((!isPublicData || nearby) && url.search))
       return json({ error: 'Unknown route' }, 404);
@@ -150,6 +156,7 @@ export default {
       let filters: KnowledgeFilters | DirectoryFilters | null = null;
       let unifiedFilters: UnifiedSearchFilters | null = null;
       let externalQuery: string | null = null;
+      let answerQuery: {query:string;language:'en'|'yo'} | null = null;
       let placeId: string | null = null;
       let reviewFilters: ReviewFilters | null = null;
       let nearbyFilters:NearbySearch|null=null;
@@ -164,7 +171,8 @@ export default {
       }
       if (isPublicData && !nearby) {
         try {
-          if (externalWeb) externalQuery=parseExternalQuery(url.searchParams);
+          if (publicAnswer) answerQuery=parsePublicAnswerQuery(url.searchParams);
+          else if (externalWeb) externalQuery=parseExternalQuery(url.searchParams);
           else if (unifiedSearch) unifiedFilters = parseUnifiedSearch(url.searchParams);
           else if (knowledge) filters = parseKnowledgeFilters(url.searchParams);
           else if (places) filters = parseDirectoryFilters(url.searchParams);
@@ -189,6 +197,38 @@ export default {
         if (!point) return json({ error: 'Expected a confirmed, valid coordinate pair' }, 400);
       }
       if(nearby&&!nearbyFilters)return json({error:'Invalid nearby request'},400);
+      if(publicAnswer){
+        if(!answerQuery)return json({error:'Invalid public query'},400);
+        if(env.EXTERNAL_WEB_SEARCH_ENABLED!=='true'||
+           env.PUBLIC_SOURCE_ANSWER_ENABLED!=='true')
+          return json({available:false,reason:'Public source reading is disabled'},503,
+            {'Referrer-Policy':'no-referrer'});
+        // Only reviewed *public* SQL readers, never a private case, account,
+        // pending listing or moderation queue. Both providers fail independently.
+        const reviewedTask=(async()=>{
+          const reader=new pg.Client({
+            connectionString:env.HYPERDRIVE.connectionString,
+            connectionTimeoutMillis:3500,query_timeout:3500,
+          });
+          try {
+            await reader.connect();
+            return await searchReviewedEkiti(reader,{query:answerQuery.query,limit:5});
+          }finally{await reader.end().catch(()=>{});}
+        })().catch(()=>undefined);
+        const externalTask=(async()=>{
+          return env.BRAVE_SEARCH_API_KEY
+            ? await fetchEkitiWebResults(answerQuery.query,env.BRAVE_SEARCH_API_KEY)
+            : await fetchEkitiWikipediaResults(answerQuery.query);
+        })().catch(()=>undefined);
+        const [reviewed,external]=await Promise.all([reviewedTask,externalTask]);
+        const answerResult=await buildPublicWebAnswer({
+          query:answerQuery.query,language:answerQuery.language,
+          reviewed,external,
+          aiEnabled:env.GROUNDED_AI_ENABLED==='true',
+          aiKey:env.OPENAI_API_KEY,aiModel:env.SEARCH_ANSWER_MODEL,
+        });
+        return json(answerResult,200,{'Referrer-Policy':'no-referrer'});
+      }
       if(externalWeb){
         if(!externalQuery)return json({error:'Invalid public web query'},400);
         if(env.EXTERNAL_WEB_SEARCH_ENABLED!=='true')
