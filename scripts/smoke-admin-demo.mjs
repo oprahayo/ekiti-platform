@@ -9,6 +9,20 @@ const resp=await fetch(origin,{redirect:'error',signal:AbortSignal.timeout(15000
 assert.equal(resp.status,200,'Admin demo root must respond successfully');
 assert.match(resp.headers.get('content-type')||'',/text\/html/i);
 const html=await resp.text();
+const expectedSha=process.argv[3];
+if(expectedSha){
+  assert.match(expectedSha,/^[a-f0-9]{40}$/);
+  const manifestResp=await fetch(new URL('/staging-build.json',origin),{
+    redirect:'error',signal:AbortSignal.timeout(15000),
+  });
+  assert.equal(manifestResp.status,200,'Admin deployment manifest missing');
+  const manifest=await manifestResp.json();
+  assert.deepEqual(manifest,{
+    release:'citizen-admin-sprints-03-12',
+    branch:'integration/staging-citizen-admin-sprints-03-12',
+    commit:expectedSha,target:'admin-demo',
+  },'Static admin Worker is serving a stale commit');
+}
 assert.match(html,/<div id="root"><\/div>/,'Admin React app root is missing');
 const js=html.match(/<script[^>]+src="([^"]+\.js)"/i)?.[1];
 assert.ok(js,'Admin Vite module must be present');
