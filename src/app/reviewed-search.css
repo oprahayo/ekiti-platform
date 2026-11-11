@@ -1,0 +1,36 @@
+/* Purpose-built search results: no phone-width desktop wrapper. */
+.search-shell {max-width:none;}
+.search-shell .app-header {max-width:1280px;margin-inline:auto;padding-inline:clamp(16px,3.5vw,42px);}
+.search-results-page {max-width:1120px;margin-inline:auto;padding:clamp(22px,4vw,56px) clamp(16px,3.5vw,42px) 90px;}
+.search-results-intro h1 {font-size:clamp(25px,3vw,38px);font-weight:550;letter-spacing:-.045em;}
+.search-results-intro p {color:var(--text-secondary);margin-top:8px;max-width:640px;}
+.search-results-form {display:flex;gap:10px;margin:26px 0 12px;max-width:790px;}
+.search-results-form input[type=search] {min-width:0;flex:1;min-height:54px;border-radius:10px;}
+.search-results-form button {flex:0 0 auto;min-height:54px;padding:0 24px;border:1px solid var(--text-primary);background:var(--text-primary);color:var(--surface);font-size:15px;}
+.search-results-shortcuts {display:flex;flex-wrap:wrap;gap:8px 20px;font-size:14px;margin:12px 0 32px;}
+.search-results-shortcuts a {color:var(--text-secondary);}
+.search-results-content {max-width:860px;}
+.search-results-count {margin:12px 0 24px;font-size:14px;color:var(--text-secondary);}
+.search-results-section {margin:28px 0;}
+.search-results-section h2 {font-size:17px;font-weight:600;margin-bottom:8px;}
+.search-result {padding:18px 0 19px;border-bottom:1px solid var(--border);}
+.search-result h3 {font-size:18px;line-height:1.35;font-weight:540;margin-bottom:5px;}
+.search-result h3 a {color:var(--accent);text-decoration:none;}
+.search-result h3 a:hover {text-decoration:underline;}
+.search-result p {line-height:1.5;font-size:14px;color:var(--text-secondary);margin:6px 0 0;overflow-wrap:anywhere;}
+.search-result .search-result-meta {font-size:12px;color:var(--text-tertiary);}
+.search-result .search-result-source {font-size:12px;}
+.search-results-error {color:var(--danger);font-size:14px;}
+.search-results-muted {font-size:15px;max-width:650px;color:var(--text-secondary);margin:20px 0;line-height:1.6;}
+.search-results-disclosure {margin-top:50px;padding-top:18px;border-top:1px solid var(--border);color:var(--text-tertiary);font-size:12px;max-width:760px;}
+@media (min-width:900px) {
+  .search-shell .bottom-nav {display:none;}
+  .search-results-page {min-height:calc(100vh - 70px);}
+}
+@media (max-width:480px) {
+  .search-results-form {gap:7px;margin-top:20px;}
+  .search-results-form button {padding:0 12px;min-height:48px;}
+  .search-results-form input[type=search] {min-height:48px;}
+  .search-results-shortcuts {gap:9px 15px;font-size:13px;}
+  .search-result {padding-block:16px;}
+}
