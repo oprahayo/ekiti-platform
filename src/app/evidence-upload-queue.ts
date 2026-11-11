@@ -7,7 +7,7 @@
  * bytes are persisted to browser storage or placed in a URL.
  */
 import {
-  MAX_EVIDENCE_CHUNK_BYTES,MAX_EVIDENCE_CHUNKS,sha256Bytes,
+  MAX_EVIDENCE_CHUNK_BYTES,MAX_EVIDENCE_CHUNKS,EVIDENCE_SESSION_ID,sha256Bytes,
   type EvidenceKind,type EvidenceMime,type EvidenceStatus,
   type EvidenceChunkAcknowledgement,
 } from '../evidence/evidence-protocol.ts';
@@ -45,6 +45,8 @@ async function parsed<T>(response:Response):Promise<T>{
 export class EvidenceUploadQueue {
   private pending:PendingSegment[]=[];
   private inFlight:Promise<void>|null=null;
+  private captureChain:Promise<void>=Promise.resolve();
+  private queuedCaptures=0;
   private nextIndex=0;
   private acked=0;
   private storedBytes=0;
@@ -72,7 +74,7 @@ export class EvidenceUploadQueue {
         mimeType:args.mimeType,evidenceConsent:true,evidencePolicyVersion:args.evidencePolicyVersion}),
     });
     const result=await parsed<{sessionId:string}>(response);
-    if(!/^[0-9a-f-]{36}$/u.test(result.sessionId))
+    if(!EVIDENCE_SESSION_ID.test(result.sessionId))
       throw new EvidenceUploadError('invalid_session_response');
     const instance=new EvidenceUploadQueue(result.sessionId,args.secret,fetcher,args.onChange);
     instance.publish();
@@ -119,28 +121,42 @@ export class EvidenceUploadQueue {
    * Schedule one MediaRecorder timeslice. Does not block the recorder callback,
    * but never reports data saved until server ACK verifies object+ledger.
    */
-  async enqueue(blob:Blob):Promise<void>{
+  enqueue(blob:Blob):Promise<void>{
     if(this.destroyed||this.restored||this.phase==='complete')
-      throw new EvidenceUploadError('recording_not_available');
+      return Promise.reject(new EvidenceUploadError('recording_not_available'));
     if(!blob.size||blob.size>MAX_EVIDENCE_CHUNK_BYTES)
-      throw new EvidenceUploadError('segment_size_unsupported');
-    if(this.nextIndex>=MAX_EVIDENCE_CHUNKS)
-      throw new EvidenceUploadError('recording_limit_reached');
-    if(this.pending.length>=MAX_PENDING){
+      return Promise.reject(new EvidenceUploadError('segment_size_unsupported'));
+    if(this.nextIndex+this.queuedCaptures>=MAX_EVIDENCE_CHUNKS)
+      return Promise.reject(new EvidenceUploadError('recording_limit_reached'));
+    // Account for blobs still being converted: no unbounded pending file reads
+    // during an outage or under a stalled network connection.
+    if(this.pending.length+this.queuedCaptures>=MAX_PENDING){
       this.phase='offline';
       this.warning='The unsaved evidence buffer is full. Stop recording. Do not assume any unacknowledged segment is saved.';
       this.publish();
-      throw new EvidenceUploadError('unsaved_buffer_full');
+      return Promise.reject(new EvidenceUploadError('unsaved_buffer_full'));
     }
-    const bytes=new Uint8Array(await blob.arrayBuffer());
-    const sha256=await sha256Bytes(bytes);
-    this.pending.push({index:this.nextIndex++,bytes,sha256});
-    this.publish();
-    await this.flush();
+    this.queuedCaptures++;
+    const work=this.captureChain.then(async()=>{
+      try {
+        const bytes=new Uint8Array(await blob.arrayBuffer());
+        const sha256=await sha256Bytes(bytes);
+        if(this.destroyed)return;
+        this.pending.push({index:this.nextIndex++,bytes,sha256});
+        this.publish();
+        // Network upload runs independently of the MediaRecorder event
+        // to avoid stopping chunk capture while one request is in flight.
+        void this.flush();
+      }finally{this.queuedCaptures--;}
+    });
+    this.captureChain=work.catch(()=>{});
+    return work;
   }
   /** Reconcile an ACK whose response was lost before resending pending bytes. */
   async retry():Promise<void>{
     if(this.restored)throw new EvidenceUploadError('resume_status_only');
+    await this.captureChain;
+    if(this.inFlight)await this.inFlight;
     const remote=await this.remoteStatus();
     if(remote.finished) {
       if(this.pending.length)throw new EvidenceUploadError('session_finished_with_unsaved_chunks');
@@ -159,7 +175,11 @@ export class EvidenceUploadQueue {
   }
   private flush():Promise<void>{
     if(this.inFlight)return this.inFlight;
-    this.inFlight=this.sendPending().finally(()=>{this.inFlight=null;});
+    this.inFlight=this.sendPending().finally(()=>{
+      this.inFlight=null;
+      if(this.pending.length&&this.phase!=='offline'&&!this.destroyed)
+        void this.flush();
+    });
     return this.inFlight;
   }
   private async sendPending():Promise<void>{
@@ -189,7 +209,10 @@ export class EvidenceUploadQueue {
     this.phase='ready';this.warning=null;this.publish();
   }
   async finish():Promise<void>{
+    if(this.restored)throw new EvidenceUploadError('recovered_session_cannot_be_completed');
+    await this.captureChain;
     if(this.inFlight)await this.inFlight;
+    if(this.pending.length&&this.phase!=='offline')await this.flush();
     if(this.pending.length||this.phase==='offline')
       throw new EvidenceUploadError('unacknowledged_segments');
     if(this.acked<1)throw new EvidenceUploadError('empty_recording');
