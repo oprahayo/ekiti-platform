@@ -31,6 +31,7 @@ test('guided report choices advance real conversation and save an honest private
   await page.getByRole('button',{name:/No follow-up contact/}).click();
   await expect(page.getByRole('heading',{name:'Review your private draft'})).toBeVisible();
   await expect(page.locator('.review-list')).toContainText('Ado-Ekiti');
+  await page.getByLabel('I understand this is a local draft, not a report submission, and I choose to save it here.').check();
   await page.getByRole('button',{name:'Save private draft on this device'}).click();
   await expect(page.getByRole('heading',{name:'Draft saved locally'})).toBeVisible();
   await expect(page.getByText(/No report has been submitted/)).toBeVisible();
@@ -63,6 +64,7 @@ test('capture is evidence only: photo preview, optional email and no upload/noti
   await page.getByRole('button',{name:'Continue'}).click();
   await expect(page.getByRole('heading',{name:'Review your private draft'})).toBeVisible();
   await expect(page.getByText(/delivery not active/)).toBeVisible();
+  await page.getByLabel('I understand this is a local draft, not a report submission, and I choose to save it here.').check();
   await page.getByRole('button',{name:'Save private draft on this device'}).click();
   const stored=await page.evaluate(()=>sessionStorage.getItem('ekiti-guided-draft-v1'));
   expect(stored).not.toContain('resident@example.test');
