@@ -59,6 +59,22 @@ export default function ReportPrivacy() {
         avoid sending exact household or vulnerable-person locations.</p>
     </section>
     <section className="preview-privacy-section">
+      <h2>Optional nearby directory search</h2>
+      <p>Explore includes a separate Find verified places near me action. Only after you press it
+        will the browser ask for your current device location and, if permission is granted,
+        send the coordinate pair in a short-lived request body to the first-party
+        <code>/api/places/nearby</code> endpoint. A separate Near me control only filters by
+        verified Ekiti LGA; it is not a true distance ranking.</p>
+      <p>When authorized and available, nearby results are limited to source-reviewed,
+        published listings with reviewed coordinates inside the verified LGA polygon.
+        Approximate distances are straight-line only. The app does not store your raw
+        position in report drafts, persistent browser storage or returned directory
+        results. Network providers and server infrastructure may still process
+        connection details, so no claim of complete anonymity is made.
+        This service is disabled until its geographic-query migration is reviewed
+        and activated independently.</p>
+    </section>
+    <section className="preview-privacy-section">
       <h2>Delete saved local drafts</h2>
       <p>Delete saved guided and legacy text drafts from this browser. This does not delete downloaded copies,
         content you have shared elsewhere, data held by another device or active text still on a different open tab.
