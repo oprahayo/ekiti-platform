@@ -46,7 +46,7 @@ export default function NearbyDirectorySearch({category,lga,query,unsupported}:P
     <div className="directory-nearest-controls">
       <button type="button" disabled={unsupported||state.status==='checking'}
         onClick={()=>void check()} className="quiet-action">
-        {state.status==='checking'?'Checking reviewed places…':'Find verified places near me'}
+        {state.status==='checking'?'Checking reviewed places…':'Find nearby places by distance'}
       </button>
       <label htmlFor="nearby-radius">Within
         <select id="nearby-radius" value={radiusKm}
