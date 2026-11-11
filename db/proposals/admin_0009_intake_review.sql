@@ -119,6 +119,7 @@ DECLARE r civic_private.reports%ROWTYPE;
   result_id uuid;prior civic_private.admin_intake_review_proposals%ROWTYPE;
 BEGIN
   IF _actor IS NULL OR _case IS NULL OR _revision IS NULL OR _revision<1 OR
+    _kind IS NULL OR
     _kind NOT IN('safeguarding_review','possible_duplicate','assignment_review') OR
     (_kind='assignment_review')<>(_target_lga IS NOT NULL) OR
     (_target_lga IS NOT NULL AND _target_lga !~ '^[a-z0-9][a-z0-9-]{1,63}$')
