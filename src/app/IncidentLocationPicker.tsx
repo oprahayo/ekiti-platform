@@ -29,6 +29,13 @@ export default function IncidentLocationPicker({
     alive.current=true;
     return ()=>{alive.current=false;generation.current++;};
   },[]);
+  React.useEffect(()=>{
+    if(disabled) {
+      generation.current++;
+      setMode('none');setLatitude('');setLongitude('');
+      setCoverage(null);setStatus('idle');setApplied(false);
+    }
+  },[disabled]);
   function switchMode(next:'none'|'device'|'coordinates'){
     generation.current++;
     setMode(next);setLatitude('');setLongitude('');
@@ -100,12 +107,12 @@ export default function IncidentLocationPicker({
           <label htmlFor="incident-latitude">Latitude
             <input id="incident-latitude" value={latitude} maxLength={16}
               inputMode="decimal" autoComplete="off" placeholder="e.g. 7.62"
-              onChange={event=>{setLatitude(event.target.value);setCoverage(null);setStatus('idle');}}/>
+              onChange={event=>{generation.current++;setLatitude(event.target.value);setCoverage(null);setStatus('idle');setApplied(false);}}/>
           </label>
           <label htmlFor="incident-longitude">Longitude
             <input id="incident-longitude" value={longitude} maxLength={16}
               inputMode="decimal" autoComplete="off" placeholder="e.g. 5.22"
-              onChange={event=>{setLongitude(event.target.value);setCoverage(null);setStatus('idle');}}/>
+              onChange={event=>{generation.current++;setLongitude(event.target.value);setCoverage(null);setStatus('idle');setApplied(false);}}/>
           </label>
         </div>
         <button type="button" className="quiet-action" disabled={status==='checking'}
