@@ -177,7 +177,8 @@ test('Sprint 11 real SQL timeline, ownership, contact consent and release gates 
         await db.query('SELECT public.civic_link_private_report($1::uuid,$2::text) AS linked',
           [report.public_reference,secret])).rows[0].linked),true);
       assert.equal(await preference(A,'email'),true);
-      await db.query("UPDATE civic_private.reports SET delete_at=now()-interval '1 second' WHERE id=$1",[report.id]);
+      // A legal historical fixture: delete_at must remain AFTER received_at.
+      await db.query("UPDATE civic_private.reports SET received_at=now()-interval '5 days', delete_at=now()-interval '1 day' WHERE id=$1",[report.id]);
       assert.deepEqual(await timeline(A),[]);
       assert.equal(await preference(A,'email'),false);
       await db.query('DELETE FROM civic_private.reports WHERE id=$1',[report.id]);
