@@ -33,7 +33,7 @@ function SourceHighlights({items}:{items:ExternalWebResultSet['results']}) {
   </section>;
 }
 
-export default function ExternalWebResults({query}:{query:string}) {
+export default function ExternalWebResults({query,autoRead=false}:{query:string;autoRead?:boolean}) {
   const [state,setState]=React.useState<'idle'|'loading'|'ready'|'unavailable'>('idle');
   const [data,setData]=React.useState<ExternalWebResultSet|null>(null);
   const {language}=useApp();
@@ -69,7 +69,7 @@ export default function ExternalWebResults({query}:{query:string}) {
       if(!controller.signal.aborted){setData(null);setState('unavailable');}
     });
   };
-  const readSources=()=>{
+  const readSources=React.useCallback(()=>{
     answerAbort.current?.abort();
     const controller=new AbortController();
     answerAbort.current=controller;
@@ -89,7 +89,8 @@ export default function ExternalWebResults({query}:{query:string}) {
     }).catch(()=>{
       if(!controller.signal.aborted){setAnswer(null);setAnswerState('unavailable');}
     });
-  };
+  },[query,language]);
+  React.useEffect(()=>{if(autoRead)readSources();},[autoRead,readSources]);
   const publicQuery=/\bekiti\b/i.test(query)?query:'Ekiti State Nigeria '+query;
   const google='https://www.google.com/search?'+new URLSearchParams({q:publicQuery});
   const brave='https://search.brave.com/search?'+new URLSearchParams({q:publicQuery});
@@ -101,13 +102,13 @@ export default function ExternalWebResults({query}:{query:string}) {
         <p>News, public websites and other platforms mentioning Ekiti.</p>
       </div>
     </div>
-    <p className="search-web-privacy">Only when you click a source action will your public query be sent to outside providers.
+    <p className="search-web-privacy">When you explicitly submit a public search or click a source action, the public query may be shared with an external search provider.
       If optional AI summaries are configured, selected public excerpts may also be sent to an AI provider.
-      Do not enter private reports, names, phone numbers or confidential details here.</p>
+      Private reports, personal details and confidential information must not be searched here.</p>
     <div className="search-web-actions">
       <button type="button" className="search-web-action search-web-read" onClick={readSources}
         disabled={answerState==='loading'}>
-        {answerState==='loading'?'Reading public sources…':'Read sources & explain'}
+        {answerState==='loading'?'Reading public sources…':answerState==='ready'?'Refresh cited sources':'Read sources & explain'}
       </button>
       <span>Reviewed Ekiti Civic records are considered first.</span>
     </div>
