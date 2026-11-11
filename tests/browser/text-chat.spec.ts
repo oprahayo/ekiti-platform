@@ -20,7 +20,7 @@ test('the guided journey asks category, description and location in sequence', a
   await page.getByRole('button', { name: 'Roads' }).click();
   await page.locator('#guided-description').fill('My community bridge has collapsed near the main road.');
   await page.getByRole('button', { name: 'Continue' }).click();
-  await expect(page.getByText(/Where in Ekiti did it happen/)).toBeVisible();
+  await expect(page.locator('#guided-lga')).toBeVisible();
   await page.locator('#guided-lga').selectOption('ado-ekiti');
   await page.getByRole('button', { name: 'Continue' }).click();
   await expect(page.getByText(/Would you like to attach evidence now/)).toBeVisible();

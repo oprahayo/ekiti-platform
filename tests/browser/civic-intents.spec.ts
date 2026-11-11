@@ -56,6 +56,6 @@ test('reporting is typed chat even if speech recognition exists', async ({ page 
   await page.getByRole('button', { name: 'Roads' }).click();
   await page.locator('#guided-description').fill('The damaged footbridge needs urgent attention in my area.');
   await page.getByRole('button', { name: 'Continue' }).click();
-  await expect(page.getByText(/Where in Ekiti did it happen/)).toBeVisible();
+  await expect(page.locator('#guided-lga')).toBeVisible();
 });
 

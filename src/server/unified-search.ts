@@ -1,4 +1,5 @@
 import type { Client } from 'pg';
+import {inferEkitiLocality,normaliseEkitiText} from '../geo/reviewed-localities.ts';
 import {
   searchKnowledge, searchPlaces, type DirectoryFilters, type KnowledgeFilters,
 } from './public-data.ts';
@@ -31,17 +32,90 @@ export function parseUnifiedSearch(params: URLSearchParams): UnifiedSearchFilter
   return {query, limit};
 }
 
-export async function searchReviewedEkiti(db: Client, input: UnifiedSearchFilters) {
-  const directory: DirectoryFilters = {query: input.query, category: null, lga: null, limit: input.limit};
-  const knowledge: KnowledgeFilters = {query: input.query, limit: input.limit};
-  // The two original SQL functions read only approved sources, published places,
-  // approved knowledge and verified LGAs. Do not add a fallback to raw records.
-  const places = await searchPlaces(db, directory);
-  const articles = await searchKnowledge(db, knowledge);
+export interface PublicSearchPlan {
+  directory: DirectoryFilters;
+  knowledge: KnowledgeFilters;
+  localityHint: {
+    name: string;
+    lgaId: string;
+    lgaName: string;
+    source: string;
+    confidence: 'reviewed-place-name';
+  } | null;
+  scope: 'specific-place' | 'lga' | 'none' | 'ambiguous';
+}
+
+const intentWords = /^(find|search|show|me|for|where|is|are|some|any|near|around|in|at|within|of|the|a|an|please|looking|services?|businesses?)$/u;
+const hotelWords = /^(hotel|hotels|resort|resorts|motel|motels|guesthouse|guesthouses|accommodation|lodging)$/u;
+const healthWords = /^(hospital|hospitals|clinic|clinics|pharmacy|pharmacies|healthcare)$/u;
+const schoolWords = /^(school|schools|university|universities|college|colleges)$/u;
+const officeWords = /^(ministry|ministries|office|offices|mda|mdas)$/u;
+
+/**
+ * Typed queries retain a source-backed locality *hint*, not a distance or
+ * coordinate claim. The existing SQL reader still verifies every result.
+ */
+export function planPublicSearch(input:UnifiedSearchFilters):PublicSearchPlan {
+  const normalized=normaliseEkitiText(input.query);
+  const inference=inferEkitiLocality(input.query);
+  const place=inference.status==='candidate'?inference.place:null;
+  const tokens=normalized.split(' ').filter(Boolean);
+  const category:DirectoryFilters['category']=tokens.some(t=>hotelWords.test(t))?'Hotels'
+    :tokens.some(t=>healthWords.test(t))?'Health'
+    :tokens.some(t=>schoolWords.test(t))?'Schools'
+    :tokens.some(t=>officeWords.test(t))?'Offices':null;
+  let residual=' '+normalized+' ';
+  let matchedAlias:string|null=null;
+  if(place) {
+    // Only remove aliases actually present in the query. Longer names win.
+    const names=[...place.aliases].sort((a,b)=>b.length-a.length);
+    for(const alias of names) {
+      const name=normaliseEkitiText(alias);
+      const where=residual.indexOf(' '+name+' ');
+      if(where!==-1){
+        matchedAlias=alias;
+        residual=residual.slice(0,where)+' '+residual.slice(where+name.length+2);break;
+      }
+    }
+  }
+  const terms=residual.trim().split(/\s+/u).filter(t=>
+    t&&!intentWords.test(t) &&
+    !hotelWords.test(t)&&!healthWords.test(t)&&!schoolWords.test(t)&&!officeWords.test(t));
+  let directoryQuery:string|null=terms.join(' ').slice(0,100)||null;
+  // For coarse categories, locality name is the useful verified address
+  // text; a full natural sentence would not match the existing safe SQL API.
+  if(category && place && !directoryQuery) {
+    directoryQuery=matchedAlias||place.name;
+  }
+  // Generic place-only queries can use its address, not the full sentence.
+  if(!category && place && !directoryQuery)
+    directoryQuery=matchedAlias||place.name;
+  if(!directoryQuery && !category) directoryQuery=input.query;
   return {
-    query: input.query,
-    reviewedOnly: true as const,
-    places,
-    knowledge: articles,
+    directory:{
+      category,lga:place?.lgaId??null,query:directoryQuery,
+      limit:input.limit,
+    },
+    knowledge:{query:input.query,limit:input.limit},
+    localityHint:place?{
+      name:place.name,lgaId:place.lgaId,lgaName:place.lgaName,
+      source:place.source,confidence:'reviewed-place-name',
+    }:null,
+    scope:place?(place.kind==='lga'?'lga':'specific-place'):
+      inference.status==='ambiguous'?'ambiguous':'none',
+  };
+}
+
+export async function searchReviewedEkiti(db:Client,input:UnifiedSearchFilters) {
+  const plan=planPublicSearch(input);
+  // Existing source-reviewed SQL functions protect public rows. Never search
+  // private cases, raw listing queue, draft narratives or staff tables here.
+  const places=await searchPlaces(db,plan.directory);
+  const knowledge=await searchKnowledge(db,plan.knowledge);
+  return {
+    query:input.query,reviewedOnly:true as const,
+    places,knowledge,
+    localityHint:plan.localityHint,
+    locationScope:plan.scope,
   };
 }

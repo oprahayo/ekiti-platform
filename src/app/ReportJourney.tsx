@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router';
 import { lgas } from './fixtures.ts';
 import IncidentLocationPicker from './IncidentLocationPicker.tsx';
 import EmergencyContactNotice from './EmergencyContactNotice.tsx';
+import {inferEkitiLocality} from '../geo/reviewed-localities.ts';
 import { useApp } from './state.tsx';
 import {
   CHAT_SOUND_KEY, REPORT_CATEGORIES, REPORT_DRAFT_KEY, REPORT_STEPS,
@@ -79,7 +80,7 @@ export default function ReportJourney() {
   const [savedSuccessfully,setSavedSuccessfully] = React.useState(false);
   const [community, setCommunity] = React.useState('');
   const [lgaId, setLgaId] = React.useState('');
-  const [incidentPointSource,setIncidentPointSource] = React.useState<'manual'|'boundary_confirmed'>('manual');
+  const [incidentPointSource,setIncidentPointSource] = React.useState<'manual'|'boundary_confirmed'|'text_candidate'>('manual');
   const [incidentWardName,setIncidentWardName] = React.useState<string|null>(null);
   const [media, setMedia] = React.useState<File | null>(null);
   const [mediaUrl, setMediaUrl] = React.useState('');
@@ -300,7 +301,23 @@ export default function ReportJourney() {
   function nextDescription() {
     const text = description.trim();
     if (text.length < 20) { setValidation('Please add at least 20 characters so the issue is clear.'); return; }
-    respond(text, 'location');
+    // Local browser-only inference: never transmit a private narrative as a
+    // search query. A sourced place name suggests an LGA, not a verified GPS pin.
+    const inference = inferEkitiLocality(text);
+    if(inference.status === 'candidate' &&
+       lgas.some(area=>area.id===inference.place.lgaId)) {
+      setLgaId(inference.place.lgaId);
+      setCommunity(inference.place.kind==='lga'?'':inference.place.name);
+      setIncidentPointSource('text_candidate');
+      setIncidentWardName(null);
+      respond(text,'location','I found a possible location in your description. Please confirm it is where the incident occurred, or change it.');
+    } else {
+      setLgaId('');setCommunity('');
+      setIncidentPointSource('manual');setIncidentWardName(null);
+      respond(text,'location',inference.status==='ambiguous'
+        ? 'I found places in different local government areas. Please choose where the incident occurred.'
+        : 'I could not confidently identify the incident area from the description. Choose a town or LGA, or use the map.');
+    }
   }
   function nextLocation() {
     const selected = lgas.find(area => area.id === lgaId);
@@ -375,6 +392,10 @@ export default function ReportJourney() {
   const chosenArea = lgas.find(item => item.id === lgaId)?.name || 'Not selected';
   const safetySignal = reviewSignal(category,feedback?'unknown':immediateDanger);
   const restrictEvidence = restrictPreviewEvidence(safeguardConcerns);
+  const inferredIncidentLocation = incidentPointSource==='text_candidate'
+    ? inferEkitiLocality(description) : {status:'unresolved'} as const;
+  const inferredCandidate = inferredIncidentLocation.status==='candidate' &&
+    inferredIncidentLocation.place.lgaId===lgaId ? inferredIncidentLocation.place : null;
   const sameTabOverlap = !resumedDraft && possibleSameTabDraft(
     {purpose:feedback?'feedback':'report',category,lgaId,description:description.trim()},savedDraft);
   return <main className="page guided-report-page" id="main">
@@ -485,18 +506,28 @@ export default function ReportJourney() {
     </form>}
 
     {!typing && step === 'location' && <form className="guided-input-form" onSubmit={event=>{event.preventDefault();nextLocation();}}>
-      <label htmlFor="guided-lga">Local government area</label>
-      <select id="guided-lga" value={lgaId} required onChange={event=>{
-        setLgaId(event.target.value);setIncidentPointSource('manual');setIncidentWardName(null);
-        setValidation('');
-      }}>
-        <option value="">Choose one of the 16 LGAs</option>
-        {lgas.map(area=><option key={area.id} value={area.id}>{area.name}</option>)}
-      </select>
-      <label htmlFor="guided-community">Community, ward or landmark (optional)</label>
-      <input id="guided-community" value={community} maxLength={180}
-        onChange={event=>setCommunity(event.target.value)} placeholder="e.g. Ikere town centre" />
-      <p className="guided-hint">Choose where the incident happened, not where you live or where you browsed from. You can continue with the LGA alone. This private draft is not sent or published.</p>
+      {inferredCandidate && <div className="guided-place-suggestion" role="status">
+        <strong>Possible incident location: {inferredCandidate.name}</strong>
+        <p>Likely LGA: {inferredCandidate.lgaName}. This is a source-backed place-name suggestion, not a GPS verification.</p>
+        <a href={inferredCandidate.source} rel="noopener noreferrer" target="_blank">View location source</a>
+        <button type="button" onClick={()=>setIncidentPointSource('manual')}>
+          Change location
+        </button>
+      </div>}
+      {!inferredCandidate && <>
+        <label htmlFor="guided-lga">Where did the incident occur?</label>
+        <select id="guided-lga" value={lgaId} required onChange={event=>{
+          setLgaId(event.target.value);setIncidentPointSource('manual');setIncidentWardName(null);
+          setValidation('');
+        }}>
+          <option value="">Choose an LGA if your town is not recognized</option>
+          {lgas.map(area=><option key={area.id} value={area.id}>{area.name}</option>)}
+        </select>
+        <label htmlFor="guided-community">Town, community or landmark (optional)</label>
+        <input id="guided-community" value={community} maxLength={180}
+          onChange={event=>setCommunity(event.target.value)} placeholder="e.g. Ikere town centre" />
+      </>}
+      <p className="guided-hint">Confirm where the incident happened—not your current device position. The inferred area can be corrected. This private draft is not sent or published.</p>
       <IncidentLocationPicker language={language} disabled={restrictPreviewEvidence(safeguardConcerns)}
         onApply={(id,ward)=>{
           setLgaId(id);setIncidentPointSource('boundary_confirmed');setIncidentWardName(ward);
