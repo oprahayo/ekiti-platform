@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { Link } from 'react-router';
 import { useApp } from './state.tsx';
+import CivicActionIcon from './CivicActionIcon.tsx';
 
 /** The gateway stays separate from the task conversations. */
 const actions = [
@@ -11,24 +12,10 @@ const actions = [
   { to: '/listings/new', icon: 'listing', title: 'Post a listing', description: 'Suggest a business or service for review' },
 ] as const;
 
-type ActionIcon = typeof actions[number]['icon'];
-
-function ActionSymbol({ name }: { name: ActionIcon }) {
-  const shapes: Record<ActionIcon, React.ReactNode> = {
-    report: <><path d="M12 3 2.7 20h18.6L12 3Z"/><path d="M12 9v5m0 3v.2"/></>,
-    feedback: <><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 9 9 0 0 1-4.5-1.2L3 20l1.2-5A8.5 8.5 0 1 1 21 11.5Z"/><path d="M8 11.5h8m-8 3h5"/></>,
-    explore: <><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2.7 6-4.3 1 2.7-6 4.3-1Z"/></>,
-    listing: <><path d="M4 10.5h16V20H4v-9.5ZM3 10.5 5 4h14l2 6.5M9 20v-6h6v6"/></>,
-    ask: <><circle cx="12" cy="12" r="9"/><path d="M9.4 9a2.8 2.8 0 0 1 5.2 1.3c0 1.9-2.6 2.1-2.6 4M12 17.5h.01"/></>,
-  };
-  return <svg className="welcome-action-icon" viewBox="0 0 24 24" width="24" height="24"
-    fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"
-    aria-hidden="true">{shapes[name]}</svg>;
-}
-
 export default function WelcomeHome() {
   const { language, deviceLocation, requestDeviceLocation, dismissDeviceLocation } = useApp();
   return <main id="main" className="page welcome-gateway">
+    <div className="welcome-primary">
     <section className="welcome-heading" aria-labelledby="welcome-title">
       <h1 id="welcome-title">{language === 'yo' ? 'Káàbọ̀ sí Ekiti Civic' : 'Welcome to Ekiti Civic'}</h1>
       <p className="welcome-subtitle">{language === 'yo'
@@ -40,7 +27,7 @@ export default function WelcomeHome() {
       <h2 id="welcome-task-heading">{language === 'yo' ? 'Kí ni o fẹ́ ṣe lónìí?' : 'What would you like to do?'}</h2>
       <nav aria-label="Choose an activity" className="welcome-action-list welcome-dice-list">
         {actions.map(action => <Link key={action.to} to={action.to} className="welcome-action">
-          <ActionSymbol name={action.icon}/>
+          <CivicActionIcon name={action.icon}/>
           <span className="welcome-action-copy">
             <strong>{action.title}</strong>
             <span className="visually-hidden">{action.description}</span>
@@ -48,6 +35,7 @@ export default function WelcomeHome() {
         </Link>)}
       </nav>
     </section>
+    </div>
 
     {deviceLocation.status !== 'dismissed' && <section className="welcome-location" aria-label="Optional location setup">
       <div className="welcome-location-copy">
@@ -65,7 +53,6 @@ export default function WelcomeHome() {
       </div>
     </section>}
     <div className="welcome-footer">
-      <Link to="/track">Have a report reference? Check tracking</Link>
       <p>Real submissions, official receipts and public case publication are not enabled yet. Contact emergency services directly if anyone is in immediate danger.</p>
     </div>
   </main>;

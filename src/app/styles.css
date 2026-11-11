@@ -1275,3 +1275,107 @@ button { min-height: 44px; border-radius: var(--radius-input); font-size: 14px; 
 @media(max-width:350px){
   .directory-page .directory-category-tile>span{font-size:9.7px}
 }
+
+/* Sprint 02 visual polish: place the primary welcome conversation gateway
+   in the usable central viewport, not immediately below the sticky header.
+   Location consent and honest service disclosure remain below. */
+.welcome-gateway{
+  display:flex;
+  flex-direction:column;
+  padding-top:0;
+  padding-bottom:calc(var(--nav-height) + env(safe-area-inset-bottom) + 28px);
+}
+.welcome-primary{
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  justify-content:center;
+  min-height:clamp(410px,calc(100svh - 215px),710px);
+  padding:35px 0 28px;
+}
+.welcome-heading h1{font-size:clamp(27px,5.7vw,37px);letter-spacing:-.042em}
+.welcome-heading>.welcome-subtitle{margin-top:7px;font-size:14px}
+.welcome-activities{margin-top:clamp(35px,7vw,52px)}
+.welcome-dice-list{max-width:408px;gap:11px}
+.welcome-dice-list>.welcome-action{
+  position:relative;
+  min-height:115px;
+  padding:10px 4px 12px;
+  gap:6px;
+  border-radius:19px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  box-shadow:0 7px 19px color-mix(in srgb,var(--text-primary) 6%,transparent);
+}
+.welcome-dice-list>.welcome-action:hover{
+  box-shadow:0 8px 21px color-mix(in srgb,var(--text-primary) 12%,transparent);
+}
+.welcome-dice-list .welcome-action-icon{
+  display:block;
+  width:54px;
+  height:54px;
+  flex:0 0 54px;
+  color:unset;
+  filter:drop-shadow(0 4px 5px rgb(20 35 52 / 12%));
+}
+.welcome-dice-list .welcome-action strong{font-size:12px}
+.welcome-location{margin-top:6px}
+.welcome-footer{margin-top:17px}
+@media(max-width:350px){
+  .welcome-primary{min-height:clamp(355px,calc(100svh - 190px),600px);padding:27px 0 21px}
+  .welcome-dice-list{gap:7px}
+  .welcome-dice-list>.welcome-action{min-height:100px;padding:8px 2px;gap:5px}
+  .welcome-dice-list .welcome-action-icon{width:47px;height:47px;flex-basis:47px}
+}
+@media(max-height:620px){
+  .welcome-primary{min-height:355px}
+}
+@media(prefers-reduced-motion:reduce){
+  .welcome-dice-list>.welcome-action{transition:none}
+}
+
+/* Sprint 02: compact, keyboard-accessible conversation editing and
+   user-initiated session-draft recovery. No automatic PII persistence. */
+.guided-chat-tools{justify-content:flex-end;gap:9px;min-height:38px}
+.guided-back{
+  margin-right:auto;
+  min-height:38px;
+  border:1px solid var(--border);
+  border-radius:999px;
+  background:var(--surface);
+  color:var(--text-primary);
+  font-size:12px;
+  font-weight:600;
+  padding:7px 13px;
+}
+.guided-back:focus-visible,.guided-sound-toggle:focus-visible,
+.guided-resume button:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.guided-resume{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+  background:var(--surface-muted);
+  border:1px solid var(--border);
+  border-radius:13px;
+  padding:12px 13px;
+  margin:4px 0 15px;
+}
+.guided-resume strong{font-size:13px;font-weight:700}
+.guided-resume p{font-size:11px;color:var(--text-secondary);line-height:1.5;margin:4px 0 0}
+.guided-resume-actions{display:flex;gap:7px;flex-wrap:wrap}
+.guided-resume-actions button{
+  min-height:44px;
+  padding:7px 11px;
+  border:1px solid var(--border);
+  border-radius:9px;
+  background:var(--surface);
+  color:var(--text-primary);
+  font-size:12px;
+}
+.guided-resume-actions button:first-child{
+  background:var(--positive);
+  color:var(--surface);
+  border-color:var(--positive);
+}
