@@ -23,3 +23,23 @@ test('directory map remains available at 320px with privacy-safe empty state',as
   await expect(page.getByRole('heading',{name:'Explore Ekiti on the map'})).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(321);
 });
+
+
+test('incident map is optional and never requests private boundary resolution until explicit confirmation',async({page})=>{
+  let resolveCalls=0;
+  page.on('request',request=>{
+    if(request.url().includes('/api/resolve'))resolveCalls++;
+  });
+  await page.goto('/report');
+  await page.getByRole('button',{name:'Write text'}).click();
+  await page.getByRole('button',{name:'Roads',exact:true}).click();
+  await page.locator('#guided-description').fill('A dangerous roadside ditch needs attention near the community market.');
+  await page.getByRole('button',{name:'Continue',exact:true}).click();
+  await page.getByRole('button',{name:'Choose on Ekiti map'}).click();
+  await expect(page.locator('#map')).toBeVisible();
+  await expect(page.getByText(/Your selected point stays in memory/)).toBeVisible();
+  expect(resolveCalls).toBe(0);
+  await page.getByRole('button',{name:'Choose on Ekiti map'}).click();
+  await expect(page.locator('#map')).toHaveCount(0);
+  expect(resolveCalls).toBe(0);
+});
