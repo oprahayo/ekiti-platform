@@ -47,8 +47,7 @@ export function createEkitiMap({container,onPoint,onError,pins=[]}:EkitiMapOptio
         }},
         {id:'names',type:'symbol',source:'lgas',layout:{
           'text-field':['get','lganame'],'text-size':11,
-          'text-font':['Open Sans Regular','Arial Unicode MS Regular'],
-          'text-allow-overlap':false,
+           'text-allow-overlap':false,
         },paint:{'text-color':'#264c41','text-halo-color':'#f4f7f3',
           'text-halo-width':1.2}},
       ],
