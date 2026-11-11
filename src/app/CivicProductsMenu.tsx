@@ -45,9 +45,9 @@ export function CivicProductsMenu(){
       <div className="civic-products-language" role="group" aria-label="Menu language">
         <strong>Language</strong>
         <button type="button" aria-pressed={language==='en'}
-          onClick={()=>setLanguage('en')}>English</button>
+          onClick={()=>{setLanguage('en');if(ref.current)ref.current.open=false;}}>English</button>
         <button type="button" aria-pressed={language==='yo'}
-          onClick={()=>setLanguage('yo')}>Yorùbá</button>
+          onClick={()=>{setLanguage('yo');if(ref.current)ref.current.open=false;}}>Yorùbá</button>
       </div>
       <p className="civic-products-disclaimer">
         Operated independently by inEkiti Official. Government delivery and
