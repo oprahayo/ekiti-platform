@@ -173,7 +173,7 @@ test('Tailored product symbols keep distinct artwork and report progression visi
     elements.map(svg=>svg.innerHTML));
   expect(paths).toHaveLength(8);
   expect(new Set(paths).size).toBe(8);
-  await page.getByRole('link',{name:/Civic report/}).click();
+  await page.locator('.civic-products-panel .civic-product-report').click();
   await expect(page.locator('.guided-stage-meter')).toBeVisible();
   await page.getByRole('button',{name:/Write text/}).click();
   await expect(page.getByText(/Step 2 · Topic/)).toBeVisible();
