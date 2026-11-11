@@ -98,6 +98,32 @@ export default function ReportPrivacy() {
         retention and deletion controls.</p>
     </section>
     <section className="preview-privacy-section">
+      <h2>One-time email/SMS case links</h2>
+      <p>A separate, currently disabled case-link feature would allow an already
+        email/phone-verified account holder to request a one-time private
+        link for a submitted report only after supplying its original secret
+        receipt and consenting to delivery to their existing verified contact.
+        The app cannot verify an arbitrary contact or infer that knowing a
+        phone number gives ownership of another person's report.</p>
+      <p>If separately approved, delivery attempts would use a short-lived
+        256-bit random ticket, retained in the database only as a digest.
+        The ticket is transmitted to the configured message provider and appears
+        in the link's URL fragment; fragments can still appear in browser
+        history, screenshots, copied links and message-provider logs until
+        cleared. The app immediately removes it from the address on opening
+        the link, then requests verified account sign-in and a deliberate
+        redemption click before any private case association. Tickets expire
+        after 10 minutes and are consumed once.</p>
+      <p>The delivery queue distinguishes queued, in-progress and
+        provider-accepted messages. <strong>Provider acceptance does not prove
+        the message reached the recipient.</strong> A retry generates a
+        different ticket, so an older message's link may stop working.
+        No emergency dispatch, government office delivery, or public case
+        acknowledgement follows from sending or opening a link. Currently
+        <strong> no actual email or SMS provider is connected</strong>,
+        and no case message is being delivered.</p>
+    </section>
+    <section className="preview-privacy-section">
       <h2>Delete saved local drafts</h2>
       <p>Delete saved guided and legacy text drafts from this browser. This does not delete downloaded copies,
         content you have shared elsewhere, data held by another device or active text still on a different open tab.
