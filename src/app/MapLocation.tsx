@@ -22,8 +22,8 @@ export default function MapLocation({onPoint,pins=NO_PINS,mode='incident'}:Props
       if(cancelled)return;
       controller=createEkitiMap({
         container:node,
-        onPoint:onPointRef.current
-          ?(lat,lon)=>onPointRef.current?.(lat,lon):undefined,
+        ...(onPointRef.current
+          ?{onPoint:(lat:number,lon:number)=>onPointRef.current?.(lat,lon)}:{}),
         onError:()=>{if(!cancelled)setError('The map could not render. Use the LGA selector instead.');},
         pins,
       });
