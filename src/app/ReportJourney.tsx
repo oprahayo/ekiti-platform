@@ -376,7 +376,7 @@ export default function ReportJourney() {
     {!typing && step === 'description' && <form className="guided-input-form" onSubmit={event=>{event.preventDefault();nextDescription();}}>
       <fieldset className="guided-triage-question">
         <legend>{taxonomyQuestion(category,language)}</legend>
-        <div className="guided-triage-options" role="group" aria-label="Incident detail">
+        <div className="guided-triage-options">
           {INCIDENT_TAXONOMY[category].choices.map(option=>
             <button key={option.id} type="button" aria-pressed={subcategory===option.id}
               onClick={()=>setSubcategory(subcategory===option.id?'':option.id)}>
@@ -388,7 +388,7 @@ export default function ReportJourney() {
       </fieldset>
       {!feedback && <fieldset className="guided-triage-question">
         <legend>{language==='yo' ? 'Ṣé ẹnikẹ́ni wà nínú ewu báyìí?' : 'Is anyone in immediate danger right now?'}</legend>
-        <div className="guided-triage-options" role="group" aria-label="Immediate danger">
+        <div className="guided-triage-options">
           {([
             ['yes',language==='yo'?'Bẹ́ẹ̀ni':'Yes'],
             ['no',language==='yo'?'Rárá':'No'],
