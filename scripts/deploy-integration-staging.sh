@@ -39,9 +39,11 @@ npm run test:all
 
 echo 'Checking citizen staging Worker and frontend without deployment'
 npm run staging:check
+node scripts/stamp-staging.mjs citizen
 
 echo 'Building and checking separate fictional-only admin demo'
 npm run build:admin
+node scripts/stamp-staging.mjs admin-demo
 npx wrangler deploy --config wrangler.admin-demo.staging.jsonc --dry-run --outdir .wrangler/admin-staging-check
 
 echo 'Preparing public preview Worker with private features explicitly disabled'
@@ -50,10 +52,10 @@ node scripts/prepare-staging.mjs
 # Deployment is limited to the two known staging Worker names.
 # No production routes, DB migrations, feature-gate approvals or case writes.
 npx wrangler deploy --config wrangler.staging.local.json
-node scripts/smoke-staging.mjs "${CITIZEN_STAGING_URL:-https://ekiti-platform-staging.inekitikete.workers.dev}"
+node scripts/smoke-staging.mjs "${CITIZEN_STAGING_URL:-https://ekiti-platform-staging.inekitikete.workers.dev}" "$(git rev-parse HEAD)"
 
 npx wrangler deploy --config wrangler.admin-demo.staging.jsonc
-node scripts/smoke-admin-demo.mjs "${ADMIN_DEMO_STAGING_URL:-https://ekiti-admin-demo-staging.inekitikete.workers.dev}"
+node scripts/smoke-admin-demo.mjs "${ADMIN_DEMO_STAGING_URL:-https://ekiti-admin-demo-staging.inekitikete.workers.dev}" "$(git rev-parse HEAD)"
 
 echo 'Staging preview deployed and smoke-tested (guest citizen app + fictional admin demo).'
 echo 'Private case submission, accounts, messages, proximity and staff operations remain disabled.'
