@@ -43,6 +43,7 @@ export function parseExternalQuery(params:URLSearchParams):string {
  */
 const ekitiEvidence=/\bekiti\b|\bado[\s-]+ekiti\b|\bikogosi\b|\bikere[\s-]+ekiti\b|\bikole[\s-]+ekiti\b|\bilawe[\s-]+ekiti\b|\bile[\s-]+ife[\s-]+ekiti\b|\befon[\s-]+alaaye\b|\bijero[\s-]+ekiti\b|\biludun[\s-]+ekiti\b|\beda[\s-]+oniyo\b/i;
 const ekitiGovHost=/^(?:www\.)?ekitistate\.gov\.ng$/i;
+export function hasEkitiContext(value:string):boolean {return ekitiEvidence.test(value);}
 
 export function ekitiResultRelevance(result:{
   title:string;description:string;url:string;domain:string
