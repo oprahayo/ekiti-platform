@@ -15,7 +15,7 @@ jobs:
           - 5432:5432
         options: >-
           --health-cmd pg_isready --health-interval 5s
-          --health-timeout 5s --retries 10
+          --health-timeout 5s --health-retries 10
     env:
       # Separate GitHub Actions job, separate disposable PostgreSQL instance.
       # Citizen and admin SQL proposals must never share a staging database.
