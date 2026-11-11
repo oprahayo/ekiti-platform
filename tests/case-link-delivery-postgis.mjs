@@ -180,6 +180,32 @@ test('Sprint10 default-off verified delivery SQL, exact scope, single use, expir
       assert.equal(await redeem(B,TOK3),false);
       assert.equal((await db.query('SELECT count(*)::int AS n FROM civic_private.citizen_case_links WHERE citizen_id=$1',[B])).rows[0].n,0);
     });
+    await t.test('crashed third lease is failed and abandoned queue rows are purgeable',async()=>{
+      const reportC=await insertReport('6'.repeat(64),'7'.repeat(64));
+      assert.equal(await request(A,reportC.public_reference,'6'.repeat(64),'email'),true);
+      for(const [n,token] of ['d'.repeat(64),'e'.repeat(64),'f'.repeat(64)].entries()){
+        const [leased]=await lease(token);
+        assert.equal(leased.attempt,n+1);
+        if(n<2){
+          assert.equal(await settle(leased.delivery_id,n+1,false),true);
+          await db.query("UPDATE civic_private.case_link_outbox SET next_attempt_at=now()-interval '1 second' WHERE id=$1",
+            [leased.delivery_id]);
+        }else{
+          await db.query("UPDATE civic_private.case_link_outbox SET lease_until=now()-interval '1 second' WHERE id=$1",
+            [leased.delivery_id]);
+          assert.deepEqual(await lease('0'.repeat(64)),[],'no fourth attempt');
+          const purged=await db.query('SELECT civic_private.case_link_delivery_purge() AS n');
+          assert.equal(purged.rows[0].n,0,'exhausted attempts become failed before age-out');
+          const status=(await db.query('SELECT status,token_digest FROM civic_private.case_link_outbox WHERE id=$1',
+            [leased.delivery_id])).rows[0];
+          assert.equal(status.status,'failed');assert.equal(status.token_digest,null);
+          await db.query("UPDATE civic_private.case_link_outbox SET updated_at=now()-interval '31 days' WHERE id=$1",
+            [leased.delivery_id]);
+          assert.equal((await db.query('SELECT civic_private.case_link_delivery_purge() AS n')).rows[0].n,1);
+        }
+      }
+      await db.query('DELETE FROM civic_private.reports WHERE id=$1',[reportC.id]);
+    });
     await t.test('report deletion cascades to pending and redeemed delivery rows',async()=>{
       await db.query('DELETE FROM civic_private.reports WHERE id IN($1,$2)',[reportA.id,reportB.id]);
       assert.equal((await db.query('SELECT count(*)::int AS n FROM civic_private.case_link_outbox')).rows[0].n,0);
