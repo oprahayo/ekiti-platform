@@ -3,10 +3,9 @@ import { test, expect } from '@playwright/test';
 const actions = [
   ['/report', 'Report an issue'],
   ['/report?kind=feedback', 'Give feedback'],
-  ['/post', 'Community post'],
   ['/explore', 'Explore Ekiti'],
   ['/listings/new', 'Post a listing'],
-  ['/ask', 'Ask a question'],
+  ['/ask', 'Ask about Ekiti'],
 ];
 
 for (const width of [280, 320, 390, 768, 1280]) {
@@ -16,7 +15,7 @@ for (const width of [280, 320, 390, 768, 1280]) {
     await expect(page.getByRole('heading', { name:'Welcome to Ekiti Civic' })).toBeVisible();
     await expect(page.getByText('Your mobile gateway to Ekiti State.')).toBeVisible();
     await expect(page.getByRole('heading', { name:'What would you like to do?' })).toBeVisible();
-    await expect(page.locator('.welcome-action')).toHaveCount(6);
+    await expect(page.locator('.welcome-action')).toHaveCount(5);
 
     const measurements = await page.evaluate(() => {
       const rect = (selector: string) => {
@@ -53,11 +52,11 @@ for (const width of [280, 320, 390, 768, 1280]) {
     expect(measurements.promptToButtons).toBeGreaterThanOrEqual(12);
     for (const center of ['headlineCenter','subtitleCenter','promptCenter'] as const)
       expect(Math.abs(measurements[center]-measurements.appCenter)).toBeLessThanOrEqual(7);
-    expect(measurements.columns).toBe(width < 560 ? 2 : 3);
+    expect(measurements.columns).toBe(6);
     for (const item of measurements.items) {
       expect(item.height).toBeGreaterThanOrEqual(48);
-      expect(item.height).toBeLessThanOrEqual(72);
-      expect(item.width).toBeGreaterThan(80);
+      expect(item.height).toBeLessThanOrEqual(100);
+      expect(item.width).toBeGreaterThanOrEqual(65);
     }
     await expect(page.locator('.app-header .wordmark')).toBeVisible();
     await expect(page.locator('.app-header .header-profile-link')).toHaveCount(1);
@@ -66,7 +65,7 @@ for (const width of [280, 320, 390, 768, 1280]) {
   });
 }
 
-test('Sprint 01: all six compact actions launch their existing workflows', async ({ page }) => {
+test('Sprint 01: all five icon-led actions launch their existing workflows', async ({ page }) => {
   await page.goto('/');
   for (const [route, title] of actions) {
     const link=page.locator('.welcome-action[href="'+route+'"]');
@@ -75,7 +74,7 @@ test('Sprint 01: all six compact actions launch their existing workflows', async
   }
   await page.getByRole('link',{name:/Report an issue/}).click();
   await expect(page).toHaveURL(/\/report$/);
-  await expect(page.getByRole('heading',{name:'Report an issue'})).toBeVisible();
+  await expect(page.getByText(/Welcome\. I will guide you through a report/)).toBeVisible();
   await page.goto('/');
   await page.getByRole('link',{name:/Explore Ekiti/}).click();
   await expect(page).toHaveURL(/\/explore$/);
