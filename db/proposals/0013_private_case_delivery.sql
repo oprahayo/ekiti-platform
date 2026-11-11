@@ -263,13 +263,26 @@ RETURNS integer LANGUAGE plpgsql VOLATILE SECURITY DEFINER
 SET search_path=pg_catalog,pg_temp AS $$
 DECLARE _count integer;
 BEGIN
+  -- A crash after the final lease may leave a row stuck at "leased" with
+  -- no further eligible attempt; never treat that as a sent message.
+  UPDATE civic_private.case_link_outbox q
+    SET status='failed',token_digest=NULL,token_expires_at=NULL,
+        lease_until=NULL,updated_at=now()
+    WHERE q.status='leased' AND q.attempts>=3
+      AND q.lease_until<now();
+
+  -- Retention bounds cover untouched queues, changed recipients and
+  -- crashed workers as well as finished records. This function is not
+  -- automatically scheduled or granted to the sender.
   DELETE FROM civic_private.case_link_outbox q
     WHERE (q.status IN('redeemed','failed') OR
       (q.status='provider_accepted' AND q.token_expires_at<now()))
-      AND q.updated_at<now()-interval '30 days';
+      AND q.updated_at<now()-interval '30 days'
+      OR (q.status IN('queued','leased')
+        AND q.requested_at<now()-interval '30 days');
   GET DIAGNOSTICS _count=ROW_COUNT;
   RETURN _count;
-END $$;
+END $;
 ALTER FUNCTION civic_private.case_link_delivery_purge()
   OWNER TO ekiti_case_link_owner;
 
