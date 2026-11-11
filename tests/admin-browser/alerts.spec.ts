@@ -55,3 +55,23 @@ test('280px admin keeps four main navigation choices and a usable alert panel',a
   const size=await page.evaluate(()=>document.documentElement.scrollWidth);
   expect(size).toBeLessThanOrEqual(280);
 });
+
+test('sample case queue filters by chosen LGA without changing any private server data',async({page})=>{
+  await page.goto('/');
+  const filter=page.getByLabel('Filter cases by LGA');
+  await expect(filter).toBeVisible();
+  await filter.selectOption('Ado Ekiti');
+  await expect(page.locator('.case-list-item')).toHaveCount(1);
+  await expect(page.locator('.case-list-item').first()).toContainText('Ado Ekiti');
+  await filter.selectOption('');
+  await expect(page.locator('.case-list-item')).toHaveCount(6);
+});
+test('overview opens map only after explicit click, without sample incident markers',async({page})=>{
+  await page.goto('/?view=analytics');
+  await expect(page.locator('#map')).toHaveCount(0);
+  await page.getByRole('button',{name:'View Ekiti boundary map'}).click();
+  await expect(page.locator('#map')).toBeVisible();
+  await expect(page.getByText(/Public incident pins are intentionally absent/)).toBeVisible();
+  await page.getByRole('button',{name:'Hide Ekiti map'}).click();
+  await expect(page.locator('#map')).toHaveCount(0);
+});
