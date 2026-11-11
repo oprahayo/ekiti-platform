@@ -28,6 +28,7 @@ export interface EvidenceEnvironment extends IntakeReleaseConfig {
   EVIDENCE_POLICY_VERSION?:string;
   EVIDENCE_KEY_HEX?:string;
   EVIDENCE_R2?:PrivateObjectBucket;
+  EVIDENCE_HYPERDRIVE?:{connectionString:string};
   EVIDENCE_LIMIT?:RateLimitBinding;
 }
 
@@ -155,7 +156,8 @@ export async function handlePrivateEvidence(
   if(request.method!==requiredMethod)return json({error:'Unsupported method'},405);
 
   const readiness=ensureEvidenceRelease(env);
-  if(!readiness.ready || !env.EVIDENCE_R2 || !env.EVIDENCE_LIMIT ||
+  if(!readiness.ready || !env.EVIDENCE_R2 || !env.EVIDENCE_HYPERDRIVE?.connectionString?.trim() ||
+    !env.EVIDENCE_LIMIT ||
     env.EVIDENCE_LIMIT===env.REPORTING_LIMIT || env.EVIDENCE_LIMIT===env.REPORTING_TRACK_LIMIT ||
     !env.EVIDENCE_RELEASE_APPROVAL_ID?.trim() ||
     env.EVIDENCE_RETENTION_JOB_VERIFIED!=='true' ||
@@ -206,7 +208,7 @@ export async function handlePrivateEvidence(
         throw new EvidenceProtocolError('Invalid completion request',400);
       expectedChunks=(value as {expectedChunks:number}).expectedChunks;
     }
-    db=await openDb(readiness.privateConnection);
+    db=await openDb(env.EVIDENCE_HYPERDRIVE!.connectionString);
     const digest=await secretDigestHex(create?create.secret:auth!);
     if(create){
       const id=await db.start(create.reference,digest,create.kind,create.mimeType,
