@@ -9,6 +9,7 @@ import { ModerationWorkspace, RoutingWorkspace } from './OperationsModules.tsx';
 import { OpsAlerts, deriveDemoAlerts } from './OpsAlerts.tsx';
 const EkitiOpsMap=React.lazy(()=>import('./EkitiOpsMap.tsx'));
 import { adminViewUrl, isCaseView, readAdminView, type AdminView } from './navigation.ts';
+import './admin-refinement.css';
 
 type View = AdminView;
 
