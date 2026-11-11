@@ -35,6 +35,7 @@ test('Sprint10 default-off verified delivery SQL, exact scope, single use, expir
         has_table_privilege('anon','civic_private.case_link_outbox','SELECT') AS anon_queue,
         has_table_privilege('ekiti_location_reader','civic_private.case_link_outbox','SELECT') AS public_queue,
         has_table_privilege('ekiti_case_delivery_api','civic_private.case_link_outbox','SELECT') AS sender_queue,
+        has_table_privilege('ekiti_case_link_owner','civic_private.case_link_release','UPDATE') AS owner_activate,
         has_function_privilege('authenticated',
           'public.civic_request_case_link(uuid,text,text)','EXECUTE') AS user_request,
         has_function_privilege('authenticated',
@@ -44,7 +45,7 @@ test('Sprint10 default-off verified delivery SQL, exact scope, single use, expir
         has_function_privilege('ekiti_case_delivery_api',
           'civic_private.case_link_delivery_purge()','EXECUTE') AS sender_purge`);
       assert.deepEqual(x.rows[0],{auth_queue:false,anon_queue:false,public_queue:false,
-        sender_queue:false,user_request:true,auth_lease:false,sender_lease:true,sender_purge:false});
+        sender_queue:false,owner_activate:false,user_request:true,auth_lease:false,sender_lease:true,sender_purge:false});
     });
     await db.query(`INSERT INTO auth.users
       (id,email,phone,email_confirmed_at,phone_confirmed_at) VALUES
