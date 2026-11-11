@@ -18,7 +18,7 @@ Access/refresh tokens stay tab-scoped in the pre-existing sessionStorage impleme
 A new opt-in proposal `db/proposals/0012_citizen_report_links.sql` creates a `civic_private.citizen_case_links` index keyed by report ID, with foreign keys to both the private report and `auth.users`. Its row is cascaded away when the report expires and is **actually deleted**, or when the Supabase account is deleted. It does **not** alter existing reports, save a second copy of the secret, create new receipts or change the report's retention. Account history remains empty unless deliberately linked.
 
 Each link requires **both**:
-1. An authenticated, server-verified Supabase JWT: SQL uses `auth.uid()` for the signed-in account; it never accepts a caller-supplied account ID.
+1. An authenticated, server-verified Supabase JWT: SQL uses `auth.uid()` for the signed-in account and checks Supabase `auth.users` for a confirmed email or phone; it never accepts a caller-supplied account ID. Anonymous/unconfirmed accounts are denied even if they have an authenticated role.
 2. The matching committed report UUID **and original 256-bit receipt secret**, sent to a narrow HTTPS PostgREST RPC after explicit UI consent. The DB validates its SHA-256 digest against the existing private report's digest; no secret is persisted, logged or placed in a URL.
 
 A case already linked to another account is **not transferred** even with a correct secret; an approved human dispute/recovery process would be required. Someone merely knowing a resident's email, phone, social handle, location, device or report number cannot claim the report. The current guest draft has no server-issued receipt and cannot be claimed.
