@@ -50,7 +50,12 @@ export async function playPreviewChime():Promise<boolean>{
 export function OpsAlerts({cases,onOpenCase}:{
  cases:readonly AdminCase[];onOpenCase:(id:string)=>void;
 }){
- const alerts=React.useMemo(()=>deriveDemoAlerts(cases),[cases]);
+ const allAlerts=React.useMemo(()=>deriveDemoAlerts(cases),[cases]);
+ const [priorityOnly,setPriorityOnly]=React.useState(false);
+ const [lga,setLga]=React.useState('');
+ const lgas=React.useMemo(()=>[...new Set(allAlerts.map(x=>x.area))].sort(),[allAlerts]);
+ const alerts=allAlerts.filter(alert=>
+   (!priorityOnly||alert.severity==='priority')&&(!lga||alert.area===lga));
  const [sounds,setSounds]=React.useState(false);
  const [error,setError]=React.useState('');
  const [readIds,setReadIds]=React.useState<readonly string[]>([]);
@@ -70,6 +75,20 @@ export function OpsAlerts({cases,onOpenCase}:{
        <input id="ops-sound" type="checkbox" checked={sounds}
          onChange={e=>setSounds(e.target.checked)}/>
        <span>Sound {sounds?'on':'off'}</span>
+     </label>
+   </div>
+   <div className="ops-alert-preferences">
+     <label htmlFor="ops-alert-lga">Area
+       <select id="ops-alert-lga" value={lga}
+         onChange={e=>setLga(e.target.value)}>
+         <option value="">All areas</option>
+         {lgas.map(area=><option key={area} value={area}>{area}</option>)}
+       </select>
+     </label>
+     <label className="ops-priority-filter" htmlFor="ops-priority-only">
+       <input type="checkbox" id="ops-priority-only" checked={priorityOnly}
+         onChange={e=>setPriorityOnly(e.target.checked)}/>
+       Priority only
      </label>
    </div>
    <div className="ops-alert-controls">
@@ -92,6 +111,7 @@ export function OpsAlerts({cases,onOpenCase}:{
        }}>View case</button>
      </li>)}</ol>}
    <p className="ops-alert-disclosure">Alerts derive only from local illustrative cases.
+     Area and priority filters apply only to the on-screen sample inbox.
      No push subscription, background notifications, SMS, dispatch or alarm is enabled.
      A chime plays only after you enable sound and press Test chime.</p>
  </section>;
