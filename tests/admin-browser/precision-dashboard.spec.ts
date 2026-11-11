@@ -28,7 +28,7 @@ test('dashboard search, queue and case review are functional on sample records',
   await page.locator('#precision-status').selectOption('escalated');
   await expect(page.locator('.precision-table-section tbody tr')).toHaveCount(1);
   await page.locator('#precision-status').selectOption('all');
-  await page.locator('#precision-area').selectOption('Ado-Ekiti');
+  await page.locator('#precision-area').selectOption('Ado Ekiti');
   await expect(page.locator('.precision-table-section tbody tr')).toHaveCount(1);
   await page.locator('.precision-open-case').click();
   await expect(page.locator('.detail-panel')).toContainText('DEMO-1001');
