@@ -120,14 +120,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       } else if (result.stateBoundaryStatus === 'inside' &&
         result.consistency !== 'conflict' &&
         result.lga?.status === 'matched' && result.lga.match &&
+        typeof result.lga.match.id === 'string' &&
         lgas.some(area => area.id === result.lga!.match!.id)) {
         const match = result.lga.match;
+        const knownName = lgas.find(area => area.id === match.id)!.name;
+        const ward = result.ward?.match;
         const wardName = result.consistency === 'consistent' &&
-          result.ward?.status === 'matched' ? result.ward.match?.name : undefined;
+          result.ward?.status === 'matched' && ward?.parentId === match.id &&
+          !ward.onBoundary && !result.stateOnBoundary && !match.onBoundary ?
+            ward.name : undefined;
         setExploreLga(match.id);
         setDeviceLocation({
-          status: 'matched', lgaName: match.name, wardName,
-          message: 'Showing verified Ekiti LGA results for ' + match.name +
+          status: 'matched', lgaName: knownName, wardName,
+          message: 'Showing verified Ekiti LGA results for ' + knownName +
             (wardName ? ' · ' + wardName : '') +
             '. This is area filtering, not a distance-based nearby ranking.',
         });
