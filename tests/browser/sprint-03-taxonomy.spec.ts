@@ -76,7 +76,8 @@ test('bilingual follow-up fits narrow phone without introducing another dashboar
   await page.setViewportSize({width:280,height:720});
   await page.emulateMedia({reducedMotion:'reduce'});
   await page.goto('/report');
-  await page.getByRole('button',{name:'YOR'}).click();
+  await page.getByLabel('Open Ekiti Civic menu').click();
+  await page.locator('.civic-products-language').getByRole('button',{name:'Yorùbá'}).click();
   await page.getByRole('button',{name:'Write text'}).click();
   await page.getByRole('button',{name:'Drainage'}).click();
   await expect(page.getByText('Kí ló ń ṣẹlẹ̀ sí ọ̀nà ìṣàn omi?')).toBeVisible();
