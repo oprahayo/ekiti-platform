@@ -1,5 +1,5 @@
 import pg from 'pg';
-import {parseExternalQuery,fetchEkitiWebResults,ExternalQueryError} from './external-web-search.ts';
+import {parseExternalQuery,fetchEkitiWebResults,fetchEkitiWikipediaResults} from './external-web-search.ts';
 import { parseUnifiedSearch, searchReviewedEkiti, type UnifiedSearchFilters } from './unified-search.ts';
 import { handlePrivateReporting, type PrivateReportingEnv } from './private-report-routes.ts';
 import {handlePrivateEvidence,type EvidenceEnvironment} from './private-evidence-routes.ts';
@@ -191,11 +191,14 @@ export default {
       if(nearby&&!nearbyFilters)return json({error:'Invalid nearby request'},400);
       if(externalWeb){
         if(!externalQuery)return json({error:'Invalid public web query'},400);
-        if(env.EXTERNAL_WEB_SEARCH_ENABLED!=='true'||!env.BRAVE_SEARCH_API_KEY)
+        if(env.EXTERNAL_WEB_SEARCH_ENABLED!=='true')
           return json({available:false,reason:'External discovery is not configured'},503,
             {'Referrer-Policy':'no-referrer'});
         try{
-          return json(await fetchEkitiWebResults(externalQuery,env.BRAVE_SEARCH_API_KEY),200,
+          const results=env.BRAVE_SEARCH_API_KEY
+            ? await fetchEkitiWebResults(externalQuery,env.BRAVE_SEARCH_API_KEY)
+            : await fetchEkitiWikipediaResults(externalQuery);
+          return json(results,200,
             {'Referrer-Policy':'no-referrer'});
         }catch{return json({available:false,reason:'Web discovery temporarily unavailable'},503,
           {'Referrer-Policy':'no-referrer'});}
