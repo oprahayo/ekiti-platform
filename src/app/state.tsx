@@ -5,6 +5,18 @@ import { lgas, type Category } from './fixtures.ts';
 import type { DirectoryIconName } from './DirectoryCategories.tsx';
 import {acquireDevicePosition,resolveVerifiedPoint,PositionError} from './verified-location.ts';
 
+export type AppearanceMode = 'system' | 'light' | 'dark';
+export const APPEARANCE_KEY='ekiti-ui-appearance-v1';
+export function readAppearance():AppearanceMode {
+  try {
+    const current=localStorage.getItem(APPEARANCE_KEY);
+    if(current==='system'||current==='light'||current==='dark')return current;
+    // Preserve an explicit legacy dark preference, without treating an
+    // old automatically-stored light default as a manual override.
+    if(localStorage.getItem('ekiti-ui-theme-v2')==='dark')return 'dark';
+  }catch{/* Private mode and blocked storage: use system settings. */}
+  return 'system';
+}
 export type EkitiLocationStatus =
   | 'prompt' | 'loading' | 'matched' | 'outside' | 'unavailable' | 'denied' | 'unmapped' | 'dismissed';
 
@@ -22,6 +34,8 @@ interface AppState {
   language: Language;
   setLanguage: (language: Language) => void;
   dark: boolean;
+  appearance: AppearanceMode;
+  setAppearance: (mode: AppearanceMode) => void;
   toggleTheme: () => void;
   pendingReportText: string;
   setPendingReportText: (value: string) => void;
@@ -56,10 +70,26 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const clearSavedPlaces = () => {
     if (writeSavedPlaces([])) setSavedPlaceIds([]);
   };
-  const [dark, setDark] = React.useState(() => {
-    try { return localStorage.getItem('ekiti-ui-theme-v2') === 'dark'; }
-    catch { return false; }
+  const [appearance,setAppearanceState]=React.useState<AppearanceMode>(readAppearance);
+  const [systemDark,setSystemDark]=React.useState(()=>{
+    try {return window.matchMedia('(prefers-color-scheme: dark)').matches;}
+    catch{return false;}
   });
+  const dark=appearance==='dark'||(appearance==='system'&&systemDark);
+  const setAppearance=(mode:AppearanceMode)=>{
+    if(!['system','light','dark'].includes(mode))return;
+    setAppearanceState(mode);
+    try{localStorage.setItem(APPEARANCE_KEY,mode);}
+    catch{/* Appearance remains available without storage. */}
+  };
+  React.useEffect(()=>{
+    if(typeof window.matchMedia!=='function')return;
+    const media=window.matchMedia('(prefers-color-scheme: dark)');
+    const update=()=>setSystemDark(media.matches);
+    update();
+    media.addEventListener?.('change',update);
+    return()=>media.removeEventListener?.('change',update);
+  },[]);
   const [language, setLanguageState] = React.useState<Language>(() => {
     try { return localStorage.getItem('ekiti-ui-language') === 'yo' ? 'yo' : 'en'; }
     catch { return 'en'; }
@@ -156,16 +186,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   React.useEffect(() => {
-    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
-    try { localStorage.setItem('ekiti-ui-theme-v2', dark ? 'dark' : 'light'); }
-    catch { /* Theme still works without writable storage. */ }
-  }, [dark]);
+    document.documentElement.dataset.theme=dark?'dark':'light';
+    document.documentElement.style.colorScheme=dark?'dark':'light';
+    document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')
+      ?.setAttribute('content',dark?'#101b1e':'#ffffff');
+  },[dark]);
 
   const value: AppState = {
     savedPlaceIds, toggleSavedPlace, clearSavedPlaces,
     language, setLanguage,
-    dark,
-    toggleTheme: () => setDark((value) => !value),
+    dark,appearance,setAppearance,
+    toggleTheme: () => setAppearance(dark?'light':'dark'),
     pendingReportText, setPendingReportText,
     askDraft,
     setAskDraft,
