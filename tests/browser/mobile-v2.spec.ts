@@ -108,7 +108,7 @@ test('Scores show the denominator and a negative metric without implying real ou
 test('fictional tracking deep link never requires a fake token or claims official activity', async ({ page }) => {
   await page.goto('/track/DEMO-EKP-2026-00001');
   await expect(page.getByRole('heading', { name: 'Example timeline · not a real case' })).toBeVisible();
-  await expect(page.locator('.case-timeline li')).toHaveCount(5);
+  await expect(page.locator('.case-timeline li')).toHaveCount(6);
   await expect(page.locator('.case-timeline li.event-recorded')).toHaveCount(0);
   await expect(page.getByText('Not independently verified')).toBeVisible();
   await expect(page.locator('#tracking-token')).toHaveCount(0);
