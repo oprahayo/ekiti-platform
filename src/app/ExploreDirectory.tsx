@@ -1,11 +1,12 @@
 import * as React from 'react';
-import { Link, useSearchParams } from 'react-router';
+import { Link } from 'react-router';
 import { demoPlaces, lgas } from './fixtures.ts';
 import { DirectoryIcon, categoryForGroup, directoryCategories } from './DirectoryCategories.tsx';
 import { useApp } from './state.tsx';
 import NearbyDirectorySearch from './NearbyDirectorySearch.tsx';
 import {findSourcedExamples} from './sourced-examples.ts';
 import SourcedPlaceExamples from './SourcedPlaceExamples.tsx';
+import './explore-map-first.css';
 
 const EkitiDirectoryMap = React.lazy(() => import('./EkitiDirectoryMap.tsx'));
 
@@ -35,10 +36,6 @@ export default function ExploreDirectory() {
     exploreQuery, setExploreQuery, exploreLga, setExploreLga,
     deviceLocation, requestDeviceLocation, selectManualArea,
   } = useApp();
-  const [searchParams] = useSearchParams();
-  const mapRequested=searchParams.get('map')==='1';
-  const [mapOpen, setMapOpen] = React.useState(mapRequested);
-  React.useEffect(()=>{if(mapRequested)setMapOpen(true);},[mapRequested]);
   const [places, setPlaces] = React.useState<ReviewedPlace[]>([]);
   const [loadState, setLoadState] = React.useState<LoadState>('idle');
 
@@ -128,11 +125,11 @@ export default function ExploreDirectory() {
     selectManualArea('');
   };
 
-  return <main className="page explore-page directory-page" id="main">
+  return <main className="page explore-page directory-page directory-map-first-page" id="main">
     <section className="directory-hero" aria-label="Browse Ekiti">
       <header className="directory-header">
-        <h1>Browse Categories</h1>
-        <p>Find places and services in Ekiti.</p>
+        <h1>Explore Ekiti</h1>
+        <p>Find places and services on the map, then choose what you need.</p>
       </header>
       <div className="directory-search-row">
         <div className="directory-search">
@@ -161,23 +158,16 @@ export default function ExploreDirectory() {
           ? 'Enable location to browse your verified Ekiti area, or explore freely.'
           : deviceLocation.message}
       </p>
-      <details className="directory-manual-area">
-        <summary>Browse another area (optional)</summary>
-        <div className="directory-area">
-          <label htmlFor="explore-lga">Choose an LGA</label>
-          <select id="explore-lga" value={exploreLga}
-            onChange={event => selectManualArea(event.target.value)}>
-            <option value="">All of Ekiti</option>
-            {lgas.map(lga => <option key={lga.id} value={lga.id}>{lga.name}</option>)}
-          </select>
-        </div>
-      </details>
-      <NearbyDirectorySearch
-        category={activeCategory?.group??null}
-        lga={exploreLga||null}
-        query={query||null}
-        unsupported={Boolean(activeCategory&&!activeCategory.group)}/>
     </section>
+    <div className="directory-map-first-stage" aria-label="Ekiti map and directory categories">
+      <React.Suspense fallback={<div className="directory-map-loading" role="status">Opening Ekiti map…</div>}>
+        <EkitiDirectoryMap places={loadState==='ready'?places:[]}
+          selectedLga={exploreLga} onSelectLga={selectManualArea}/>
+      </React.Suspense>
+      <div className="directory-map-sheet">
+        <p className="directory-map-sheet-intro">
+          Choose a category to see reviewed places across Ekiti. The map stays in view.
+        </p>
     {activeCategory && <button type="button" className="directory-back" onClick={allCategories}>
       <span aria-hidden="true">←</span> Browse all categories
     </button>}
@@ -203,7 +193,28 @@ export default function ExploreDirectory() {
       </p>}
     </section>
 
-    {!browseOnly && <section className="directory-results" aria-label="Directory search results">
+        <div className="directory-map-tools">
+      <details className="directory-manual-area">
+        <summary>Browse another area (optional)</summary>
+        <div className="directory-area">
+          <label htmlFor="explore-lga">Choose an LGA</label>
+          <select id="explore-lga" value={exploreLga}
+            onChange={event => selectManualArea(event.target.value)}>
+            <option value="">All of Ekiti</option>
+            {lgas.map(lga => <option key={lga.id} value={lga.id}>{lga.name}</option>)}
+          </select>
+        </div>
+      </details>
+      <NearbyDirectorySearch
+        category={activeCategory?.group??null}
+        lga={exploreLga||null}
+        query={query||null}
+        unsupported={Boolean(activeCategory&&!activeCategory.group)}/>
+        </div>
+      </div>
+    </div>
+
+    {!browseOnly && <section id="directory-results" className="directory-results" aria-label="Directory search results">
       <div className="directory-results-head">
         <h2>{activeCategory?.label || 'Search results'}</h2>
         <span>{exploreLga ? lgas.find(item => item.id === exploreLga)?.name : 'Across Ekiti'}</span>
@@ -258,13 +269,6 @@ export default function ExploreDirectory() {
     <SourcedPlaceExamples items={visibleSourcedExamples} context="explore"/>
 
     <div className="directory-secondary">
-      <button type="button" className="quiet-action" onClick={() => setMapOpen(value => !value)}>
-        {mapOpen ? 'Hide Ekiti map' : 'View interactive Ekiti directory map'}
-      </button>
-      {mapOpen && <React.Suspense fallback={<p role="status" className="note">Loading map only now…</p>}>
-        <EkitiDirectoryMap places={loadState==='ready'?places:[]}
-          selectedLga={exploreLga} onSelectLga={selectManualArea}/>
-      </React.Suspense>}
       <h2>Can’t find what you need?</h2>
       <Link to="/search" className="text-link">
         Search all of Ekiti
