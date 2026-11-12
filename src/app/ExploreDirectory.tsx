@@ -4,22 +4,10 @@ import { demoPlaces, lgas } from './fixtures.ts';
 import { DirectoryIcon, categoryForGroup, directoryCategories } from './DirectoryCategories.tsx';
 import { useApp } from './state.tsx';
 import NearbyDirectorySearch from './NearbyDirectorySearch.tsx';
+import {findSourcedExamples} from './sourced-examples.ts';
+import SourcedPlaceExamples from './SourcedPlaceExamples.tsx';
 
 const EkitiDirectoryMap = React.lazy(() => import('./EkitiDirectoryMap.tsx'));
-
-/** Public-source-confirmed examples, not platform-reviewed directory entries.
- * Keep external sources visible and never feed these into verified search/maps. */
-const sourcedExamples = [
-  { name: 'Federal Teaching Hospital, Ido-Ekiti', category: 'Health', lgaId: 'ido-osi',
-    description: 'Teaching hospital in Ido-Ekiti; its public website describes specialist and emergency services.',
-    source: 'Hospital website', url: 'https://fethi.gov.ng/' },
-  { name: 'Ekiti State University', category: 'Schools', lgaId: 'ado-ekiti',
-    description: 'Public university in Ado-Ekiti, with an official student and admissions portal.',
-    source: 'University portal', url: 'https://eksuportal.eksu.edu.ng/' },
-  { name: 'Ikogosi Warm Springs Resort', category: 'Hotels', lgaId: 'ekiti-west',
-    description: 'Publicly listed resort and natural warm springs attraction in Ikogosi.',
-    source: 'Resort website', url: 'https://www.ikogosiresort.com/' },
-] as const;
 
 
 interface ReviewedPlace {
@@ -120,14 +108,9 @@ export default function ExploreDirectory() {
     return haystack.includes(query);
   }), [activeCategory, exploreLga, query]);
 
-  const visibleSourcedExamples = sourcedExamples.filter(place => {
-    if (activeCategory && (!activeCategory.group || place.category !== activeCategory.group)) return false;
-    if (exploreLga && place.lgaId !== exploreLga) return false;
-    if (!query) return true;
-    const group = directoryCategories.find(category => category.group === place.category);
-    return [place.name, place.description, place.category, group?.label, group?.keywords]
-      .filter(Boolean).join(' ').toLocaleLowerCase().includes(query);
-  });
+  const visibleSourcedExamples = activeCategory && !activeCategory.group
+    ? []
+    : findSourcedExamples(query, {category:activeCategory?.group||null,lgaId:exploreLga||null});
 
   const selectCategory = (id: typeof directoryCategories[number]['id']) => {
     const category = directoryCategories.find(item => item.id === id)!;
@@ -220,18 +203,6 @@ export default function ExploreDirectory() {
       </p>}
     </section>
 
-    {visibleSourcedExamples.length > 0 && <section className="directory-source-examples" aria-label="Source-confirmed Ekiti examples">
-      <h2>Explore real places in Ekiti</h2>
-      <p>Source-confirmed examples for discovery. These are not yet independently verified or approved Ekiti Civic directory entries; details may change. Visit each original source to confirm.</p>
-      <ul>
-        {visibleSourcedExamples.map(place => <li key={place.url}>
-          <strong>{place.name}</strong>
-          <span>{place.category} · {lgas.find(lga => lga.id === place.lgaId)?.name} · {place.description}</span>
-          <a href={place.url} target="_blank" rel="noopener noreferrer">View source: {place.source}</a>
-        </li>)}
-      </ul>
-    </section>}
-
     {!browseOnly && <section className="directory-results" aria-label="Directory search results">
       <div className="directory-results-head">
         <h2>{activeCategory?.label || 'Search results'}</h2>
@@ -283,6 +254,8 @@ export default function ExploreDirectory() {
           <button type="button" className="text-link" onClick={clearFilters}>Clear filters</button>
         </div>}
     </section>}
+
+    <SourcedPlaceExamples items={visibleSourcedExamples} context="explore"/>
 
     <div className="directory-secondary">
       <button type="button" className="quiet-action" onClick={() => setMapOpen(value => !value)}>
