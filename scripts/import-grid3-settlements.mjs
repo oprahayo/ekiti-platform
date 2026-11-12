@@ -68,7 +68,7 @@ async function fetchSnapshot(){
     }
   }
   if(all.length!==count.count)throw new Error('Incomplete source snapshot');
-  all.sort((a,b)=>a.properties.FID-b.properties.FID);
+  all.sort((a,b)=>(a.properties.FID ?? a.id)-(b.properties.FID ?? b.id));
   const raw=Buffer.from(textJson({type:'FeatureCollection',features:all}),'utf8');
   if(raw.byteLength>90_000_000)throw new Error('Source snapshot unexpectedly large');
   await mkdir(outputDir,{recursive:true});
