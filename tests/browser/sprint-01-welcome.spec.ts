@@ -49,7 +49,7 @@ test('all civic services live in the compact header product launcher',async({pag
   await page.getByLabel('Open Ekiti Civic menu').click();
   await page.locator('.civic-products-panel').getByRole('link',{name:/Explore Ekiti/}).click();
   await expect(page).toHaveURL(/\/explore$/);
-  await expect(page.getByRole('heading',{name:'Explore Ekiti',exact:true})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Browse Categories'})).toBeVisible();
 });
 
 test('Yoruba and appearance settings remain usable from the search homepage',async({page})=>{

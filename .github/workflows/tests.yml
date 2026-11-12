@@ -91,15 +91,6 @@ jobs:
           npx playwright install chromium
           npm run test:browser
 
-      - name: Preserve Explore map-first and chatbot screenshot review
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: explore-map-first-acceptance
-          path: test-results/explore-map-first/
-          if-no-files-found: ignore
-          retention-days: 7
-
       - name: Preserve Sprint 02 centered homepage and conversation screenshots
         if: always()
         uses: actions/upload-artifact@v4
