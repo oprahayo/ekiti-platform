@@ -263,7 +263,7 @@ export default function ExploreDirectory() {
       </button>
       {mapOpen && <React.Suspense fallback={<p role="status" className="note">Loading map only now…</p>}>
         <EkitiDirectoryMap places={loadState==='ready'?places:[]}
-          onSelectLga={selectManualArea}/>
+          selectedLga={exploreLga} onSelectLga={selectManualArea}/>
       </React.Suspense>}
       <h2>Can’t find what you need?</h2>
       <Link to="/search" className="text-link">

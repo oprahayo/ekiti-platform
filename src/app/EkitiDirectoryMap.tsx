@@ -5,6 +5,7 @@ import './ekiti-directory-map.css';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
 import boundariesUrl from '../../data/grid3/lga.json?url';
 import {lgas} from './fixtures.ts';
+import {boundsForLga,normalizeLgaName} from './ekiti-lga-viewport.ts';
 
 export interface PublicReviewedMapPlace{
   id:string;name:string;category:string;lga_id:string;
@@ -34,8 +35,9 @@ export function reviewedMapGeoJson(places:readonly PublicReviewedMapPlace[]){
 
 /** Only source-reviewed, public geocodes get pins. Guest map never asks for
  * device location; no private reports, raw GPS or preview listings are loaded. */
-export default function EkitiDirectoryMap({places,onSelectLga}:{
+export default function EkitiDirectoryMap({places,onSelectLga,selectedLga=''}:{
  places:readonly PublicReviewedMapPlace[];onSelectLga:(id:string)=>void;
+ selectedLga?:string;
 }){
  const element=React.useRef<HTMLDivElement|null>(null);
  const map=React.useRef<maplibregl.Map|null>(null);
@@ -43,6 +45,26 @@ export default function EkitiDirectoryMap({places,onSelectLga}:{
  onSelect.current=onSelectLga;
  const [failed,setFailed]=React.useState(false);
  const [loaded,setLoaded]=React.useState(false);
+ const [areaQuery,setAreaQuery]=React.useState('');
+ const matchingLgas=React.useMemo(()=>{
+   const needle=normalizeLgaName(areaQuery.trim());
+   return needle ? lgas.filter(lga=>normalizeLgaName(lga.name).includes(needle)) : lgas;
+ },[areaQuery]);
+ const jumpToLga=(id:string)=>{
+   const area=lgas.find(lga=>lga.id===id);
+   if(!area)return;
+   onSelect.current(id);
+   const bounds=boundsForLga(area.name);
+   if(bounds && map.current)map.current.fitBounds(bounds,{
+     padding:36,maxZoom:10,duration:window.matchMedia('(prefers-reduced-motion: reduce)').matches?0:350,
+   });
+ };
+ const resetMap=()=>{
+   onSelect.current('');
+   map.current?.fitBounds([[4.78,7.21],[5.9,8.2]],{
+     padding:24,duration:window.matchMedia('(prefers-reduced-motion: reduce)').matches?0:350,
+   });
+ };
  const plotted=React.useMemo(()=>reviewedMapGeoJson(places),[places]);
  React.useEffect(()=>{
    if(!element.current)return;
@@ -78,7 +100,7 @@ export default function EkitiDirectoryMap({places,onSelectLga}:{
        const label=String(event.features?.[0]?.properties?.lganame||'').toLowerCase()
          .replace(/[^a-z0-9]/g,'');
        const match=lgas.find(a=>a.name.toLowerCase().replace(/[^a-z0-9]/g,'')===label);
-       if(match)onSelect.current(match.id);
+       if(match)jumpToLga(match.id);
      });
      instance.on('click','reviewed-points',event=>{
        const coordinates=(event.features?.[0]?.geometry as {coordinates?:number[]})?.coordinates;
@@ -92,6 +114,13 @@ export default function EkitiDirectoryMap({places,onSelectLga}:{
  },[]);
  React.useEffect(()=>{
    if(!loaded||!map.current)return;
+   const area=lgas.find(lga=>lga.id===selectedLga);
+   const bounds=area?boundsForLga(area.name):null;
+   if(bounds)map.current.fitBounds(bounds,{padding:36,maxZoom:10,duration:0});
+   else map.current.fitBounds([[4.78,7.21],[5.9,8.2]],{padding:24,duration:0});
+ },[selectedLga,loaded]);
+ React.useEffect(()=>{
+   if(!loaded||!map.current)return;
    const source=map.current.getSource('reviewedPlaces') as maplibregl.GeoJSONSource|undefined;
    if(source)source.setData(plotted as GeoJSON.FeatureCollection);
  },[loaded,plotted]);
@@ -100,8 +129,33 @@ export default function EkitiDirectoryMap({places,onSelectLga}:{
      <h2>Explore Ekiti on the map</h2>
      <p>16 local government boundaries · {plotted.features.length} independently reviewed places pinned</p>
    </div>
+   <div className="directory-map-area-toolbar">
+     <details className="directory-map-area-chooser">
+       <summary>Find an LGA on the map</summary>
+       <div className="directory-map-area-content">
+         <label htmlFor="map-lga-lookup">Search the 16 LGAs</label>
+         <input type="search" id="map-lga-lookup" value={areaQuery} autoComplete="off"
+           onChange={event=>setAreaQuery(event.target.value)} placeholder="e.g. Ado-Ekiti, Ijero" />
+         <ul className="directory-map-area-list" aria-label="Ekiti local governments">
+           {matchingLgas.map(area=><li key={area.id}>
+             <button type="button" aria-pressed={selectedLga===area.id}
+               onClick={()=>jumpToLga(area.id)}>{area.name}</button>
+           </li>)}
+         </ul>
+         {matchingLgas.length===0 && <p role="status">
+           No matching LGA name. Try another spelling; town and village search is not available yet.
+         </p>}
+       </div>
+     </details>
+     {selectedLga && <button type="button" className="directory-map-clear"
+       onClick={resetMap}>View all Ekiti</button>}
+   </div>
+   {selectedLga && <p className="directory-map-selection" role="status">
+     Selected area: {lgas.find(lga=>lga.id===selectedLga)?.name || 'Ekiti'}.
+     The directory filter applies to this LGA; this is not a distance search.
+   </p>}
    <div ref={element} className="directory-review-map-canvas" role="img"
-     aria-label="Interactive Ekiti local government boundaries and verified directory pins"/>
+     aria-label="Interactive Ekiti local government boundaries and independently reviewed directory pins"/>
    {failed&&<p role="alert">The map is unavailable. You can still browse by LGA above.</p>}
    {plotted.features.length===0&&<p role="status">
      No reviewed business coordinates are available for these filters.
@@ -109,8 +163,10 @@ export default function EkitiDirectoryMap({places,onSelectLga}:{
    </p>}
    <p className="directory-geo-clarification">Select an LGA on the map to filter the directory.
      Only reviewed directory coordinates appear as markers. The map does not show
-     private incident points or emergency reports. Boundary source: GRID3 /
-     eHealth Africa and Proxy Logics (2020), CC BY 4.0.
+     private incident points or emergency reports. The 16 LGA boundaries come from
+     <a href="https://grid3.org/geospatial-data-nigeria" target="_blank" rel="noopener noreferrer"> GRID3
+     (eHealth Africa and Proxy Logics, 2020, CC BY 4.0)</a>.
+     This is not yet a complete map of Ekiti towns or villages.
      No third-party tile requests or GPS permission are required.</p>
  </section>;
 }
