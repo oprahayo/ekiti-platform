@@ -10,7 +10,7 @@ test('Explore shows compact categories without Yellow Pages branding', async ({ 
   const api: string[] = [];
   page.on('request', request => { if (request.url().includes('/api/places')) api.push(request.url()); });
   await page.goto('/explore');
-  await expect(page.getByRole('heading', { name: 'Explore Ekiti' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Explore Ekiti', exact: true })).toBeVisible();
   await expect(page.getByText('Find places and services on the map, then choose what you need.')).toBeVisible();
   await expect(page.locator('.directory-category-tile')).toHaveCount(24);
   await expect(page.locator('.directory-tile-icon')).toHaveCount(24);
