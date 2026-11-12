@@ -129,6 +129,8 @@ export default function EkitiDirectoryMap({places,onSelectLga,selectedLga=''}:{
      <h2>Explore Ekiti on the map</h2>
      <p>16 local government boundaries · {plotted.features.length} independently reviewed places pinned</p>
    </div>
+   <div ref={element} className="directory-review-map-canvas" role="img"
+     aria-label="Interactive Ekiti local government boundaries and independently reviewed directory pins"/>
    <div className="directory-map-area-toolbar">
      <details className="directory-map-area-chooser">
        <summary>Find an LGA on the map</summary>
@@ -154,8 +156,7 @@ export default function EkitiDirectoryMap({places,onSelectLga,selectedLga=''}:{
      Selected area: {lgas.find(lga=>lga.id===selectedLga)?.name || 'Ekiti'}.
      The directory filter applies to this LGA; this is not a distance search.
    </p>}
-   <div ref={element} className="directory-review-map-canvas" role="img"
-     aria-label="Interactive Ekiti local government boundaries and independently reviewed directory pins"/>
+
    {failed&&<p role="alert">The map is unavailable. You can still browse by LGA above.</p>}
    {plotted.features.length===0&&<p role="status">
      No reviewed business coordinates are available for these filters.
