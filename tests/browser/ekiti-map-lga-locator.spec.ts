@@ -12,6 +12,7 @@ test('Explore opens its single Ekiti map first and offers all 16 keyboard-operab
   await page.locator('.directory-map-area-chooser summary').click();
   await expect(page.getByRole('searchbox',{name:'Search the 16 LGAs'})).toBeVisible();
   await expect(page.locator('.directory-map-area-list button')).toHaveCount(16);
+  await page.locator('.directory-map-credits summary').click();
   await expect(page.getByText(/not yet a complete map of Ekiti towns or villages/)).toBeVisible();
   await expect(page.getByRole('link',{name:/GRID3/})).toHaveAttribute('href','https://grid3.org/geospatial-data-nigeria');
   expect(gps).toEqual([]);
