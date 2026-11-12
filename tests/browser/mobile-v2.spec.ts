@@ -29,7 +29,7 @@ for (const width of [280, 320, 360, 375, 390, 428, 768, 1024, 1440]) {
 test('five-tab navigation supports direct deep links', async ({ page }) => {
   for (const [path, heading] of [
     ['/ask', 'Ask anything about Ekiti'],
-    ['/explore', 'Browse Categories'],
+    ['/explore', 'Explore Ekiti'],
     ['/report', 'Report an issue'],
     ['/track', 'Check a report'],
     ['/scores', 'Public response'],
@@ -54,7 +54,7 @@ test('Homepage question uses one search surface and returns sourced Ekiti facts'
 
 test('Explore filters survive tab changes; all data is identified as demo', async ({ page }) => {
   await page.goto('/explore');
-  await expect(page.getByRole('heading', { name: 'Browse Categories' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Explore Ekiti', exact: true })).toBeVisible();
   await expect(page.locator('.directory-category-tile')).toHaveCount(24);
   await page.locator('#place-search').fill('school');
   await page.getByRole('button', { name: 'Schools' }).click();
@@ -69,16 +69,16 @@ test('Explore filters survive tab changes; all data is identified as demo', asyn
   await expect(page.getByText(/This is a fictional directory example/)).toBeVisible();
 });
 
-test('Explore does not load map assets unless explicitly requested', async ({ page }) => {
+test('Explore opens one first-party LGA map with the categories, not a second hidden map', async ({ page }) => {
   const resources: string[] = [];
   page.on('request', request => resources.push(request.url()));
   await page.goto('/explore');
-  await expect(page.locator('.directory-category-tile')).toHaveCount(24);
-  await expect(page.locator('.place-row')).toHaveCount(0);
-  expect(resources.some(url => /\/assets\/(map-|lga-)/.test(url))).toBe(false);
-  await page.getByRole('button', { name: 'View interactive Ekiti directory map' }).click();
   await expect(page.locator('.directory-review-map-canvas')).toBeVisible();
-  await expect(page.getByText('Sample directory entries are never pinned as real locations.')).toBeVisible();
+  await expect(page.locator('.directory-review-map-canvas')).toHaveCount(1);
+  await expect(page.locator('.directory-map-first-stage .directory-category-tile')).toHaveCount(24);
+  await expect(page.locator('.place-row')).toHaveCount(0);
+  await expect(page.getByText(/Sample directory entries are never pinned as real locations/)).toBeVisible();
+  expect(resources.some(url => /tile\.openstreetmap\.org|maps\.googleapis\.com/.test(url))).toBe(false);
 });
 
 test('Scores show the denominator and a negative metric without implying real outcomes', async ({ page }) => {
