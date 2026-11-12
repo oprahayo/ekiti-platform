@@ -1,7 +1,7 @@
 import pg from 'pg';
 import {parseExternalQuery,fetchEkitiWebResults,fetchEkitiWikipediaResults} from './external-web-search.ts';
 import {parsePublicAnswerQuery,buildPublicWebAnswer} from './public-web-answer.ts';
-import { parseUnifiedSearch, searchReviewedEkiti, type UnifiedSearchFilters } from './unified-search.ts';
+import { parseUnifiedSearch, searchReviewedEkiti, unavailableReviewedEkiti, type UnifiedSearchFilters } from './unified-search.ts';
 import { handlePrivateReporting, type PrivateReportingEnv } from './private-report-routes.ts';
 import {handlePrivateEvidence,type EvidenceEnvironment} from './private-evidence-routes.ts';
 import { resolveIncidentLocation } from './location.ts';
@@ -286,6 +286,11 @@ export default {
         await client.end();
       }
     } catch {
+      // Source-backed locality recognition is available independently from
+      // Postgres. This is a deliberately degraded search response, never
+      // silently presented as an empty/verified SQL result.
+      if(unifiedSearch && unifiedFilters)
+        return json(unavailableReviewedEkiti(unifiedFilters),200);
       return json({ error: 'Service temporarily unavailable' }, 503);
     }
   },
