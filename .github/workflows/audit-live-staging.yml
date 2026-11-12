@@ -8,6 +8,11 @@ on:
     paths:
       - .github/workflows/audit-live-staging.yml
       - scripts/audit-live-ui.mjs
+      - scripts/smoke-staging.mjs
+      - scripts/check-public-readers.mjs
+      - src/server/public-data.ts
+      - src/server/worker.ts
+      - docs/public-search-recovery.md
 
 permissions:
   contents: read
