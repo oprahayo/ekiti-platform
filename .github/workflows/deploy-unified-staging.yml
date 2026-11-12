@@ -1,4 +1,5 @@
 name: Publish reviewed guest-only integration staging
+# Owner-requested map-first Explore guest-only staging publish, 12 Nov 2026.
 # Staging release requested by project owner on 2026-11-12 to publish the latest
 # passing integrated guest-only citizen + fictional admin preview. No new features.
 
