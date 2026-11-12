@@ -2,6 +2,8 @@ import * as React from 'react';
 import {Link, useNavigate, useSearchParams} from 'react-router';
 import {useApp} from './state.tsx';
 import {detectIntent} from './intents.ts';
+import {findSourcedExamples} from './sourced-examples.ts';
+import SourcedPlaceExamples from './SourcedPlaceExamples.tsx';
 import type {AskResult} from '../server/ask-knowledge.ts';
 import './reviewed-search.css';
 const ExternalWebResults=React.lazy(()=>import('./ExternalWebResults.tsx'));
@@ -135,6 +137,14 @@ export default function ReviewedSearch() {
     navigate('/search?'+new URLSearchParams({q:value,web:'1'}).toString());
   };
 
+  const sourcedCandidates = React.useMemo(() =>
+    findSourcedExamples(query).filter(candidate =>
+      !(state==='ready' && data?.query===query && data.places.some(
+        place => place.name.trim().toLocaleLowerCase()===candidate.name.toLocaleLowerCase() ||
+          place.source_url===candidate.sourceUrl
+      ))
+    ), [query,data,state]);
+
   return <main className="page search-results-page" id="main">
     <div className="search-results-intro">
       <h1>Search Ekiti</h1>
@@ -171,7 +181,7 @@ export default function ReviewedSearch() {
     </p>}
     {tab!=='web'&&state==='loading' && <p className="search-results-muted" role="status">Searching reviewed Ekiti records…</p>}
     {tab!=='web'&&state==='unavailable' && <p className="search-results-muted" role="alert">
-      Verified search is temporarily unavailable. No sample listings are substituted.
+      Verified search is temporarily unavailable. Separately labeled source examples below are not reviewed directory results.
     </p>}
 
     {(tab==='all'||tab==='knowledge')&&isPublicQuestion(query) && <section className="search-answer" aria-labelledby="source-answer-title">
@@ -243,6 +253,9 @@ export default function ReviewedSearch() {
           </article>)}</div>
       </section>}
     </div>}
+    {(tab==='all'||tab==='places') &&
+      (state==='ready'||state==='unavailable') &&
+      <SourcedPlaceExamples items={sourcedCandidates} context="search"/>}
     {tab==='all'&&query.length>=2&&query.length<=90&&
       <React.Suspense fallback={<p role="status">Loading web tools…</p>}>
         <ExternalWebResults query={query} autoRead={params.get('web')==='1'}/>
