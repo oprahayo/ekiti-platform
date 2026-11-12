@@ -17,7 +17,9 @@
     "check:admin": "tsc --project tsconfig.admin.json --noEmit",
     "build:admin": "vite build --config vite.admin.config.ts",
     "dev:admin": "vite --config vite.admin.config.ts",
-    "test:admin:browser": "playwright test --config playwright.admin.config.ts"
+    "test:admin:browser": "playwright test --config playwright.admin.config.ts",
+    "data:settlements:fetch": "node scripts/import-grid3-settlements.mjs fetch",
+    "data:settlements:prepare": "node scripts/import-grid3-settlements.mjs prepare"
   },
   "engines": {
     "node": ">=22.16.0"
