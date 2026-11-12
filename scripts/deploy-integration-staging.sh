@@ -39,6 +39,15 @@ npm run test:all
 
 echo 'Checking citizen staging Worker and frontend without deployment'
 npm run staging:check
+
+# Optional but recommended: test existing public DB readers BEFORE uploading.
+# The connection string stays in the operator's environment, never in source.
+if [[ -n "${PUBLIC_READER_DATABASE_URL:-}" ]]; then
+  echo 'Checking reviewed public search readers with the restricted DB login'
+  npm run db:public-search:check
+else
+  echo 'Public-reader preflight skipped: set PUBLIC_READER_DATABASE_URL to detect missing civic SQL before deployment.' >&2
+fi
 node scripts/stamp-staging.mjs citizen
 
 echo 'Building and checking separate fictional-only admin demo'

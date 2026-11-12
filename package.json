@@ -14,6 +14,7 @@
     "test:browser": "playwright test",
     "staging:prepare": "node scripts/prepare-staging.mjs",
     "staging:check": "npm run build && node scripts/prepare-staging.mjs --dry-run && wrangler deploy --config wrangler.dry-run.local.json --dry-run --outdir .wrangler/staging-check",
+    "db:public-search:check": "node scripts/check-public-readers.mjs",
     "check:admin": "tsc --project tsconfig.admin.json --noEmit",
     "build:admin": "vite build --config vite.admin.config.ts",
     "dev:admin": "vite --config vite.admin.config.ts",
