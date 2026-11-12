@@ -1,4 +1,5 @@
 name: Audit live Ekiti staging release
+# Owner-requested read-only staging verification, 2026-11-12. No deployments.
 on:
   workflow_dispatch:
   push:
