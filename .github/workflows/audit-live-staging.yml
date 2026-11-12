@@ -50,3 +50,30 @@ jobs:
             }
           }
           EOF
+
+      - name: Checkout audited staging smoke-test scripts
+        uses: actions/checkout@v4
+        with:
+          ref: integration/staging-citizen-admin-sprints-03-12
+          persist-credentials: false
+      - name: Smoke-test both deployed staging previews without credentials
+        shell: bash
+        run: |
+          LIVE_SHA="$(node --input-type=module <<'EOF'
+          const urls=[
+            'https://ekiti-platform-staging.inekitikete.workers.dev/staging-build.json',
+            'https://ekiti-admin-demo-staging.inekitikete.workers.dev/staging-build.json',
+          ];
+          const manifests=await Promise.all(urls.map(async url=>{
+            const r=await fetch(url,{redirect:'error',signal:AbortSignal.timeout(15000)});
+            if(!r.ok)throw Error('Release manifest HTTP '+r.status);
+            return r.json();
+          }));
+          if(!/^[a-f0-9]{40}$/.test(manifests[0]?.commit||'')||
+            manifests[0].commit!==manifests[1]?.commit)
+            throw Error('Citizen and admin staging versions do not match');
+          console.log(manifests[0].commit);
+          EOF
+          )"
+          node scripts/smoke-staging.mjs https://ekiti-platform-staging.inekitikete.workers.dev "$LIVE_SHA"
+          node scripts/smoke-admin-demo.mjs https://ekiti-admin-demo-staging.inekitikete.workers.dev "$LIVE_SHA"
