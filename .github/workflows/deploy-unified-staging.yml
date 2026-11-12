@@ -1,4 +1,6 @@
 name: Publish reviewed guest-only integration staging
+# Staging release requested by project owner on 2026-11-12 to publish the latest
+# passing integrated guest-only citizen + fictional admin preview. No new features.
 
 # Owner-authorized staging publish request: map-led admin dashboard PR #46,
 # 11 November 2026. This one-time audited workflow edit triggers push deploy.
