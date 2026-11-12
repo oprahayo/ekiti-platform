@@ -32,6 +32,8 @@ interface Knowledge {
 interface SearchResponse {
   query: string;
   reviewedOnly: true;
+  /** Explicitly false when public reader calls failed, never interpreted as zero matches. */
+  reviewedAvailable?: boolean;
   places: Place[];
   knowledge: Knowledge[];
   localityHint?: {name:string;lgaId:string;lgaName:string;source:string;confidence:'reviewed-place-name'} | null;
@@ -202,9 +204,14 @@ export default function ReviewedSearch() {
       </>}
     </section>}
     {tab!=='web'&&state==='ready' && data && <div className="search-results-content">
-      <p className="search-results-count" role="status">
-        {data.places.length + data.knowledge.length + (data.localityHint?1:0)} reviewed result{data.places.length+data.knowledge.length+(data.localityHint?1:0)===1?'':'s'} shown for “{data.query}”
-      </p>
+      {data.reviewedAvailable===false
+        ? <p className="search-results-muted" role="alert">
+            Reviewed Ekiti Civic records are temporarily offline. Recognized place names below come from a reviewed geography source, not live directory records.
+            You can still browse separately labeled source links and public web references.
+          </p>
+        : <p className="search-results-count" role="status">
+            {data.places.length + data.knowledge.length + (data.localityHint?1:0)} reviewed result{data.places.length+data.knowledge.length+(data.localityHint?1:0)===1?'':'s'} shown for “{data.query}”
+          </p>}
       {(tab==='all'||tab==='places')&&data.localityHint && <section className="search-results-section" aria-labelledby="search-locality">
         <h2 id="search-locality">Recognized place</h2>
         <article className="search-result search-locality-result">
@@ -219,7 +226,7 @@ export default function ReviewedSearch() {
       {(tab==='all'||tab==='places')&&data.locationScope==='ambiguous' && <p className="search-results-muted">
         This query mentions places in different LGAs. A single location was not assumed.
       </p>}
-      {data.places.length===0 && data.knowledge.length===0 && !data.localityHint && <p className="search-results-muted">
+      {data.reviewedAvailable!==false && data.places.length===0 && data.knowledge.length===0 && !data.localityHint && <p className="search-results-muted">
         No reviewed result matches yet. The directory is growing; this does not mean the service or place does not exist.
         Try a simpler name, or <Link to="/explore">browse Ekiti categories</Link>.
       </p>}

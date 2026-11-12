@@ -42,6 +42,8 @@ assert.ok(wards.every((a) => parents.has(a.parentId)));
 const unified = await (await request('/api/search?q=Hotels+near+Ikogosi')).json();
 assert.equal(unified.query, 'Hotels near Ikogosi');
 assert.equal(unified.reviewedOnly, true);
+assert.equal(unified.reviewedAvailable, true,
+  'Live reviewed search cannot be reported healthy while the database is unavailable');
 assert.ok(Array.isArray(unified.places));
 assert.ok(Array.isArray(unified.knowledge));
 for (const [path,kind] of [

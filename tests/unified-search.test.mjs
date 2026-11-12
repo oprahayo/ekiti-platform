@@ -28,7 +28,7 @@ test('public search queries only approved existing directory and knowledge reade
     },
   };
   const response=await searchReviewedEkiti(db,{query:'Ekiti',limit:7});
-  assert.deepEqual(response,{query:'Ekiti',reviewedOnly:true,places,knowledge,localityHint:null,locationScope:'none'});
+  assert.deepEqual(response,{query:'Ekiti',reviewedOnly:true,reviewedAvailable:true,places,knowledge,localityHint:null,locationScope:'none'});
   assert.equal(calls.length,2);
   assert.deepEqual(calls[0].values,[null,null,'ekiti',7]);
   assert.deepEqual(calls[1].values,['Ekiti',7]);
@@ -53,6 +53,17 @@ test('public search endpoint rejects malformed/cross-origin/method misuse before
   }),env);
   assert.equal(denied.status,403);
   const unreachable=await worker.fetch(new Request('https://ekiti.example/api/search?q=Ekiti'),env);
-  assert.equal(unreachable.status,503);
+  assert.equal(unreachable.status,200);
+  const fallback=await unreachable.json();
+  assert.equal(fallback.reviewedOnly,true);
+  assert.equal(fallback.reviewedAvailable,false);
+  assert.deepEqual(fallback.places,[]);
+  assert.deepEqual(fallback.knowledge,[]);
   assert.equal(unreachable.headers.get('Cache-Control'),'no-store');
+  const localityResponse=await worker.fetch(
+    new Request('https://ekiti.example/api/search?q=Hotels+near+Ikogosi'),env);
+  assert.equal(localityResponse.status,200);
+  const localityFallback=await localityResponse.json();
+  assert.equal(localityFallback.reviewedAvailable,false);
+  assert.equal(localityFallback.localityHint?.lgaName,'Ekiti West');
 });

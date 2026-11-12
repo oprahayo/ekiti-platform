@@ -9,7 +9,8 @@ const expectedCommit=process.env.GITHUB_SHA||'';
 const probes=[
   ['/api/areas','geography',body=>Array.isArray(body)&&body.filter(x=>x.kind==='lga').length===16],
   ['/api/search?q=Hotels+near+Ikogosi','search',
-    body=>body?.reviewedOnly===true&&Array.isArray(body.places)&&Array.isArray(body.knowledge)],
+    body=>body?.reviewedOnly===true&&body?.reviewedAvailable!==false&&
+      Array.isArray(body.places)&&Array.isArray(body.knowledge)],
   ['/api/places?limit=3','places',
     body=>body?.reviewedOnly===true&&Array.isArray(body.items)],
   ['/api/knowledge?q=Ekiti&limit=3','knowledge',

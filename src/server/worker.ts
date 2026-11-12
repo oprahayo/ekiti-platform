@@ -1,7 +1,7 @@
 import pg from 'pg';
 import {parseExternalQuery,fetchEkitiWebResults,fetchEkitiWikipediaResults} from './external-web-search.ts';
 import {parsePublicAnswerQuery,buildPublicWebAnswer} from './public-web-answer.ts';
-import { parseUnifiedSearch, searchReviewedEkiti, type UnifiedSearchFilters } from './unified-search.ts';
+import { parseUnifiedSearch, searchReviewedEkiti, unavailableReviewedEkiti, type UnifiedSearchFilters } from './unified-search.ts';
 import { handlePrivateReporting, type PrivateReportingEnv } from './private-report-routes.ts';
 import {handlePrivateEvidence,type EvidenceEnvironment} from './private-evidence-routes.ts';
 import { resolveIncidentLocation } from './location.ts';
@@ -148,13 +148,15 @@ export default {
         (request.headers.get('Sec-Fetch-Site')!==null &&
          request.headers.get('Sec-Fetch-Site')!=='same-origin'))))
       return json({ error: 'Cross-site request denied' }, 403);
+    // Survives the public-reader catch so a validated query can retain
+    // only its safe, static locality hint when PostgreSQL is unavailable.
+    let unifiedFilters: UnifiedSearchFilters | null = null;
     try {
       const key = request.headers.get('CF-Connecting-IP') || 'local';
       if (!(await env.LOCATION_LIMIT.limit({ key })).success)
         return json({ error: 'Please try again in a minute' }, 429, { 'Retry-After': '60' });
       let point = null;
       let filters: KnowledgeFilters | DirectoryFilters | null = null;
-      let unifiedFilters: UnifiedSearchFilters | null = null;
       let externalQuery: string | null = null;
       let answerQuery: {query:string;language:'en'|'yo'} | null = null;
       let placeId: string | null = null;
@@ -286,6 +288,11 @@ export default {
         await client.end();
       }
     } catch {
+      // Source-backed locality recognition is available independently from
+      // Postgres. This is a deliberately degraded search response, never
+      // silently presented as an empty/verified SQL result.
+      if(unifiedSearch && unifiedFilters)
+        return json(unavailableReviewedEkiti(unifiedFilters),200);
       return json({ error: 'Service temporarily unavailable' }, 503);
     }
   },
