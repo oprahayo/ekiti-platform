@@ -7,6 +7,7 @@ on:
       - integration/staging-citizen-admin-sprints-03-12
     paths:
       - .github/workflows/audit-live-staging.yml
+      - scripts/audit-live-ui.mjs
 
 permissions:
   contents: read
@@ -14,7 +15,7 @@ permissions:
 jobs:
   audit:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 20
     steps:
       - name: Inspect both public deployment manifests without credentials
         shell: bash
@@ -77,3 +78,23 @@ jobs:
           )"
           node scripts/smoke-staging.mjs https://ekiti-platform-staging.inekitikete.workers.dev "$LIVE_SHA"
           node scripts/smoke-admin-demo.mjs https://ekiti-admin-demo-staging.inekitikete.workers.dev "$LIVE_SHA"
+
+      - name: Prepare disposable public-browser auditor
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install audited dependencies and Chromium
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Audit real browser usability against public staging
+        run: node scripts/audit-live-ui.mjs
+      - name: Save public-only visual audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ekiti-live-usability-${{ github.run_id }}
+          path: artifacts/live-staging-ui/
+          if-no-files-found: warn
+          retention-days: 7
