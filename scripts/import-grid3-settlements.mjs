@@ -61,7 +61,7 @@ async function fetchSnapshot(){
     if(response.features.length!==requested)
       throw new Error('Incomplete or changing source: page at '+offset);
     for(const f of response.features){
-      const id=f?.properties?.FID;
+      const id=f?.properties?.FID ?? f?.id;
       if(!Number.isSafeInteger(id)||seen.has(id))
         throw new Error('Unstable or duplicate FID in source page '+offset);
       seen.add(id);all.push(f);
