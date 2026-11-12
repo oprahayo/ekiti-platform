@@ -1,3 +1,4 @@
+import * as React from 'react';
 import type {SourcedPlaceExample} from './sourced-examples.ts';
 import './sourced-place-examples.css';
 
