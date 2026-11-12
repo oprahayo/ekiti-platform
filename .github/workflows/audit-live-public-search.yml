@@ -1,0 +1,63 @@
+name: Read-only live public search audit
+# No database credentials or Cloudflare token. Audits public staging, then
+# publishes a small commit status visible to the connected GitHub workflow.
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - integration/staging-citizen-admin-sprints-03-12
+    paths:
+      - .github/workflows/audit-live-public-search.yml
+      - scripts/audit-live-public-search.mjs
+      - scripts/smoke-staging.mjs
+      - scripts/check-public-readers.mjs
+
+permissions:
+  contents: read
+  statuses: write
+
+jobs:
+  live-public-readers:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Audit live reviewed-data endpoints and release manifest
+        id: audit
+        continue-on-error: true
+        run: node scripts/audit-live-public-search.mjs
+      - name: Publish safe pass/fail signal on audited commit
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          AUDIT_STATE: ${{ steps.audit.outputs.state }}
+          AUDIT_DESCRIPTION: ${{ steps.audit.outputs.description }}
+        run: |
+          node --input-type=module <<'EOF'
+          const state=process.env.AUDIT_STATE==='success'?'success':'failure';
+          const description=(process.env.AUDIT_DESCRIPTION||'Live public staging audit did not complete').slice(0,140);
+          const url='https://api.github.com/repos/'+process.env.GITHUB_REPOSITORY+'/statuses/'+process.env.GITHUB_SHA;
+          const result=await fetch(url,{
+            method:'POST',
+            headers:{Authorization:'Bearer '+process.env.GH_TOKEN,
+              Accept:'application/vnd.github+json',
+              'Content-Type':'application/json',
+              'X-GitHub-Api-Version':'2022-11-28'},
+            body:JSON.stringify({state,context:'ekiti/live-public-search',
+              description,target_url:process.env.GITHUB_SERVER_URL+'/'+
+                process.env.GITHUB_REPOSITORY+'/actions/runs/'+process.env.GITHUB_RUN_ID}),
+            signal:AbortSignal.timeout(10000),
+          });
+          if(!result.ok)throw Error('Cannot publish audit commit status (HTTP '+result.status+')');
+          console.log('Published read-only live audit status: '+state);
+          EOF
+      - name: Fail workflow if live staging does not pass
+        if: steps.audit.outputs.state != 'success'
+        run: |
+          echo 'Live staging public search/readiness needs repair; see audit summary.'
+          exit 1
