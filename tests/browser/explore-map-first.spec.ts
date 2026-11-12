@@ -13,7 +13,7 @@ test('Explore opens exactly one map before a compact illustrated category sheet'
   await expect(page.locator('.directory-map-first-stage .directory-category-tile')).toHaveCount(24);
   await expect(page.locator('.directory-map-sheet .directory-tile-icon')).toHaveCount(24);
   await page.locator('.directory-map-first-stage .maplibregl-canvas').waitFor({state:'visible'});
-  await page.waitForTimeout(1200);
+  await page.waitForTimeout(2300); // Give local boundary geometry time to paint before screenshots.
   const layout=await page.evaluate(()=>{
     const map=document.querySelector('.directory-review-map-canvas')!.getBoundingClientRect();
     const sheet=document.querySelector('.directory-map-sheet')!.getBoundingClientRect();
@@ -32,6 +32,8 @@ test('Explore keeps one map and a side-by-side category panel on wide screens',a
   await page.goto('/explore?map=1');
   await expect(page.locator('.directory-review-map-canvas')).toHaveCount(1);
   await expect(page.locator('.directory-category-tile')).toHaveCount(24);
+  await page.locator('.maplibregl-canvas').waitFor({state:'visible'});
+  await page.waitForTimeout(2300);
   const layout=await page.evaluate(()=>{
     const map=document.querySelector('.directory-review-map')!.getBoundingClientRect();
     const panel=document.querySelector('.directory-map-sheet')!.getBoundingClientRect();
