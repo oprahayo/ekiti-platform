@@ -21,7 +21,6 @@ test('Sprint 08 starts with the unchanged 24 categories, no GPS prompt and no au
   await expect(page.locator('.directory-category-tile')).toHaveCount(24);
   await expect(page.getByRole('searchbox',{name:'Search services and places'})).toBeVisible();
   await expect(page.getByRole('button',{name:'Find nearby places by distance'})).toBeVisible();
-  await page.locator('.directory-nearby-explanation summary').click();
   await expect(page.getByText(/filters by verified LGA, not distance/)).toBeVisible();
   await expect(page.getByText(/Only reviewed, geocoded listings can appear/)).toBeVisible();
   expect(requests).toEqual([]);
