@@ -148,13 +148,15 @@ export default {
         (request.headers.get('Sec-Fetch-Site')!==null &&
          request.headers.get('Sec-Fetch-Site')!=='same-origin'))))
       return json({ error: 'Cross-site request denied' }, 403);
+    // Survives the public-reader catch so a validated query can retain
+    // only its safe, static locality hint when PostgreSQL is unavailable.
+    let unifiedFilters: UnifiedSearchFilters | null = null;
     try {
       const key = request.headers.get('CF-Connecting-IP') || 'local';
       if (!(await env.LOCATION_LIMIT.limit({ key })).success)
         return json({ error: 'Please try again in a minute' }, 429, { 'Retry-After': '60' });
       let point = null;
       let filters: KnowledgeFilters | DirectoryFilters | null = null;
-      let unifiedFilters: UnifiedSearchFilters | null = null;
       let externalQuery: string | null = null;
       let answerQuery: {query:string;language:'en'|'yo'} | null = null;
       let placeId: string | null = null;
