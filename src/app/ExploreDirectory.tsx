@@ -152,12 +152,9 @@ export default function ExploreDirectory() {
           <span>{deviceLocation.status === 'loading' ? 'Checking' : 'Near me'}</span>
         </button>
       </div>
-      <p className="directory-geo-clarification">“Near me” filters by verified LGA, not distance. Use the separate verified nearby search for straight-line ranking.</p>
-      <p className={'directory-location-summary directory-location-' + deviceLocation.status} role="status">
-        {deviceLocation.status === 'prompt'
-          ? 'Enable location to browse your verified Ekiti area, or explore freely.'
-          : deviceLocation.message}
-      </p>
+      {deviceLocation.status !== 'prompt' && <p className={'directory-location-summary directory-location-' + deviceLocation.status} role="status">
+        {deviceLocation.message}
+      </p>}
     </section>
     <div className="directory-map-first-stage" aria-label="Ekiti map and directory categories">
       <React.Suspense fallback={<div className="directory-map-loading" role="status">Opening Ekiti map…</div>}>
@@ -210,6 +207,11 @@ export default function ExploreDirectory() {
         lga={exploreLga||null}
         query={query||null}
         unsupported={Boolean(activeCategory&&!activeCategory.group)}/>
+                    <details className="directory-nearby-explanation">
+            <summary>Location and distance information</summary>
+            <p>“Near me” filters by verified LGA, not distance. Use the separate verified nearby search for straight-line ranking.</p>
+            <p>Location is optional; you can browse Ekiti without granting GPS access.</p>
+          </details>
         </div>
       </div>
     </div>
