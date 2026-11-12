@@ -39,7 +39,7 @@ test('five-tab navigation supports direct deep links', async ({ page }) => {
   ]) {
     await page.goto(path);
     if (path === '/report') await expect(page.getByText(/Welcome\. I will guide you through a report/)).toBeVisible();
-    else await expect(page.getByRole('heading', { name: heading })).toBeVisible();
+    else await expect(page.getByRole('heading', { name: heading, exact: true })).toBeVisible();
   }
 });
 
