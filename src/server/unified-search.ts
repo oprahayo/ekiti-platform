@@ -106,6 +106,21 @@ export function planPublicSearch(input:UnifiedSearchFilters):PublicSearchPlan {
   };
 }
 
+/**
+ * On a public-reader outage retain only the deterministic, reviewed
+ * geographic NAME hint. Never claim that empty SQL results were checked.
+ * Sourced examples and external web references remain separate in the UI.
+ */
+export function unavailableReviewedEkiti(input:UnifiedSearchFilters) {
+  const plan=planPublicSearch(input);
+  return {
+    query:input.query,reviewedOnly:true as const,reviewedAvailable:false as const,
+    places:[],knowledge:[],
+    localityHint:plan.localityHint,
+    locationScope:plan.scope,
+  };
+}
+
 export async function searchReviewedEkiti(db:Client,input:UnifiedSearchFilters) {
   const plan=planPublicSearch(input);
   // Existing source-reviewed SQL functions protect public rows. Never search
@@ -113,7 +128,7 @@ export async function searchReviewedEkiti(db:Client,input:UnifiedSearchFilters) 
   const places=await searchPlaces(db,plan.directory);
   const knowledge=await searchKnowledge(db,plan.knowledge);
   return {
-    query:input.query,reviewedOnly:true as const,
+    query:input.query,reviewedOnly:true as const,reviewedAvailable:true as const,
     places,knowledge,
     localityHint:plan.localityHint,
     locationScope:plan.scope,
