@@ -216,3 +216,36 @@
     scroll-behavior:auto;
   }
 }
+
+/* Secondary disclosures stay accessible without pushing the map below the fold. */
+.directory-map-first-stage .directory-map-credits{
+  margin:8px 0 0;
+  border-top:1px solid var(--border);
+  padding-top:4px;
+}
+.directory-map-first-stage .directory-map-credits summary,
+.directory-map-first-stage .directory-nearby-explanation summary{
+  cursor:pointer;
+  font-size:12px;
+  color:var(--text-secondary);
+  padding:9px 1px;
+  min-height:38px;
+}
+.directory-map-first-stage .directory-map-credits summary:focus-visible,
+.directory-map-first-stage .directory-nearby-explanation summary:focus-visible{
+  outline:2px solid var(--focus);
+  outline-offset:2px;
+}
+.directory-map-first-stage .directory-map-credits .directory-geo-clarification{
+  margin-top:4px;
+  line-height:1.5;
+}
+.directory-map-first-stage .directory-nearby-explanation{
+  margin-top:8px;
+}
+.directory-map-first-stage .directory-nearby-explanation p{
+  margin:5px 0;
+  font-size:11px;
+  line-height:1.5;
+  color:var(--text-secondary);
+}
