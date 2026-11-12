@@ -83,6 +83,25 @@ await note('live release and matching admin demo manifests',async()=>{
   deployedSha=c.commit;
   return 'both workers '+deployedSha;
 });
+await note('reviewed search backend and published data readers are available',async()=>{
+  const probes=[
+    ['/api/areas','geography'],
+    ['/api/search?q=Hotels+near+Ikogosi','unified reviewed search'],
+    ['/api/places?limit=3','reviewed places'],
+    ['/api/knowledge?q=Ekiti&limit=3','reviewed knowledge'],
+  ];
+  const statuses=[];
+  for(const [path,label] of probes){
+    const response=await context.request.get(ORIGIN+path,{timeout:12000});
+    let data=null;
+    try{data=await response.json()}catch{}
+    statuses.push({label,status:response.status(),
+      message:typeof data?.error==='string'?data.error.slice(0,120):null});
+  }
+  const missing=statuses.filter(x=>x.status!==200);
+  assert.equal(missing.length,0,'One or more public data endpoints failed: '+JSON.stringify(statuses));
+  return JSON.stringify(statuses);
+});
 await note('search-first homepage renders at 390px with a single input',async()=>{
   const page=await makePage();
   await navigate(page,'/','h1#welcome-title');
@@ -132,6 +151,8 @@ await note('Explore map lists all LGAs and syncs filter and reset',async()=>{
   await page.getByRole('button',{name:'View all Ekiti'}).click();
   assert.equal(await page.locator('#explore-lga').inputValue(),'');
   const m=await metrics(page);assertNoOverflow(m,390);
+  await page.locator('.maplibregl-canvas').waitFor({state:'visible',timeout:10000});
+  await page.waitForTimeout(2200); // permit asynchronously loaded static GRID3 geometry to paint
   await page.screenshot({path:ARTIFACTS+'/explore-map-phone.png',fullPage:true});
   const mapAlert=await page.locator('.directory-review-map [role=alert]').allInnerTexts();
   if(mapAlert.length)throw Error('Map reports a rendering failure: '+mapAlert.join('; '));
