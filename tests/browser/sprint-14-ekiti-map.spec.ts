@@ -12,6 +12,7 @@ test('Explore opens one interactive Ekiti map without publishing fictional pins'
   await expect(map.getByRole('heading',{name:'Explore Ekiti on the map'})).toBeVisible();
   await expect(map.getByText(/independently reviewed places pinned/)).toBeVisible();
   await expect(map.getByText(/Sample directory entries are never pinned/)).toBeVisible();
+  await map.locator('.directory-map-credits summary').click();
   await expect(map.getByText(/does not show private incident points/)).toBeVisible();
   expect(external).toEqual([]);
 });
