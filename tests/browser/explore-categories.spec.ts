@@ -10,8 +10,8 @@ test('Explore shows compact categories without Yellow Pages branding', async ({ 
   const api: string[] = [];
   page.on('request', request => { if (request.url().includes('/api/places')) api.push(request.url()); });
   await page.goto('/explore');
-  await expect(page.getByRole('heading', { name: 'Browse Categories' })).toBeVisible();
-  await expect(page.getByText('Find places and services in Ekiti.')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Explore Ekiti', exact: true })).toBeVisible();
+  await expect(page.getByText('Find places and services on the map, then choose what you need.')).toBeVisible();
   await expect(page.locator('.directory-category-tile')).toHaveCount(24);
   await expect(page.locator('.directory-tile-icon')).toHaveCount(24);
   await expect(page.getByRole('searchbox', { name: 'Search services and places' })).toBeVisible();
@@ -54,7 +54,7 @@ for (const width of [280, 320, 360, 375, 390, 428, 768, 1024]) {
       };
     });
     expect(metrics.documentWidth).toBeLessThanOrEqual(metrics.viewportWidth);
-    expect(metrics.columns).toBe(width <= 420 ? 3 : width < 560 ? 4 : 6);
+    expect(metrics.columns).toBe(3);
     expect(Math.min(...metrics.tileWidths)).toBeGreaterThanOrEqual(65);
     expect(Math.min(...metrics.tileHeights)).toBeGreaterThanOrEqual(70);
     expect(Math.max(...metrics.tileHeights)).toBeLessThanOrEqual(110);

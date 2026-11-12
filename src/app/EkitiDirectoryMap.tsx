@@ -127,8 +127,12 @@ export default function EkitiDirectoryMap({places,onSelectLga,selectedLga=''}:{
  return <section className="directory-review-map" aria-label="Reviewed Ekiti directory map">
    <div className="directory-review-map-header">
      <h2>Explore Ekiti on the map</h2>
-     <p>16 local government boundaries · {plotted.features.length} independently reviewed places pinned</p>
+     <p>16 local government boundaries · {plotted.features.length} independently reviewed places pinned.
+       {plotted.features.length===0 && <> No reviewed business coordinates yet. Sample directory entries are never pinned as real locations.</>}
+     </p>
    </div>
+   <div ref={element} className="directory-review-map-canvas" role="img"
+     aria-label="Interactive Ekiti local government boundaries and independently reviewed directory pins"/>
    <div className="directory-map-area-toolbar">
      <details className="directory-map-area-chooser">
        <summary>Find an LGA on the map</summary>
@@ -154,13 +158,10 @@ export default function EkitiDirectoryMap({places,onSelectLga,selectedLga=''}:{
      Selected area: {lgas.find(lga=>lga.id===selectedLga)?.name || 'Ekiti'}.
      The directory filter applies to this LGA; this is not a distance search.
    </p>}
-   <div ref={element} className="directory-review-map-canvas" role="img"
-     aria-label="Interactive Ekiti local government boundaries and independently reviewed directory pins"/>
+
    {failed&&<p role="alert">The map is unavailable. You can still browse by LGA above.</p>}
-   {plotted.features.length===0&&<p role="status">
-     No reviewed business coordinates are available for these filters.
-     Sample directory entries are never pinned as real locations.
-   </p>}
+   <details className="directory-map-credits">
+     <summary>Map sources and privacy</summary>
    <p className="directory-geo-clarification">Select an LGA on the map to filter the directory.
      Only reviewed directory coordinates appear as markers. The map does not show
      private incident points or emergency reports. The 16 LGA boundaries come from
@@ -168,5 +169,6 @@ export default function EkitiDirectoryMap({places,onSelectLga,selectedLga=''}:{
      (eHealth Africa and Proxy Logics, 2020, CC BY 4.0)</a>.
      This is not yet a complete map of Ekiti towns or villages.
      No third-party tile requests or GPS permission are required.</p>
+   </details>
  </section>;
 }
