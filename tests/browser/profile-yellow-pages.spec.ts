@@ -45,7 +45,7 @@ for (const width of [280, 320, 360, 375, 390, 428, 768]) {
 test('Yellow Pages uses the shared theme and useful non-fabricated shortcuts', async ({ page }) => {
   await page.goto('/explore');
   await expect(page.locator('.directory-hero')).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Browse Categories' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Explore Ekiti', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Near me' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Prepare a listing' })).toHaveAttribute('href', '/listings/new');
   await expect(page.locator('.directory-manual-area:not([open])')).toHaveCount(1);
