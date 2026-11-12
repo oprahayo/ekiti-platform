@@ -162,6 +162,8 @@ export default function EkitiDirectoryMap({places,onSelectLga,selectedLga=''}:{
      No reviewed business coordinates are available for these filters.
      Sample directory entries are never pinned as real locations.
    </p>}
+   <details className="directory-map-credits">
+     <summary>Map sources and privacy</summary>
    <p className="directory-geo-clarification">Select an LGA on the map to filter the directory.
      Only reviewed directory coordinates appear as markers. The map does not show
      private incident points or emergency reports. The 16 LGA boundaries come from
@@ -169,5 +171,6 @@ export default function EkitiDirectoryMap({places,onSelectLga,selectedLga=''}:{
      (eHealth Africa and Proxy Logics, 2020, CC BY 4.0)</a>.
      This is not yet a complete map of Ekiti towns or villages.
      No third-party tile requests or GPS permission are required.</p>
+   </details>
  </section>;
 }
