@@ -116,7 +116,7 @@ export function buildSettlementReview(raw,boundaries){
   const reject=(id,reason)=>{quarantine.push({sourceId:id,reason});};
   for(const feature of raw.features){
     const attrs=feature?.properties||{};
-    const rawId=attrs.FID;
+    const rawId=attrs.FID ?? feature?.id;
     const id=Number.isSafeInteger(rawId)&&rawId>=0?String(rawId):'';
     if(!id){reject(null,'missing-source-object-id');continue;}
     if(seenIds.has(id)){reject(id,'duplicate-source-object-id');continue;}
