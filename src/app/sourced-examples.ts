@@ -123,7 +123,7 @@ const words = (text: string): string[] =>
 /** A local-only matcher; never substitutes for independently approved listings. */
 export function findSourcedExamples(
   query: string,
-  filters: {category?: SourcedExampleCategory | null; lgaId?: string | null} = {},
+  filters: {category?: SourcedExampleCategory | 'Offices' | null; lgaId?: string | null} = {},
 ): SourcedPlaceExample[] {
   const trimmed = query.trim();
   if (trimmed.length > 100 || /@/.test(trimmed) ||
