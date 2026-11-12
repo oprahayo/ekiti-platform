@@ -145,9 +145,9 @@ await note('reporting offers conversational private-draft entry without submissi
   await method.click();
   const categories=page.locator('.guided-category-choices button');
   await categories.first().waitFor({state:'visible',timeout:20000});
-  const name=await categories.first().innerText();
-  if(/Emergency/i.test(name))throw Error('Audit refuses to open Emergency category');
-  await categories.first().click();
+  const categoryButton=categories.filter({hasNotText:/Emergency/i}).first();
+  await categoryButton.waitFor({state:'visible',timeout:10000});
+  await categoryButton.click();
   await page.locator('#guided-description').waitFor({state:'visible',timeout:20000});
   await page.locator('#guided-description').fill('QA-only example: a damaged public road requiring inspection.');
   await page.screenshot({path:ARTIFACTS+'/report-draft-phone.png',fullPage:true});
