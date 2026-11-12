@@ -1777,11 +1777,3 @@ button { min-height: 44px; border-radius: var(--radius-input); font-size: 14px; 
 .app-shell :is(.inner-universal-search,.gateway-search-field,.directory-search,.ask-bar):focus-within {
   outline:2px solid var(--focus); outline-offset:2px;
 }
-.directory-source-examples {margin:20px 0;padding:15px 0;border-top:1px solid var(--border)}
-.directory-source-examples h2 {font-size:17px;margin:0 0 6px}
-.directory-source-examples p {font-size:12px;line-height:1.5;color:var(--text-secondary);margin:0 0 12px}
-.directory-source-examples ul {list-style:none;display:grid;gap:10px;padding:0;margin:0}
-.directory-source-examples li {padding:12px 14px;border:1px solid var(--border);border-radius:12px}
-.directory-source-examples li strong {font-size:14px;display:block}
-.directory-source-examples li span {display:block;color:var(--text-secondary);font-size:12px;line-height:1.55;margin:4px 0 8px}
-.directory-source-examples li a {font-size:12px;overflow-wrap:anywhere}
