@@ -36,6 +36,22 @@ const parents = new Set(lgas.map((a) => a.id));
 assert.equal(parents.size, 16);
 assert.equal(new Set(wards.map((a) => a.id)).size, 177);
 assert.ok(wards.every((a) => parents.has(a.parentId)));
+// A successful geography resolver does NOT prove the reviewed civic search
+// migration is installed. All three reader endpoints must work even when
+// there are no approved directory/knowledge records yet.
+const unified = await (await request('/api/search?q=Hotels+near+Ikogosi')).json();
+assert.equal(unified.query, 'Hotels near Ikogosi');
+assert.equal(unified.reviewedOnly, true);
+assert.ok(Array.isArray(unified.places));
+assert.ok(Array.isArray(unified.knowledge));
+for (const [path,kind] of [
+  ['/api/places?limit=3','places'],
+  ['/api/knowledge?q=Ekiti&limit=3','knowledge'],
+]) {
+  const data = await (await request(path)).json();
+  assert.equal(data.reviewedOnly, true, kind + ' response must be reviewed-only');
+  assert.ok(Array.isArray(data.items), kind + ' response must contain items');
+}
 const response = await request('/api/resolve', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
@@ -68,5 +84,5 @@ for (const [language, question] of [
   assert.equal(answer.confidence, 'source-backed');
 }
 console.log(
-  'Page, verified directory, Efon boundary lookup, unmapped ward and English/Yoruba Ask passed at ' + origin.origin,
+  'Page, reviewed search/places/knowledge readers, geographic directory, Efon boundary lookup, unmapped ward and English/Yoruba Ask passed at ' + origin.origin,
 );
