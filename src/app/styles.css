@@ -1751,3 +1751,37 @@ button { min-height: 44px; border-radius: var(--radius-input); font-size: 14px; 
   .guided-report-page .guided-bubble,.track-page .conversation-turn,
   .track-page .track-typing span {animation:none!important;transition:none!important;transform:none!important}
 }
+
+
+/* Single-surface search inputs on every route. The outer form/field owns the
+   visible border; native controls must never paint a second textbox. */
+.app-shell :is(.inner-universal-search,.gateway-search-field,.directory-search,.ask-bar) > input[type="search"],
+.app-shell .directory-page .directory-search > input[type="search"],
+.app-shell header.app-header form.inner-universal-search > input[type="search"],
+.app-shell .search-engine-landing .gateway-search-field > input[type="search"],
+.app-shell .ask-bar > input[type="search"] {
+  flex:1 1 auto; min-width:0; width:0; max-width:100%;
+  margin:0; padding-inline:0; box-sizing:border-box;
+  border:0!important; border-radius:0!important;
+  background:transparent!important; background-image:none!important;
+  box-shadow:none!important; outline:0!important;
+  -webkit-appearance:none; appearance:none;
+}
+.app-shell :is(.inner-universal-search,.gateway-search-field,.directory-search,.ask-bar) > input[type="search"]:is(:focus,:hover,:active) {
+  border:0!important; box-shadow:none!important;
+  outline:0!important; background:transparent!important;
+}
+.app-shell :is(.inner-universal-search,.gateway-search-field,.directory-search,.ask-bar) {
+  min-width:0; box-sizing:border-box;
+}
+.app-shell :is(.inner-universal-search,.gateway-search-field,.directory-search,.ask-bar):focus-within {
+  outline:2px solid var(--focus); outline-offset:2px;
+}
+.directory-source-examples {margin:20px 0;padding:15px 0;border-top:1px solid var(--border)}
+.directory-source-examples h2 {font-size:17px;margin:0 0 6px}
+.directory-source-examples p {font-size:12px;line-height:1.5;color:var(--text-secondary);margin:0 0 12px}
+.directory-source-examples ul {list-style:none;display:grid;gap:10px;padding:0;margin:0}
+.directory-source-examples li {padding:12px 14px;border:1px solid var(--border);border-radius:12px}
+.directory-source-examples li strong {font-size:14px;display:block}
+.directory-source-examples li span {display:block;color:var(--text-secondary);font-size:12px;line-height:1.55;margin:4px 0 8px}
+.directory-source-examples li a {font-size:12px;overflow-wrap:anywhere}
