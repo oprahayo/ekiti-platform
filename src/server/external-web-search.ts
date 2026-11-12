@@ -1,0 +1,187 @@
+/**
+ * Optional, privacy-conscious web discovery through a configured search API.
+ * Results are external references, NEVER reviewed civic knowledge or AI facts.
+ * The Worker contacts a single fixed upstream; URL results are displayed as links,
+ * never fetched/crawled by our Worker.
+ */
+export interface ExternalWebResult {
+  title: string;
+  description: string;
+  url: string;
+  domain: string;
+}
+export interface ExternalWebResultSet {
+  query: string;
+  scope: 'ekiti-public-web';
+  provider: 'Brave Search' | 'Wikipedia';
+  verifiedByEkitiCivic: false;
+  results: ExternalWebResult[];
+}
+export class ExternalQueryError extends Error {}
+export class ExternalProviderError extends Error {}
+
+const sensitiveText=/\b(i (want|need|would like) to report|my report|report an incident|submit (my|a) (report|complaint)|file a complaint|my phone|my address|my name|confidential|private case|witnessed an emergency)\b/i;
+
+export function parseExternalQuery(params:URLSearchParams):string {
+  if(params.getAll('q').length!==1||[...params.keys()].some(key=>key!=='q'))
+    throw new ExternalQueryError();
+  const query=(params.get('q')||'').trim().replace(/\s+/gu,' ');
+  if(query.length<2||query.length>90 ||
+    /[\p{Cc}\p{Cf}]/u.test(query) ||
+    /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i.test(query) ||
+    /\+?[0-9][\d ()-]{7,}[0-9]/u.test(query) || sensitiveText.test(query))
+    throw new ExternalQueryError();
+  return query;
+}
+/**
+ * A wide web provider can return Nigerian or unrelated results even when
+ * "Ekiti" is present in the request. The returned content itself must
+ * establish an Ekiti connection; merely adding Ekiti to q is not evidence.
+ *
+ * Strong locality names are included here, but ambiguous short names (e.g.
+ * Oye, Ise, Ado) intentionally cannot qualify a result on their own.
+ */
+const ekitiEvidence=/\bekiti\b|\bado[\s-]+ekiti\b|\bikogosi\b|\bikere[\s-]+ekiti\b|\bikole[\s-]+ekiti\b|\bilawe[\s-]+ekiti\b|\bile[\s-]+ife[\s-]+ekiti\b|\befon[\s-]+alaaye\b|\bijero[\s-]+ekiti\b|\biludun[\s-]+ekiti\b|\beda[\s-]+oniyo\b/i;
+const ekitiGovHost=/^(?:www\.)?ekitistate\.gov\.ng$/i;
+export function hasEkitiContext(value:string):boolean {return ekitiEvidence.test(value);}
+
+export function ekitiResultRelevance(result:{
+  title:string;description:string;url:string;domain:string
+}):number {
+  let host='';
+  try{host=new URL(result.url).hostname.toLowerCase();}
+  catch{return 0;}
+  const titleEvidence=ekitiEvidence.test(result.title);
+  const descriptionEvidence=ekitiEvidence.test(result.description);
+  const urlEvidence=ekitiEvidence.test(new URL(result.url).pathname.replace(/[_%-]/g,' '));
+  const official=ekitiGovHost.test(host);
+  if(!official&&!titleEvidence&&!descriptionEvidence&&!urlEvidence)return 0;
+  return (official?5:0)+(titleEvidence?4:0)+(descriptionEvidence?2:0)+(urlEvidence?1:0);
+}
+
+function rankedEkitiResults(items:ExternalWebResult[]):ExternalWebResult[] {
+  return items.map((item,index)=>({item,index,score:ekitiResultRelevance(item)}))
+    .filter(value=>value.score>0)
+    .sort((a,b)=>b.score-a.score||a.index-b.index)
+    .slice(0,8).map(value=>value.item);
+}
+
+function verifiedWebUrl(value:unknown):string|null {
+  if(typeof value!=='string'||value.length>2000)return null;
+  try {
+    const url=new URL(value);
+    if(url.protocol!=='https:'||url.username||url.password||
+      url.hostname==='localhost'||url.hostname.endsWith('.local'))return null;
+    return url.href;
+  } catch{return null;}
+}
+function textValue(value:unknown,max:number):string {
+  return typeof value==='string'?
+    value.replace(/<[^>]*>/g,' ').replace(/\s+/gu,' ').trim().slice(0,max):'';
+}
+async function readCappedJson(response:Response):Promise<unknown> {
+  if(response.headers.get('content-type')?.split(';')[0]?.trim()!=='application/json')
+    throw new ExternalProviderError('Unsupported search response');
+  const declared=Number(response.headers.get('content-length')||0);
+  if(declared>180_000)throw new ExternalProviderError('Search response too large');
+  if(!response.body)throw new ExternalProviderError('Empty search response');
+  let bytes=0, raw='';
+  const reader=response.body.getReader();
+  const decoder=new TextDecoder();
+  while(true) {
+    const {done,value}=await reader.read();
+    if(done)break;
+    bytes+=value.byteLength;
+    if(bytes>180_000){await reader.cancel();throw new ExternalProviderError('Search response too large');}
+    raw+=decoder.decode(value,{stream:true});
+  }
+  try{return JSON.parse(raw+decoder.decode()) as unknown;}
+  catch{throw new ExternalProviderError('Malformed search response');}
+}
+export async function fetchEkitiWebResults(
+  query:string,
+  key:string,
+  fetchImpl:typeof fetch=fetch,
+):Promise<ExternalWebResultSet> {
+  if(!key.trim())throw new ExternalProviderError('Web search unavailable');
+  const url=new URL('https://api.search.brave.com/res/v1/web/search');
+  url.searchParams.set('q',/\bekiti\b/i.test(query)?query:'Ekiti State Nigeria '+query);
+  // Request a modest candidate pool; relevance is validated before display.
+  url.searchParams.set('count','16');
+  // Ekiti/Nigeria intent is in q; omit optional country filters for API compatibility.
+  url.searchParams.set('search_lang','en');
+  url.searchParams.set('safesearch','strict');
+  let response:Response;
+  try{
+    response=await fetchImpl(url.toString(),{
+      method:'GET',
+      headers:{Accept:'application/json','X-Subscription-Token':key},
+      redirect:'error',signal:AbortSignal.timeout(7000),
+    });
+  }catch{throw new ExternalProviderError('Search provider unavailable');}
+  if(!response.ok)throw new ExternalProviderError('Search provider unavailable');
+  const raw=await readCappedJson(response);
+  if(!raw||typeof raw!=='object'||Array.isArray(raw))
+    throw new ExternalProviderError('Unexpected search response');
+  const results=(raw as {web?:{results?:unknown}}).web?.results;
+  if(!Array.isArray(results))throw new ExternalProviderError('Unexpected search response');
+  const seen=new Set<string>();
+  const safe:ExternalWebResult[]=[];
+  for(const result of results.slice(0,16)){
+    if(!result||typeof result!=='object')continue;
+    const entry=result as Record<string,unknown>;
+    const verified=verifiedWebUrl(entry.url);
+    if(!verified)continue;
+    const canonical=new URL(verified);
+    const title=textValue(entry.title,160);
+    if(!title||seen.has(verified))continue;
+    seen.add(verified);
+    safe.push({
+      title,description:textValue(entry.description,360),
+      url:verified,domain:canonical.hostname,
+    });
+    if(safe.length===16)break;
+  }
+  return {
+    query,scope:'ekiti-public-web',provider:'Brave Search',
+    verifiedByEkitiCivic:false,results:rankedEkitiResults(safe),
+  };
+}
+
+/** No-key public fallback. Limited to encyclopedia references, not news or the whole web. */
+export async function fetchEkitiWikipediaResults(
+  query:string,fetchImpl:typeof fetch=fetch,
+):Promise<ExternalWebResultSet> {
+  const url=new URL('https://en.wikipedia.org/w/rest.php/v1/search/page');
+  url.searchParams.set('q',/\bekiti\b/i.test(query)?query:'Ekiti '+query);
+  url.searchParams.set('limit','6');
+  let response:Response;
+  try{
+    response=await fetchImpl(url.toString(),{
+      method:'GET',redirect:'error',signal:AbortSignal.timeout(7000),
+      headers:{Accept:'application/json',
+        'Api-User-Agent':'EkitiCivic/0.1 (https://github.com/oprahayo/ekiti-platform)'},
+    });
+  }catch{throw new ExternalProviderError('Wikipedia search unavailable');}
+  if(!response.ok)throw new ExternalProviderError('Wikipedia search unavailable');
+  const raw=await readCappedJson(response);
+  if(!raw||typeof raw!=='object'||Array.isArray(raw))
+    throw new ExternalProviderError('Unexpected Wikipedia response');
+  const pages=(raw as {pages?:unknown}).pages;
+  if(!Array.isArray(pages))throw new ExternalProviderError('Unexpected Wikipedia response');
+  const results:ExternalWebResult[]=[];
+  for(const item of pages.slice(0,6)){
+    if(!item||typeof item!=='object')continue;
+    const entry=item as Record<string,unknown>;
+    const title=textValue(entry.title,160),key=textValue(entry.key,200);
+    if(!title||!key)continue;
+    const href=verifiedWebUrl('https://en.wikipedia.org/wiki/'+encodeURIComponent(key));
+    if(!href)continue;
+    results.push({
+      title,description:textValue(entry.description||entry.excerpt,300),
+      url:href,domain:'en.wikipedia.org',
+    });
+  }
+  return {query,scope:'ekiti-public-web',provider:'Wikipedia',
+    verifiedByEkitiCivic:false,results:rankedEkitiResults(results)};
+}

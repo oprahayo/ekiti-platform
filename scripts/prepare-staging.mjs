@@ -20,6 +20,21 @@ if (config.hyperdrive?.length !== 1 || config.hyperdrive[0].binding !== 'HYPERDR
 config.name = 'ekiti-platform-staging';
 config.hyperdrive[0].id = id;
 config.ratelimits[0].namespace_id = '2003';
+// Explicitly keep unapproved private services inert in preview even if the
+// remote staging Worker previously carried an old variable. A deploy alone
+// is not legal/security approval for live reports, evidence or proximity.
+config.vars={
+  ...(config.vars || {}),
+  REPORTING_ENABLED:'false',
+  EVIDENCE_ENABLED:'false',
+  NEARBY_DIRECTORY_ENABLED:'false',
+  NEARBY_DIRECTORY_REVIEWED:'false',
+  // Public, user-initiated, rate-limited Wikimedia discovery. No private input.
+  EXTERNAL_WEB_SEARCH_ENABLED:'true',
+  // Public-only, click-triggered and restricted source reading. No model secret in preview.
+  PUBLIC_SOURCE_ANSWER_ENABLED:'true',
+  GROUNDED_AI_ENABLED:'false',
+};
 const path = fileURLToPath(
   new URL(dryRun ? 'wrangler.dry-run.local.json' : 'wrangler.staging.local.json', root),
 );

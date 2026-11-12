@@ -1,13 +1,13 @@
 import { test, expect } from '@playwright/test';
 
-test('welcome gateway gives distinct report, feedback, post, explore, listing and ask routes', async ({ page }) => {
+test('search gateway keeps civic workflows accessible from the products menu',async({page})=>{
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Welcome to Ekiti Civic' })).toBeVisible();
-  await expect(page.getByText('Your mobile gateway to Ekiti State.')).toBeVisible();
-  await expect(page.locator('.welcome-action')).toHaveCount(5);
-  await expect(page.locator('#home-ask-input')).toHaveCount(0);
-  for(const route of ['/report','/report?kind=feedback','/explore','/listings/new','/ask']) {
-    await expect(page.locator('.welcome-action[href="'+route+'"]')).toHaveCount(1);
+  await expect(page.getByRole('heading',{name:'Welcome to Ekiti Civic'})).toBeVisible();
+  await expect(page.getByRole('searchbox',{name:'Search Ekiti State'})).toBeVisible();
+  await expect(page.locator('.welcome-action')).toHaveCount(0);
+  await page.getByLabel('Open Ekiti Civic menu').click();
+  for(const route of ['/report','/report?kind=feedback','/explore','/listings/new','/search']){
+    await expect(page.locator('.civic-products-panel a[href="'+route+'"]')).toHaveCount(1);
   }
 });
 
@@ -31,6 +31,7 @@ test('guided report choices advance real conversation and save an honest private
   await page.getByRole('button',{name:/No follow-up contact/}).click();
   await expect(page.getByRole('heading',{name:'Review your private draft'})).toBeVisible();
   await expect(page.locator('.review-list')).toContainText('Ado-Ekiti');
+  await page.getByLabel('I understand this is a local draft, not a report submission, and I choose to save it here.').check();
   await page.getByRole('button',{name:'Save private draft on this device'}).click();
   await expect(page.getByRole('heading',{name:'Draft saved locally'})).toBeVisible();
   await expect(page.getByText(/No report has been submitted/)).toBeVisible();
@@ -63,6 +64,7 @@ test('capture is evidence only: photo preview, optional email and no upload/noti
   await page.getByRole('button',{name:'Continue'}).click();
   await expect(page.getByRole('heading',{name:'Review your private draft'})).toBeVisible();
   await expect(page.getByText(/delivery not active/)).toBeVisible();
+  await page.getByLabel('I understand this is a local draft, not a report submission, and I choose to save it here.').check();
   await page.getByRole('button',{name:'Save private draft on this device'}).click();
   const stored=await page.evaluate(()=>sessionStorage.getItem('ekiti-guided-draft-v1'));
   expect(stored).not.toContain('resident@example.test');
@@ -89,9 +91,9 @@ test('feedback and listings remain editable drafts without a public forum', asyn
   await page.locator('#listing-lga').selectOption('Ikere');
   await page.locator('#listing-description').fill('An independently operated shop providing affordable clothing repairs and alterations.');
   await page.getByRole('button',{name:'Review listing draft'}).click();
-  await expect(page.getByRole('heading',{name:'Listing preview prepared'})).toBeVisible();
-  await expect(page.getByText(/Not published or submitted/)).toBeVisible();
-  await page.getByRole('link',{name:'Browse Ekiti'}).click();
+  await expect(page.getByRole('heading',{name:'Review your listing'})).toBeVisible();
+  await expect(page.getByText(/no data is sent to a moderator/)).toBeVisible();
+  await page.getByRole('link',{name:'Explore existing reviewed listings'}).click();
   await expect(page).toHaveURL(/\/explore$/);
 });
 
@@ -99,7 +101,7 @@ for (const width of [280,320,390,768,1280]) {
   test('gateway and guided chat fit without horizontal scrolling at '+width+'px', async ({ page }) => {
     await page.setViewportSize({ width, height:800 });
     await page.goto('/');
-    await expect(page.locator('.welcome-action')).toHaveCount(5);
+    await expect(page.getByRole('searchbox',{name:'Search Ekiti State'})).toBeVisible();
     const home = await page.evaluate(()=>({doc:document.documentElement.scrollWidth,view:innerWidth}));
     expect(home.doc).toBeLessThanOrEqual(home.view);
     if ([280,390,1280].includes(width))

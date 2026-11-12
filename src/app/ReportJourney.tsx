@@ -1,6 +1,9 @@
 import * as React from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { lgas } from './fixtures.ts';
+import IncidentLocationPicker from './IncidentLocationPicker.tsx';
+import EmergencyContactNotice from './EmergencyContactNotice.tsx';
+import {inferEkitiLocality} from '../geo/reviewed-localities.ts';
 import { useApp } from './state.tsx';
 import {
   CHAT_SOUND_KEY, REPORT_CATEGORIES, REPORT_DRAFT_KEY, REPORT_STEPS,
@@ -8,6 +11,13 @@ import {
   type JourneyStep, type ReportCategory, type EvidenceMethod,
   type SavedJourneyDraft,
 } from './report-journey-state.ts';
+import {
+  INCIDENT_TAXONOMY, taxonomyQuestion, taxonomyChoiceLabel,
+  reviewSignal, possibleSameTabDraft, type DangerAnswer,
+ } from './incident-taxonomy.ts';
+import {
+  restrictPreviewEvidence, hasExpiredLocalDraft, type SafeguardConcern,
+} from './report-safeguarding.ts';
 
 const OnDeviceRecorder = React.lazy(() => import('./OnDeviceRecorder.tsx'));
 
@@ -62,8 +72,16 @@ export default function ReportJourney() {
   const [method, setMethod] = React.useState<EvidenceMethod>('Text');
   const [category, setCategory] = React.useState<ReportCategory>(feedback ? 'Suggestion' : 'Other');
   const [description, setDescription] = React.useState('');
+  const [subcategory,setSubcategory] = React.useState('');
+  const [immediateDanger,setImmediateDanger] = React.useState<DangerAnswer>('unknown');
+  const [resumedDraft,setResumedDraft] = React.useState(false);
+  const [safeguardConcerns,setSafeguardConcerns] = React.useState<SafeguardConcern[]>([]);
+  const [localSaveAcknowledged,setLocalSaveAcknowledged] = React.useState(false);
+  const [savedSuccessfully,setSavedSuccessfully] = React.useState(false);
   const [community, setCommunity] = React.useState('');
   const [lgaId, setLgaId] = React.useState('');
+  const [incidentPointSource,setIncidentPointSource] = React.useState<'manual'|'boundary_confirmed'|'text_candidate'>('manual');
+  const [incidentWardName,setIncidentWardName] = React.useState<string|null>(null);
   const [media, setMedia] = React.useState<File | null>(null);
   const [mediaUrl, setMediaUrl] = React.useState('');
   const [mediaError, setMediaError] = React.useState('');
@@ -80,8 +98,12 @@ export default function ReportJourney() {
   const [history,setHistory] = React.useState<Step[]>([]);
   const [savedDraft,setSavedDraft] = React.useState<SavedJourneyDraft|null>(() => {
     try {
-      return readJourneyDraft(sessionStorage.getItem(REPORT_DRAFT_KEY),
-        feedback?'feedback':'report', lgas.map(area=>area.id));
+      const raw = sessionStorage.getItem(REPORT_DRAFT_KEY);
+      if(hasExpiredLocalDraft(raw)) {
+        sessionStorage.removeItem(REPORT_DRAFT_KEY);
+        return null;
+      }
+      return readJourneyDraft(raw, feedback?'feedback':'report', lgas.map(area=>area.id));
     } catch { return null; }
   });
   const timerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -116,6 +138,7 @@ export default function ReportJourney() {
     const previous=history.at(-1);
     if(!previous) return;
     setStep(previous);
+    setLocalSaveAcknowledged(false);
     setHistory(current=>current.slice(0,-1));
     setLines(current=>current.slice(0,-2)); // One answer + its response per completed step.
     setValidation('');setMediaError('');
@@ -133,13 +156,19 @@ export default function ReportJourney() {
         {id:nextId.current++,speaker:'assistant',text:journeyPrompt('category',language)}]);
       setHistory([]);
     }
-    setStep('category');setValidation('');
+    setStep('category');setValidation('');setLocalSaveAcknowledged(false);
   }
 
   function resumeDraft() {
     if(!savedDraft || busyRef.current) return;
     setMethod(savedDraft.method);setCategory(savedDraft.category);
     setDescription(savedDraft.description);setLgaId(savedDraft.lgaId);
+    // Restored drafts have only a self-selected LGA; no GPS/ward proof persists.
+    setIncidentPointSource('manual');setIncidentWardName(null);
+    setSubcategory(savedDraft.subcategory ?? '');
+    setImmediateDanger(savedDraft.immediateDanger ?? 'unknown');
+    setResumedDraft(true);
+    setSafeguardConcerns([]);setLocalSaveAcknowledged(false);setSavedSuccessfully(false);
     setCommunity(savedDraft.community);setMedia(null);setMediaUrl('');
     setMediaError('');setContact('');setContactMethod('none');setCaptureMode(null);
     setHistory([]);setValidation('');setSavedNote('');
@@ -191,6 +220,9 @@ export default function ReportJourney() {
       setStep('method');setHistory([]);
       setLines(initialLines(feedback,language));nextId.current=2;
       setDescription('');setLgaId('');setCommunity('');
+      setIncidentPointSource('manual');setIncidentWardName(null);
+      setSubcategory('');setImmediateDanger('unknown');setResumedDraft(false);
+      setSafeguardConcerns([]);setLocalSaveAcknowledged(false);setSavedSuccessfully(false);
       setMedia(null);setMediaUrl('');setContact('');setContactMethod('none');
       try { setSavedDraft(readJourneyDraft(sessionStorage.getItem(REPORT_DRAFT_KEY),
         feedback?'feedback':'report',lgas.map(area=>area.id))); }
@@ -238,16 +270,30 @@ export default function ReportJourney() {
     setHistory([]);
     setStep('method'); setLines(initialLines(feedback,language)); nextId.current = 2;
     setMethod('Text'); setCategory(feedback ? 'Suggestion' : 'Other'); setDescription('');
-    setCommunity(''); setLgaId(''); setMedia(null); setMediaUrl(''); setMediaError('');
+    setSubcategory('');setImmediateDanger('unknown');setResumedDraft(false);
+    setSafeguardConcerns([]);setLocalSaveAcknowledged(false);setSavedSuccessfully(false);
+    setCommunity(''); setLgaId('');setIncidentPointSource('manual');setIncidentWardName(null);
+    setMedia(null); setMediaUrl(''); setMediaError('');
     setContactMethod('none'); setContact(''); setValidation(''); setSavedNote(''); setCaptureMode(null);
     discardDraft();
   }
+  function toggleSafeguard(concern:SafeguardConcern,enabled:boolean) {
+    setSafeguardConcerns(current=>{
+      if (!enabled) return current.filter(value=>value!==concern);
+      if (current.includes(concern)) return current;
+      return [...current,concern];
+    });
+    if(enabled) {setMedia(null);setMediaUrl('');setCaptureMode(null);}
+    setLocalSaveAcknowledged(false);
+  }
   function chooseMethod(value: EvidenceMethod) {
     setMethod(value); setMedia(null); setMediaUrl(''); setMediaError(''); setCaptureMode(null);
+    setResumedDraft(false);
     respond(value + ' · ' + methodHelp[value], 'category');
   }
   function chooseCategory(value: ReportCategory) {
-    setCategory(value);
+    setCategory(value);setSubcategory('');setImmediateDanger('unknown');
+    setLocalSaveAcknowledged(false);
     respond(value, 'description', value === 'Emergency'
       ? 'If anyone is in immediate danger, contact emergency services directly. This project does not dispatch help. You can still describe the incident here as a private draft.'
       : journeyPrompt('description',language), value === 'Emergency');
@@ -255,7 +301,23 @@ export default function ReportJourney() {
   function nextDescription() {
     const text = description.trim();
     if (text.length < 20) { setValidation('Please add at least 20 characters so the issue is clear.'); return; }
-    respond(text, 'location');
+    // Local browser-only inference: never transmit a private narrative as a
+    // search query. A sourced place name suggests an LGA, not a verified GPS pin.
+    const inference = inferEkitiLocality(text);
+    if(inference.status === 'candidate' &&
+       lgas.some(area=>area.id===inference.place.lgaId)) {
+      setLgaId(inference.place.lgaId);
+      setCommunity(inference.place.kind==='lga'?'':inference.place.name);
+      setIncidentPointSource('text_candidate');
+      setIncidentWardName(null);
+      respond(text,'location','I found a possible location in your description. Please confirm it is where the incident occurred, or change it.');
+    } else {
+      setLgaId('');setCommunity('');
+      setIncidentPointSource('manual');setIncidentWardName(null);
+      respond(text,'location',inference.status==='ambiguous'
+        ? 'I found places in different local government areas. Please choose where the incident occurred.'
+        : 'I could not confidently identify the incident area from the description. Choose a town or LGA, or use the map.');
+    }
   }
   function nextLocation() {
     const selected = lgas.find(area => area.id === lgaId);
@@ -264,6 +326,11 @@ export default function ReportJourney() {
   }
   function selectMedia(file?: File) {
     setMediaError('');
+    if (restrictPreviewEvidence(safeguardConcerns)) {
+      setMedia(null);setMediaUrl('');
+      setMediaError('Media capture is unavailable for sensitive drafts in this preview. Continue without an attachment.');
+      return;
+    }
     if (!file || method === 'Text') return;
     if (!ACCEPT[method].split(',').includes(file.type) || file.size > MAX_FILE[method] || file.size === 0) {
       setMedia(null); setMediaUrl('');
@@ -273,6 +340,11 @@ export default function ReportJourney() {
     setMedia(file); setMediaUrl(URL.createObjectURL(file));
   }
   function nextEvidence(skip = false) {
+    if(restrictPreviewEvidence(safeguardConcerns)) {
+      setMedia(null);setMediaUrl('');
+      respond('Sensitive draft · no attachment', 'followup');
+      return;
+    }
     if (method !== 'Text' && !media && !skip) {
       setMediaError('Select evidence or choose Continue without attachment.'); return;
     }
@@ -292,21 +364,40 @@ export default function ReportJourney() {
     respond('Contact entered for ' + (contactMethod === 'email' ? 'email' : 'SMS') + ' (not sent)', 'review');
   }
   function save() {
+    if (!localSaveAcknowledged) {
+      setValidation('Acknowledge the local browser storage notice before saving.');
+      return;
+    }
     const snapshot = {
       purpose: feedback ? 'feedback' : 'report', method, category, description: description.trim(),
-      lgaId, community: community.trim(), attachment: media ? 'Not stored: ' + media.name : 'None',
+      lgaId, community: community.trim(),
+      ...(subcategory ? {subcategory} : {}),
+      immediateDanger:feedback ? 'unknown' : immediateDanger,
+      attachment: media ? 'Not stored: ' + media.name : 'None',
       followupRequested: contactMethod !== 'none', savedAt: new Date().toISOString(),
     };
     try {
       // Only this browser session. Raw media, phone and email are NEVER saved.
       sessionStorage.setItem(REPORT_DRAFT_KEY, JSON.stringify(snapshot));
-      setSavedNote('Saved in this browser session. Evidence and contact details were not stored.');
+      setSavedSuccessfully(true);
+      setSavedNote('Saved in this browser session. Evidence, contact details and safeguarding choices were not stored.');
       setSavedDraft(readJourneyDraft(JSON.stringify(snapshot),
         feedback?'feedback':'report',lgas.map(area=>area.id)));
-    } catch { setSavedNote('Saved only in this open tab. Browser storage is unavailable.'); }
+    } catch {
+      setSavedSuccessfully(false);
+      setSavedNote('Your text is visible on this screen, but browser storage is unavailable. It will not survive reload.');
+    }
     respond('Save private draft', 'saved');
   }
   const chosenArea = lgas.find(item => item.id === lgaId)?.name || 'Not selected';
+  const safetySignal = reviewSignal(category,feedback?'unknown':immediateDanger);
+  const restrictEvidence = restrictPreviewEvidence(safeguardConcerns);
+  const inferredIncidentLocation = incidentPointSource==='text_candidate'
+    ? inferEkitiLocality(description) : {status:'unresolved'} as const;
+  const inferredCandidate = inferredIncidentLocation.status==='candidate' &&
+    inferredIncidentLocation.place.lgaId===lgaId ? inferredIncidentLocation.place : null;
+  const sameTabOverlap = !resumedDraft && possibleSameTabDraft(
+    {purpose:feedback?'feedback':'report',category,lgaId,description:description.trim()},savedDraft);
   return <main className="page guided-report-page" id="main">
     <h1 className="visually-hidden">{feedback ? 'Share feedback' : 'Report an issue'}</h1>
     <div className="guided-chat-tools">
@@ -318,10 +409,16 @@ export default function ReportJourney() {
       </button>
     </div>
 
-    <p className="visually-hidden guided-progress" aria-label="Reporting progress">
-      {step === 'saved' ? 'Private draft saved' : 'Preparing your report · ' +
-        Math.max(1, ['method','category','description','location','evidence','followup','contact','review'].indexOf(step)+1) + ' of 8'}
-    </p>
+    <div className="guided-chat-stage" role="status" aria-label="Reporting progress">
+      <span className="guided-stage-title">{feedback ? 'Feedback conversation' : 'Civic report conversation'}</span>
+      <span className="guided-stage-step">{step==='saved' ? 'Local draft ready' :
+        `Step ${REPORT_STEPS.indexOf(step)+1} · ${step==='method'?'Choose a format':
+          step==='category'?'Topic':step==='description'?'Explain':step==='location'?'Location':
+          step==='evidence'?'Evidence':step==='followup'?'Follow-up':step==='contact'?'Contact':'Review'}`}</span>
+      <span className="guided-stage-meter" aria-hidden="true"><span style={{
+        width:(step==='saved'?100:Math.max(8,((REPORT_STEPS.indexOf(step)+1)/REPORT_STEPS.length)*100))+'%'
+      }}/></span>
+    </div>
     {step==='method' && savedDraft && !typing && <aside className="guided-resume">
       <div><strong>Saved private draft</strong>
         <p>Continue your text draft in this tab. Media and contact information were not stored.</p></div>
@@ -355,6 +452,57 @@ export default function ReportJourney() {
     </section>}
 
     {!typing && step === 'description' && <form className="guided-input-form" onSubmit={event=>{event.preventDefault();nextDescription();}}>
+      {!feedback && (category==='Emergency' || immediateDanger==='yes') && <EmergencyContactNotice />}
+      <fieldset className="guided-triage-question">
+        <legend>{taxonomyQuestion(category,language)}</legend>
+        <div className="guided-triage-options">
+          {INCIDENT_TAXONOMY[category].choices.map(option=>
+            <button key={option.id} type="button" aria-pressed={subcategory===option.id}
+              onClick={()=>setSubcategory(subcategory===option.id?'':option.id)}>
+              {option.label[language]}
+            </button>)}
+        </div>
+        <p className="guided-hint">{language==='yo'
+          ? 'O lè fo ìbéèrè yìí bí o kò bá mọ ìdáhùn.' : 'Choose a detail if it fits, or continue without selecting one.'}</p>
+      </fieldset>
+      <details className="guided-optional-safety">
+        <summary>Optional safety and privacy details</summary>
+        {!feedback && <fieldset className="guided-triage-question">
+        <legend>{language==='yo' ? 'Ṣé ẹnikẹ́ni wà nínú ewu báyìí?' : 'Is anyone in immediate danger right now?'}</legend>
+        <div className="guided-triage-options">
+          {([
+            ['yes',language==='yo'?'Bẹ́ẹ̀ni':'Yes'],
+            ['no',language==='yo'?'Rárá':'No'],
+            ['unknown',language==='yo'?'Mi ò mọ̀':'Not sure'],
+          ] as const).map(([value,label])=>
+            <button key={value} type="button" aria-pressed={immediateDanger===value}
+              onClick={()=>setImmediateDanger(value)}>{label}</button>)}
+        </div>
+        {(immediateDanger==='yes' || category==='Emergency') &&
+          <p className="guided-urgent-advice" role="alert">
+            If anyone is in immediate danger, contact local emergency services directly.
+            Ekiti Civic cannot dispatch help, preserve emergency recordings or alert an agency.
+          </p>}
+        <p className="guided-hint">This answer only helps prepare a private draft for future human review. No priority is assigned or alert sent.</p>
+        </fieldset>}
+        <fieldset className="guided-safeguard-fieldset">
+        <legend>{language==='yo' ? 'Ṣé ọ̀rọ̀ yìí lè fi ẹnikẹ́ni sínú ewu?' : 'Could this report expose someone to harm?'}</legend>
+        <label><input type="checkbox" checked={safeguardConcerns.includes('vulnerable_person')}
+          onChange={event=>toggleSafeguard('vulnerable_person',event.target.checked)}/>
+          {language==='yo' ? 'Ó kan ọmọ tàbí ẹni tó nílò ààbò pàtàkì' :
+            'I need extra privacy protection for someone affected'}</label>
+        <label><input type="checkbox" checked={safeguardConcerns.includes('retaliation')}
+          onChange={event=>toggleSafeguard('retaliation',event.target.checked)}/>
+          {language==='yo' ? 'Mo bẹ̀rù ìhalẹ̀ tàbí ìgbẹ̀san' :
+            'I am worried about threats, identification or retaliation'}</label>
+        {restrictEvidence && <p className="guided-urgent-advice" role="status">
+          Please leave out names, faces, private addresses and other identifying details.
+          Media capture is disabled for this sensitive draft because secure evidence handling is not active.
+          This preview cannot keep identities confidential or alert protection services.
+        </p>}
+        <p className="guided-hint">These safety choices are advisory and stay in this page's memory only; they are not saved or sent.</p>
+        </fieldset>
+      </details>
       <label htmlFor="guided-description">Your report</label>
       <textarea id="guided-description" rows={4} maxLength={4000} value={description}
         onChange={event=>{setDescription(event.target.value);setValidation('');}}
@@ -364,21 +512,43 @@ export default function ReportJourney() {
     </form>}
 
     {!typing && step === 'location' && <form className="guided-input-form" onSubmit={event=>{event.preventDefault();nextLocation();}}>
-      <label htmlFor="guided-lga">Local government area</label>
-      <select id="guided-lga" value={lgaId} required onChange={event=>{setLgaId(event.target.value);setValidation('');}}>
-        <option value="">Choose one of the 16 LGAs</option>
-        {lgas.map(area=><option key={area.id} value={area.id}>{area.name}</option>)}
-      </select>
-      <label htmlFor="guided-community">Community, ward or landmark (optional)</label>
-      <input id="guided-community" value={community} maxLength={180}
-        onChange={event=>setCommunity(event.target.value)} placeholder="e.g. Ikere town centre" />
-      <p className="guided-hint">Exact GPS and household addresses will not be made public. After review, an approved report may appear at an approximate area on the Ekiti map.</p>
+      {inferredCandidate && <div className="guided-place-suggestion" role="status">
+        <strong>Possible incident location: {inferredCandidate.name}</strong>
+        <p>Likely LGA: {inferredCandidate.lgaName}. This is a source-backed place-name suggestion, not a GPS verification.</p>
+        <a href={inferredCandidate.source} rel="noopener noreferrer" target="_blank">View location source</a>
+        <button type="button" onClick={()=>setIncidentPointSource('manual')}>
+          Change location
+        </button>
+      </div>}
+      {!inferredCandidate && <>
+        <label htmlFor="guided-lga">Where did the incident occur?</label>
+        <select id="guided-lga" value={lgaId} required onChange={event=>{
+          setLgaId(event.target.value);setIncidentPointSource('manual');setIncidentWardName(null);
+          setValidation('');
+        }}>
+          <option value="">Choose an LGA if your town is not recognized</option>
+          {lgas.map(area=><option key={area.id} value={area.id}>{area.name}</option>)}
+        </select>
+        <label htmlFor="guided-community">Town, community or landmark (optional)</label>
+        <input id="guided-community" value={community} maxLength={180}
+          onChange={event=>setCommunity(event.target.value)} placeholder="e.g. Ikere town centre" />
+      </>}
+      <p className="guided-hint">Confirm where the incident happened—not your current device position. The inferred area can be corrected. This private draft is not sent or published.</p>
+      <IncidentLocationPicker language={language} disabled={restrictPreviewEvidence(safeguardConcerns)}
+        onApply={(id,ward)=>{
+          setLgaId(id);setIncidentPointSource('boundary_confirmed');setIncidentWardName(ward);
+          setValidation('');
+        }}/>
+      <p className="guided-hint">A boundary suggestion is not an official incident-location verification. No raw GPS or incident coordinates are saved with your draft.</p>
       {validation && <p role="alert" className="guided-error">{validation}</p>}
       <button className="primary-action" type="submit">Continue</button>
     </form>}
 
     {!typing && step === 'evidence' && <section className="guided-input-form" aria-label="Attach optional evidence">
-      {method === 'Text' ? <p>Text-only report selected. You can proceed without media.</p> : <>
+      {restrictEvidence ? <p className="guided-urgent-advice" role="status">
+        For a report involving a vulnerable person or fear of retaliation, photo, video and
+        audio capture are disabled in this local preview. Use a non-identifying text summary only.
+      </p> : method === 'Text' ? <p>Text-only report selected. You can proceed without media.</p> : <>
         <p>{methodHelp[method]} Choose to capture new evidence or select a saved file.</p>
         {(method === 'Video' || method === 'Audio') && <div className="guided-capture-choice" role="group" aria-label="Choose evidence source">
           <button type="button" aria-pressed={captureMode === 'record'}
@@ -409,8 +579,10 @@ export default function ReportJourney() {
         {mediaError && <p className="guided-error" role="alert">{mediaError}</p>}
         <p className="guided-hint">Original media can reveal faces, addresses or metadata. This preview does not upload or preserve recordings, even while recording. Never rely on it as emergency evidence storage.</p>
       </>}
-      <button type="button" className="primary-action" onClick={()=>nextEvidence()}>{method === 'Text' ? 'Continue' : 'Continue with evidence'}</button>
-      {method !== 'Text' && <button type="button" className="text-link" onClick={()=>nextEvidence(true)}>Continue without attachment</button>}
+      <button type="button" className="primary-action" onClick={()=>nextEvidence(restrictEvidence)}>
+        {method === 'Text' || restrictEvidence ? 'Continue' : 'Continue with evidence'}
+      </button>
+      {method !== 'Text' && !restrictEvidence && <button type="button" className="text-link" onClick={()=>nextEvidence(true)}>Continue without attachment</button>}
     </section>}
 
     {!typing && step === 'followup' && <section className="guided-choices" aria-label="Choose tracking contact">
@@ -442,25 +614,67 @@ export default function ReportJourney() {
       <dl className="review-list">
         <dt>Purpose</dt><dd>{feedback ? 'Feedback' : 'Report'}</dd>
         <dt>Category</dt><dd>{category}</dd>
+        <dt>Issue detail</dt><dd>{taxonomyChoiceLabel(category,subcategory,language) ?? 'Not specified'}</dd>
+        {!feedback && <><dt>Safety answer</dt><dd>{immediateDanger==='yes'?'Immediate danger reported':
+          immediateDanger==='no'?'No immediate danger reported':'Not sure / not assessed'}</dd>
+          <dt>Review signal</dt><dd>{safetySignal==='immediate_safety_concern'?
+            'Possible immediate safety concern — manual review needed' :
+            'Human assessment required before any priority decision'}</dd></>}
         <dt>Method</dt><dd>{method}</dd>
         <dt>Description</dt><dd>{description.trim()}</dd>
         <dt>Location</dt><dd>{chosenArea}{community ? ' · ' + community : ''}</dd>
+        <dt>Area selection</dt><dd>{incidentPointSource==='boundary_confirmed'
+          ? 'Verified-boundary suggestion confirmed by you; exact coordinates not saved'
+          : 'LGA selected manually; coordinates not checked or saved'}</dd>
+        {incidentPointSource==='boundary_confirmed'&&incidentWardName&&
+          <><dt>Ward suggestion</dt><dd>{incidentWardName} (not included in stored draft)</dd></>}
         <dt>Evidence</dt><dd>{media ? media.name + ' (not uploaded)' : 'No file attached'}</dd>
+        <dt>Safeguarding</dt><dd>{restrictEvidence
+          ? 'Sensitive details noted in this tab only; no automatic reporting or protection'
+          : 'No safeguarding flag selected (not assessed)'}</dd>
         <dt>Follow-up</dt><dd>{contactMethod === 'none' ? 'None requested' : contactMethod.toUpperCase() + ' · delivery not active'}</dd>
       </dl>
-      <p className="privacy-notice">This is not a submission. No real report ID, phone/email receipt, official assignment or public map marker can be issued until secure intake and moderation are enabled.</p>
-      <button className="primary-action" type="button" onClick={save}>Save private draft on this device</button>
+      {sameTabOverlap && <aside className="guided-duplicate-notice" role="status">
+        <strong>Possible repeat of your own saved draft</strong>
+        <p>This report resembles a draft saved in this browser tab. Check whether it describes the same incident.
+        No other residents' reports were searched, no identity was compared and no case has been merged.</p>
+      </aside>}
+      {safetySignal==='immediate_safety_concern' && !feedback && <p className="guided-urgent-advice" role="alert">
+        If the danger is current, seek emergency help directly; this private draft is not monitored or dispatched.
+      </p>}
+      <p className="privacy-notice">This is not a submission. These answers are preliminary, not verified severity or official triage. No real report ID, phone/email receipt, official assignment or public map marker can be issued until secure intake and moderation are enabled.</p>
+      <div className="guided-local-save-notice">
+        <strong>Save only if you want this browser to remember your draft</strong>
+        <p>Your text, category and area will be stored in this browser tab for reopening up to 24 hours.
+          It is not encrypted or sent as a report. Anyone with access to this browser may see it.
+          The copy expires for reopening after 24 hours and is removed when this reporting page is next opened.
+          Contact, evidence and safeguarding flags will not be stored.</p>
+        <label className="guided-local-save-consent">
+          <input type="checkbox" checked={localSaveAcknowledged}
+            onChange={event=>{setLocalSaveAcknowledged(event.target.checked);setValidation('');}}/>
+          I understand this is a local draft, not a report submission, and I choose to save it here.
+        </label>
+        <p className="guided-hint">This choice only authorizes this device's local draft save. It is not consent to future server processing.</p>
+        <Link to="/privacy" target="_blank" rel="noopener noreferrer">Privacy and safety details</Link>
+        {validation && <p role="alert" className="guided-error">{validation}</p>}
+      </div>
+      <button className="primary-action" type="button" onClick={save} disabled={!localSaveAcknowledged}>
+        Save private draft on this device
+      </button>
       <button type="button" className="quiet-action" onClick={editCategory}>Change category</button>
     </section>}
 
     {!typing && step === 'saved' && <section className="guided-review" role="status">
-      <h2>Draft saved locally</h2>
+      <h2>{savedSuccessfully?'Draft saved locally':'Draft not saved to browser storage'}</h2>
       <p>{savedNote}</p>
       <p className="privacy-notice">No report has been submitted. There is no tracking ID or email/SMS receipt, and nothing has been placed on the public map.</p>
       <Link to="/track" className="text-link">How tracking will work</Link>
-      <button className="quiet-action" type="button" onClick={reset}>Start another report</button>
+      <button className="quiet-action" type="button" onClick={reset}>Delete this draft and start another</button>
+      <Link to="/privacy" target="_blank" rel="noopener noreferrer" className="text-link">Manage local draft privacy</Link>
     </section>}
 
-    <p className="guided-independent-note">Independent civic project · Not a government emergency service. Report evidence and contact details stay in this tab until secure intake is approved.</p>
+    <p className="guided-independent-note">Independent civic project · Not a government emergency service.
+      No secure intake, moderation or dispatch is active. Legal operator identification and the live privacy policy await approval.
+      {' '}<Link to="/privacy" target="_blank" rel="noopener noreferrer">Privacy and safety</Link></p>
   </main>;
 }

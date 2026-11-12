@@ -1,18 +1,25 @@
 import * as React from 'react';
 import { BrowserRouter, Link, NavLink, Route, Routes, useLocation } from 'react-router';
 import { demoMetrics, lgas } from './fixtures.ts';
-import { Ask } from './AskExperience.tsx';
+
 import WelcomeHome from './WelcomeHome.tsx';
 import { AppProvider, useApp } from './state.tsx';
 import { CitizenAuthProvider } from './CitizenAuth.tsx';
+import { CivicProductsMenu } from './CivicProductsMenu.tsx';
+import InnerSearchBar from './InnerSearchBar.tsx';
+import './search-engine-home.css';
 
+const Ask = React.lazy(() => import('./AskExperience.tsx').then(mod => ({ default: mod.Ask })));
 const Report = React.lazy(() => import('./ReportJourney.tsx'));
+const ReportPrivacy = React.lazy(() => import('./ReportPrivacy.tsx'));
 const LegacyReport = React.lazy(() => import('./Report.tsx'));
 const ListingDraft = React.lazy(() => import('./ContributionDrafts.tsx'));
 const Track = React.lazy(() => import('./TrackConversation.tsx'));
 const Explore = React.lazy(() => import('./ExploreDirectory.tsx'));
+const ReviewedSearch = React.lazy(() => import('./ReviewedSearch.tsx'));
 const PlaceDetails = React.lazy(() => import('./PlaceDetails.tsx'));
 const CitizenProfile = React.lazy(() => import('./CitizenProfile.tsx'));
+const CaseLinkClaim = React.lazy(() => import('./CaseLinkClaim.tsx'));
 
 function Icon({ name }: { name: 'home' | 'explore' | 'report' | 'track' | 'scores' | 'profile' | 'settings' | 'search' }) {
   const shapes: Record<typeof name, React.ReactNode> = {
@@ -29,7 +36,10 @@ function Icon({ name }: { name: 'home' | 'explore' | 'report' | 'track' | 'score
 }
 
 function HeaderControls() {
-  const { dark, toggleTheme, language, setLanguage } = useApp();
+  const { appearance, setAppearance, language, setLanguage } = useApp();
+  const label=appearance==='system'?'System':appearance==='light'?'Light':'Dark';
+  const modes=['system','light','dark'] as const;
+  const appearanceRef=React.useRef<HTMLDetailsElement>(null);
   return <div className="header-controls">
     <div className="header-languages" role="group" aria-label="Answer language">
       <button type="button" onClick={() => setLanguage('en')}
@@ -38,15 +48,28 @@ function HeaderControls() {
       <button type="button" onClick={() => setLanguage('yo')}
         aria-pressed={language === 'yo'} lang="yo">YOR</button>
     </div>
-    <button type="button" className="icon-control theme-switch" onClick={toggleTheme}
-      aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
-      title={dark ? 'Light mode' : 'Dark mode'}>
-      {dark ? <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
-        <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.5 1.5m11.2 11.2 1.5 1.5M4.9 19.1l1.5-1.5M17.6 6.4l1.5-1.5"/>
-      </svg> : <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
-        <path d="M20.2 15.2A8.6 8.6 0 0 1 8.8 3.8 8.5 8.5 0 1 0 20.2 15.2Z"/>
-      </svg>}
-    </button>
+    <details ref={appearanceRef} className="appearance-picker">
+      <summary className="icon-control theme-switch" aria-label={'Appearance settings · '+label}
+        title={'Appearance: '+label}>
+        <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor"
+          strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="9"/><path d="M12 3v18A9 9 0 0 0 12 3Z"/>
+        </svg>
+      </summary>
+      <div className="appearance-panel" aria-label="Color mode">
+        <strong>Appearance</strong>
+        <div role="group" aria-label="Choose color mode">
+          {modes.map(mode=><button key={mode} type="button"
+            aria-pressed={appearance===mode}
+            onClick={()=>{setAppearance(mode);if(appearanceRef.current)appearanceRef.current.open=false;}}>
+            {mode==='system'?'System':mode==='light'?'Light':'Dark'}
+            {appearance===mode&&<span aria-hidden="true">✓</span>}
+          </button>)}
+        </div>
+        <small>System follows your device appearance automatically.</small>
+      </div>
+    </details>
+    <CivicProductsMenu />
   </div>;
 }
 
@@ -96,6 +119,9 @@ function BottomNav() {
 
 function Shell() {
   const location = useLocation();
+  const isHome=location.pathname === '/';
+  const isSearch=location.pathname === '/search' || isHome;
+  const showInnerSearch=!isHome && location.pathname!=='/search';
   const isChat = ['/', '/ask', '/report', '/track'].includes(location.pathname) ||
     location.pathname.startsWith('/track/');
   const scrollByRoute = React.useRef<Map<string, number>>(new Map());
@@ -107,10 +133,11 @@ function Shell() {
       previousRoute.current = location.pathname;
     }
   }, [location.pathname]);
-  return <div className="app-shell">
+  return <div className={isSearch ? "app-shell search-shell" : "app-shell inner-search-shell"}>
     <a className="skip-link" href="#main">Skip to content</a>
     <header className={'app-header ' + (isChat ? 'chat-app-header' : '')}>
       <Link className="wordmark" to="/" aria-label="Ekiti Civic home">ekit<span className="brand-i">i</span><small>civic</small></Link>
+      {showInnerSearch && <InnerSearchBar />}
       <HeaderControls />
       <Link to="/profile" className="header-profile-link" aria-label="Citizen profile"><Icon name="profile" /></Link>
     </header>
@@ -120,13 +147,16 @@ function Shell() {
           <Route path="/" element={<WelcomeHome />} />
           <Route path="/ask" element={<Ask />} />
           <Route path="/explore" element={<Explore />} />
+          <Route path="/search" element={<ReviewedSearch />} />
           <Route path="/report" element={<Report />} />
+          <Route path="/privacy" element={<ReportPrivacy />} />
           <Route path="/report/text-draft" element={<LegacyReport />} />
           <Route path="/listings/new" element={<ListingDraft />} />
           <Route path="/track" element={<Track />} />
           <Route path="/track/:publicId" element={<Track />} />
           <Route path="/scores" element={<Scores />} />
           <Route path="/profile" element={<CitizenProfile />} />
+          <Route path="/case-link" element={<CaseLinkClaim />} />
           <Route path="/places/:id" element={<PlaceDetails />} />
           <Route path="*" element={<main className="page"><h1>Page not found</h1><Link to="/">Return home</Link></main>} />
         </Routes>

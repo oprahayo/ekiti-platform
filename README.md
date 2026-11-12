@@ -43,6 +43,18 @@ The Yellow Pages profile now supports real **moderated review feeds and rating s
 
 [See the implementation, privacy safeguards, configuration and explicit activation checklist](docs/citizen-reviews-claims.md).
 
+## Unified staging preview (Sprints 03–12)
+
+The citizen and administrative draft branches are now combined in
+`integration/staging-citizen-admin-sprints-03-12` **without changing `main`**.
+The user-facing citizen app can be previewed at the existing staging Worker.
+The independent admin dashboard is a separate **fictional-only static demo**.
+Private reports, accounts, evidence, messaging, reviewed nearby results, and
+real staff authentication remain disabled; no live migrations are applied.
+
+See [the staging integration and safe two-Worker deployment runbook](docs/staging-integration-release.md).
+Do not deploy from `main` expecting draft changes to appear.
+
 ## Development status
 
 The PostGIS resolver accepts citizen-confirmed incident coordinates. The audited GRID3 snapshot covers all 16 LGAs. The INEC reference import contains 177 electoral ward names. Electoral ward polygons await a verified crosswalk, so the current snapshot returns an unmapped ward for an in-state point. [Read the audit and measured coverage](docs/data-sources/2026-11-10-postgis-results.md).

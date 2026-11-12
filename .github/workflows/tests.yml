@@ -2,9 +2,16 @@ name: Checks
 on:
   push:
   pull_request:
+
+# Superseded integration commits are not worth running to completion.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   test:
-    runs-on: ubuntu-latest
+    # Pin before the Ubuntu 26 migration: its new apt-mirror setup caused
+    # external DNS failures in the pinned geographic import and browser CI.
+    runs-on: ubuntu-24.04
     services:
       postgres:
         image: postgis/postgis:16-3.5
@@ -22,6 +29,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - run: npm ci && npm run test:all
       - name: Create isolated geographic database
         run: |
@@ -29,7 +39,9 @@ jobs:
           psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f db/migrations/0001_geography.sql -f db/migrations/0002_location.sql -f db/migrations/0003_location_directory.sql -f db/seeds/0001_ekiti_lgas.sql
       - name: Import and verify the pinned INEC directory
         run: |
-          command -v pdftotext || (sudo apt-get update && sudo apt-get install -y poppler-utils)
+          # Use pinned, table-aware Python extraction: avoid flaky Ubuntu apt mirror.
+          # Import still rejects changed PDF SHA, wrong parent LGA or !=177 ward rows.
+          python3 -m pip install --disable-pip-version-check --no-input pdfplumber==0.11.10
           curl --fail --location --silent --show-error --retry 3 --max-time 60 \
             https://inecnigeria.org/documents/resources/rac/EKITI.pdf -o "$RUNNER_TEMP/ekiti.pdf"
           python3 scripts/import_geo.py --inec-pdf "$RUNNER_TEMP/ekiti.pdf"
@@ -45,6 +57,10 @@ jobs:
         run: psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f tests/install-citizen-proposal.sql
       - name: Verify signed-in reviews, claims and privacy gates
         run: node --experimental-strip-types --test tests/citizen-postgis.mjs
+      - name: Install private directory proposal in disposable CI database
+        run: psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f tests/install-directory-submission-proposal.sql
+      - name: Verify owner-only listing submissions and moderation privacy
+        run: node --experimental-strip-types --test tests/directory-submissions-postgis.mjs
       - name: Apply private reporting proposals in disposable CI database only
         run: |
           psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 \
@@ -56,6 +72,12 @@ jobs:
           psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -c "CREATE ROLE report_ci LOGIN PASSWORD 'ci'; GRANT ekiti_report_api TO report_ci"
       - name: Test the real private gateway transaction and RLS on disposable PostGIS
         run: node --experimental-strip-types --test tests/private-report-postgis.mjs
+      - name: Verify citizen receipt-to-account SQL under disposable PostGIS and Auth roles
+        run: node --experimental-strip-types --test tests/citizen-report-links-postgis.mjs
+      - name: Verify Sprint 10 one-time case-message delivery and redemption in disposable PostGIS
+        run: node --experimental-strip-types --test tests/case-link-delivery-postgis.mjs
+      - name: Verify Sprint 11 scoped case timelines and consent in disposable PostGIS
+        run: node --experimental-strip-types --test tests/case-timeline-postgis.mjs
       - run: npm run test:postgis
       - run: psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f scripts/coverage.sql
 
@@ -64,8 +86,9 @@ jobs:
           CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE: postgres://location_browser:ci@127.0.0.1:5432/ekiti_test
         run: |
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "CREATE ROLE location_browser LOGIN PASSWORD 'ci'; GRANT ekiti_location_reader TO location_browser"
+          PUBLIC_READER_DATABASE_URL="postgres://location_browser:ci@127.0.0.1:5432/ekiti_test" npm run db:public-search:check
           npm run staging:check
-          npx playwright install --with-deps chromium
+          npx playwright install chromium
           npm run test:browser
 
       - name: Preserve Sprint 02 centered homepage and conversation screenshots

@@ -1,0 +1,72 @@
+/* Source-grounded LGA map; no private incident pins or automatic GPS. */
+.directory-review-map{
+  border:1px solid var(--border);background:var(--surface);
+  border-radius:12px;padding:14px;margin:12px 0 20px;
+  max-width:100%;min-width:0;
+}
+.directory-review-map-header h2{font-size:18px;letter-spacing:-.2px;margin:3px 0;color:var(--text-primary)}
+.directory-review-map-header p{font-size:12px;color:var(--text-secondary);line-height:1.5}
+.directory-map-area-toolbar{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:12px 0}
+.directory-map-area-chooser{min-width:0;flex:1 1 240px}
+.directory-map-area-chooser summary{
+  font-size:13px;cursor:pointer;color:var(--accent);
+  font-weight:650;padding:6px 0;min-height:38px;
+}
+.directory-map-area-chooser summary:focus-visible,
+.directory-map-area-list button:focus-visible,.directory-map-clear:focus-visible{
+  outline:2px solid var(--focus);outline-offset:3px;
+}
+.directory-map-area-content{padding:8px 0 10px;max-width:100%}
+.directory-map-area-content label{display:block;color:var(--text-secondary);font-size:12px;margin-bottom:7px}
+.directory-map-area-content input[type="search"]{
+  display:block;width:min(100%,430px);min-height:44px;
+  padding:8px 12px;border:1px solid var(--border);
+  border-radius:9px;background:var(--surface);color:var(--text-primary);
+  font-size:16px;box-shadow:none;
+}
+.directory-map-area-content input[type="search"]:focus{outline:2px solid var(--focus);outline-offset:2px}
+.directory-map-area-list{
+  list-style:none;margin:10px 0 0;padding:0;
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:4px 9px;
+}
+.directory-map-area-list li{min-width:0}
+.directory-map-area-list button{
+  display:block;text-align:left;width:100%;min-height:37px;
+  padding:6px 8px;border:0;border-bottom:1px solid var(--border);
+  border-radius:4px;background:transparent;color:var(--text-primary);
+  font-size:12px;line-height:1.4;overflow-wrap:anywhere;
+}
+.directory-map-area-list button[aria-pressed="true"]{
+  color:var(--accent);font-weight:750;background:var(--surface-muted);
+}
+.directory-map-area-list button:hover{background:var(--surface-muted)}
+.directory-map-area-content p{font-size:12px;color:var(--text-secondary);line-height:1.5;margin-top:10px}
+.directory-map-clear{
+  border:1px solid var(--border);border-radius:20px;
+  padding:6px 12px;min-height:38px;background:var(--surface);
+  color:var(--text-primary);font-size:12px;cursor:pointer;
+}
+.directory-map-selection{font-size:12px;line-height:1.5;color:var(--text-secondary);margin:0 0 8px}
+.directory-review-map-canvas{
+  height:clamp(260px,52vw,460px);width:100%;
+  background:#edf4eb;border-radius:9px;overflow:hidden;position:relative;
+}
+.directory-review-map .directory-geo-clarification{
+  margin:12px 0 0;font-size:12px;line-height:1.6;color:var(--text-secondary);
+}
+.directory-review-map .directory-geo-clarification a{color:var(--accent)}
+.directory-review-map>p[role=status],.directory-review-map>p[role=alert]{
+  font-size:12px;line-height:1.5;padding:10px 12px;border-radius:8px;
+  background:var(--surface-muted);color:var(--text-secondary);margin:10px 0;
+}
+@media(max-width:600px){
+  .directory-map-area-list{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:450px){
+  .directory-review-map{padding:9px;border-radius:9px}
+  .directory-review-map-canvas{height:310px}
+}
+@media(prefers-reduced-motion:reduce){
+  .directory-review-map *{scroll-behavior:auto!important;transition:none!important}
+}

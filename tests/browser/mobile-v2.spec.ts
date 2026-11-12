@@ -1,41 +1,28 @@
 import { test, expect } from '@playwright/test';
 
-test('Home offers five task-first civic actions instead of launching directly into chat', async ({ page }) => {
+test('Home prioritizes universal search instead of large card navigation',async({page})=>{
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Welcome to Ekiti Civic' })).toBeVisible();
-  await expect(page.locator('.welcome-action')).toHaveCount(5);
-  await expect(page.getByRole('link', { name: /Ask about Ekiti/ })).toBeVisible();
-  await expect(page.getByRole('link', { name: /Report an issue/ })).toBeVisible();
-  await expect(page.getByRole('link', { name: /Post a listing/ })).toBeVisible();
-  await expect(page.getByText(/Real submissions, official receipts and public case publication are not enabled yet/)).toBeVisible();
-  await expect(page.locator('.feature-grid, .hero-art, .floating-card')).toHaveCount(0);
-  await expect(page.locator('.bottom-nav .nav-item')).toHaveCount(5);
+  await expect(page.getByRole('heading',{name:'Welcome to Ekiti Civic'})).toBeVisible();
+  await expect(page.getByRole('searchbox',{name:'Search Ekiti State'})).toBeVisible();
+  await expect(page.getByLabel('Open Ekiti Civic menu')).toBeVisible();
+  await expect(page.locator('.welcome-action,.feature-grid,.hero-art,.floating-card')).toHaveCount(0);
+  await expect(page.locator('.bottom-nav')).toBeHidden();
+  await expect(page.getByText(/Government report delivery and live submissions/)).toBeVisible();
 });
 
 for (const width of [280, 320, 360, 375, 390, 428, 768, 1024, 1440]) {
-  test('mobile UI fits ' + width + 'px without horizontal overflow', async ({ page }) => {
-    await page.setViewportSize({ width, height: 800 });
+  test('search home fits '+width+'px without overflow',async({page})=>{
+    await page.setViewportSize({width,height:800});
     await page.goto('/');
-    const result = await page.evaluate(() => {
-      const navItems = Array.from(document.querySelectorAll('.bottom-nav .nav-item'))
-        .map(element => {
-          const rect = element.getBoundingClientRect();
-          return { width: rect.width, height: rect.height };
-        });
-      const action = document.querySelector('.welcome-action')!.getBoundingClientRect();
-      return {
-        scrollWidth: document.documentElement.scrollWidth,
-        innerWidth: window.innerWidth,
-        navItems,
-        actionHeight: action.height,
-      };
+    const metrics=await page.evaluate(()=>{
+      const search=document.querySelector('.gateway-search-field')!.getBoundingClientRect();
+      const submit=document.querySelector('.gateway-inline-submit')!.getBoundingClientRect();
+      return {scroll:document.documentElement.scrollWidth,viewport:innerWidth,
+        inputWidth:search.width,submitWidth:submit.width};
     });
-    expect(result.scrollWidth, 'No horizontal scrolling').toBeLessThanOrEqual(result.innerWidth);
-    expect(result.actionHeight).toBeGreaterThanOrEqual(44);
-    result.navItems.forEach(item => {
-      expect(item.height).toBeGreaterThanOrEqual(44);
-      expect(item.width).toBeGreaterThanOrEqual(44);
-    });
+    expect(metrics.scroll).toBeLessThanOrEqual(metrics.viewport);
+    expect(metrics.inputWidth).toBeGreaterThan(220);
+    expect(metrics.submitWidth).toBeGreaterThanOrEqual(40);
   });
 }
 
@@ -56,16 +43,14 @@ test('five-tab navigation supports direct deep links', async ({ page }) => {
   }
 });
 
-test('Welcome gateway opens a separate source-backed question conversation', async ({ page }) => {
+test('Homepage question uses one search surface and returns sourced Ekiti facts',async({page})=>{
   await page.goto('/');
-  await page.getByRole('link', { name: /Ask about Ekiti/ }).click();
-  await expect(page).toHaveURL(/\/ask$/);
-  const input = page.locator('#ask-input');
-  await input.fill('How many local government areas?');
-  await input.press('Enter');
-  await expect(page.getByText(/16 local government areas/)).toBeVisible();
-  await expect(page.getByRole('link', { name: /Ekiti State — government overview/ })).toBeVisible();
-})
+  await page.locator('#ekiti-home-search').fill('How many local government areas?');
+  await page.getByRole('button',{name:'Search Ekiti',exact:true}).last().click();
+  await expect(page).toHaveURL(/\/search\?q=How\+many/);
+  await expect(page.getByRole('heading',{name:'Answer from Ekiti sources'})).toBeVisible();
+  await expect(page.getByText(/16 local government areas/).first()).toBeVisible();
+});
 
 test('Explore filters survive tab changes; all data is identified as demo', async ({ page }) => {
   await page.goto('/explore');
@@ -91,9 +76,9 @@ test('Explore does not load map assets unless explicitly requested', async ({ pa
   await expect(page.locator('.directory-category-tile')).toHaveCount(24);
   await expect(page.locator('.place-row')).toHaveCount(0);
   expect(resources.some(url => /\/assets\/(map-|lga-)/.test(url))).toBe(false);
-  await page.getByRole('button', { name: 'View LGA boundaries on map' }).click();
-  await expect(page.locator('#map')).toBeVisible();
-  await expect(page.getByText('Illustrative places are not geocoded or pinned.')).toBeVisible();
+  await page.getByRole('button', { name: 'View interactive Ekiti directory map' }).click();
+  await expect(page.locator('.directory-review-map-canvas')).toBeVisible();
+  await expect(page.getByText('Sample directory entries are never pinned as real locations.')).toBeVisible();
 });
 
 test('Scores show the denominator and a negative metric without implying real outcomes', async ({ page }) => {
@@ -114,14 +99,20 @@ test('fictional tracking deep link never requires a fake token or claims officia
   await expect(page.locator('#tracking-token')).toHaveCount(0);
 });
 
-test('theme toggle works, independent of system settings', async ({ page }) => {
+test('system theme follows OS changes and manual preferences override it',async({page})=>{
+  await page.emulateMedia({colorScheme:'dark'});
   await page.goto('/');
-  await page.getByRole('button', { name: 'Switch to dark mode' }).click();
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await expect(page.locator('html')).toHaveAttribute('data-theme','dark');
+  await page.emulateMedia({colorScheme:'light'});
+  await expect(page.locator('html')).toHaveAttribute('data-theme','light');
+  await page.getByLabel(/Appearance settings/).click();
+  await page.getByRole('button',{name:'Dark',exact:true}).click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme','dark');
   await page.reload();
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-  await page.getByRole('button', { name: 'Switch to light mode' }).click();
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  await expect(page.locator('html')).toHaveAttribute('data-theme','dark');
+  await page.getByLabel(/Appearance settings/).click();
+  await page.getByRole('button',{name:'System',exact:true}).click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme','light');
 });
 
 test('there are no voice or audio controls on citizen chat routes', async ({ page }) => {
@@ -142,14 +133,12 @@ test('initial Home requests are first-party only and skip map/speech bundles', a
   expect(resources.some(url => /\/assets\/(map-|lga-|VoiceOverlay)/.test(url))).toBe(false);
 });
 
-test('browser speech support never opens voice UI', async ({ page }) => {
-  await page.addInitScript(() => {
-    (window as unknown as { SpeechRecognition:unknown }).SpeechRecognition=class {};
+test('browser speech support never triggers microphone permission on the search page',async({page})=>{
+  await page.addInitScript(()=>{
+    (window as unknown as {SpeechRecognition:unknown}).SpeechRecognition=class {};
   });
   await page.goto('/');
   await expect(page.getByRole('button',{name:'Open voice mode'})).toHaveCount(0);
-  await page.getByRole('link', { name: /Ask about Ekiti/ }).click();
-  await page.locator('#ask-input').fill('Hello from the text chat');
-  await expect(page.locator('#ask-input')).toHaveValue('Hello from the text chat');
+  await page.locator('#ekiti-home-search').fill('Ekiti history');
+  await expect(page.locator('#ekiti-home-search')).toHaveValue('Ekiti history');
 });
-

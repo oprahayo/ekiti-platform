@@ -3,7 +3,20 @@ import type { Language } from '../server/ask-knowledge.ts';
 import * as React from 'react';
 import { lgas, type Category } from './fixtures.ts';
 import type { DirectoryIconName } from './DirectoryCategories.tsx';
+import {acquireDevicePosition,resolveVerifiedPoint,PositionError} from './verified-location.ts';
 
+export type AppearanceMode = 'system' | 'light' | 'dark';
+export const APPEARANCE_KEY='ekiti-ui-appearance-v1';
+export function readAppearance():AppearanceMode {
+  try {
+    const current=localStorage.getItem(APPEARANCE_KEY);
+    if(current==='system'||current==='light'||current==='dark')return current;
+    // Preserve an explicit legacy dark preference, without treating an
+    // old automatically-stored light default as a manual override.
+    if(localStorage.getItem('ekiti-ui-theme-v2')==='dark')return 'dark';
+  }catch{/* Private mode and blocked storage: use system settings. */}
+  return 'system';
+}
 export type EkitiLocationStatus =
   | 'prompt' | 'loading' | 'matched' | 'outside' | 'unavailable' | 'denied' | 'unmapped' | 'dismissed';
 
@@ -21,6 +34,8 @@ interface AppState {
   language: Language;
   setLanguage: (language: Language) => void;
   dark: boolean;
+  appearance: AppearanceMode;
+  setAppearance: (mode: AppearanceMode) => void;
   toggleTheme: () => void;
   pendingReportText: string;
   setPendingReportText: (value: string) => void;
@@ -55,10 +70,30 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const clearSavedPlaces = () => {
     if (writeSavedPlaces([])) setSavedPlaceIds([]);
   };
-  const [dark, setDark] = React.useState(() => {
-    try { return localStorage.getItem('ekiti-ui-theme-v2') === 'dark'; }
-    catch { return false; }
+  const [appearance,setAppearanceState]=React.useState<AppearanceMode>(readAppearance);
+  const [systemDark,setSystemDark]=React.useState(()=>{
+    try {return window.matchMedia('(prefers-color-scheme: dark)').matches;}
+    catch{return false;}
   });
+  const dark=appearance==='dark'||(appearance==='system'&&systemDark);
+  const setAppearance=(mode:AppearanceMode)=>{
+    if(!['system','light','dark'].includes(mode))return;
+    setAppearanceState(mode);
+    try{localStorage.setItem(APPEARANCE_KEY,mode);}
+    catch{/* Appearance remains available without storage. */}
+  };
+  React.useEffect(()=>{
+    if(typeof window.matchMedia!=='function')return;
+    const media=window.matchMedia('(prefers-color-scheme: dark)');
+    const update=()=>setSystemDark(media.matches);
+    update();
+    if (typeof media.addEventListener==='function') {
+      media.addEventListener('change',update);
+      return()=>media.removeEventListener('change',update);
+    }
+    media.addListener(update);
+    return()=>media.removeListener(update);
+  },[]);
   const [language, setLanguageState] = React.useState<Language>(() => {
     try { return localStorage.getItem('ekiti-ui-language') === 'yo' ? 'yo' : 'en'; }
     catch { return 'en'; }
@@ -108,42 +143,34 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setDeviceLocation({ status:'unavailable', message:'Device location needs a secure connection and browser location access. Browse manually instead.' });
         return;
       }
-      const position = await new Promise<GeolocationPosition>((resolve,reject) => {
-        navigator.geolocation.getCurrentPosition(resolve,reject,{
-          enableHighAccuracy: true, timeout: 12000, maximumAge: 60000,
-        });
-      });
-      // Coordinates are sent only following this explicit action, never stored
-      // in sessionStorage or URL. The verified PostGIS reader resolves coverage.
-      const response = await fetch('/api/resolve', {
-        method: 'POST',
-        cache: 'no-store',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          latitude: position.coords.latitude, longitude: position.coords.longitude,
-          confirmed: true,
-        }),
-      });
-      if (!response.ok) throw new Error('unavailable');
-      const result = await response.json() as {
-        stateBoundaryStatus?: string;
-        consistency?: string;
-        lga?: { status?: string; match?: { id: string; name: string } | null };
-        ward?: { status?: string; match?: { name: string } | null };
-      };
+      // Shared opt-in helper: never read GPS outside a direct click.
+      // Explore position is ONLY a directory filter, not incident evidence.
+      const point=await acquireDevicePosition(navigator.geolocation,window.isSecureContext);
+      const result=await resolveVerifiedPoint(point,fetch);
       if (result.stateBoundaryStatus === 'outside') {
         setExploreLga('');
         setDeviceLocation({status: 'outside',
           message: 'Your device appears to be outside Ekiti State. Nearby Ekiti results are unavailable here, but you can still explore Ekiti categories or report an incident that happened there.'});
-      } else if (result.lga?.status === 'matched' && result.lga.match &&
+      } else if (result.stateBoundaryStatus === 'inside' &&
+        result.consistency !== 'conflict' &&
+        result.lga?.status === 'matched' && result.lga.match &&
+        typeof result.lga.match.id === 'string' &&
         lgas.some(area => area.id === result.lga!.match!.id)) {
         const match = result.lga.match;
+        const matchId = match.id;
+        if (typeof matchId !== 'string') throw new PositionError('unavailable');
+        const knownName = lgas.find(area => area.id === matchId)!.name;
+        const ward = result.ward?.match;
         const wardName = result.consistency === 'consistent' &&
-          result.ward?.status === 'matched' ? result.ward.match?.name : undefined;
-        setExploreLga(match.id);
+          result.ward?.status === 'matched' &&
+          ward !== null && ward !== undefined &&
+          ward.parentId === matchId && !ward.onBoundary &&
+          !result.stateOnBoundary && !match.onBoundary &&
+          typeof ward.name === 'string' ? ward.name : undefined;
+        setExploreLga(matchId);
         setDeviceLocation({
-          status: 'matched', lgaName: match.name, wardName,
-          message: 'Showing verified Ekiti LGA results for ' + match.name +
+          status: 'matched', lgaName: knownName, wardName,
+          message: 'Showing verified Ekiti LGA results for ' + knownName +
             (wardName ? ' · ' + wardName : '') +
             '. This is area filtering, not a distance-based nearby ranking.',
         });
@@ -153,8 +180,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           message: 'Could not match the device location to one verified Ekiti LGA. Browse categories or choose an area manually.'});
       }
     } catch (error) {
-      const code = (error as {code?: number} | null)?.code;
-      setDeviceLocation(code === 1
+      const denied=error instanceof PositionError&&error.reason==='denied';
+      setDeviceLocation(denied
         ? {status:'denied',message:'Location permission was declined. You can still browse the entire directory.'}
         : {status:'unavailable',message:'Location is unavailable. You can browse Ekiti without it or try again.'});
     } finally {
@@ -163,16 +190,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   React.useEffect(() => {
-    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
-    try { localStorage.setItem('ekiti-ui-theme-v2', dark ? 'dark' : 'light'); }
-    catch { /* Theme still works without writable storage. */ }
-  }, [dark]);
+    document.documentElement.dataset.theme=dark?'dark':'light';
+    document.documentElement.style.colorScheme=dark?'dark':'light';
+    document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')
+      ?.setAttribute('content',dark?'#101b1e':'#ffffff');
+  },[dark]);
 
   const value: AppState = {
     savedPlaceIds, toggleSavedPlace, clearSavedPlaces,
     language, setLanguage,
-    dark,
-    toggleTheme: () => setDark((value) => !value),
+    dark,appearance,setAppearance,
+    toggleTheme: () => setAppearance(dark?'light':'dark'),
     pendingReportText, setPendingReportText,
     askDraft,
     setAskDraft,

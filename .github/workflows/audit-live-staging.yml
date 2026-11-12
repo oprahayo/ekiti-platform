@@ -1,0 +1,105 @@
+name: Audit live Ekiti staging release
+# Owner-requested read-only staging verification, 2026-11-12. No deployments.
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - integration/staging-citizen-admin-sprints-03-12
+    paths:
+      - .github/workflows/audit-live-staging.yml
+      - scripts/audit-live-ui.mjs
+      - scripts/smoke-staging.mjs
+      - scripts/check-public-readers.mjs
+      - src/server/public-data.ts
+      - src/server/worker.ts
+      - docs/public-search-recovery.md
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Inspect both public deployment manifests without credentials
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+        run: |
+          node --input-type=module <<'EOF'
+          const targets = [
+            ['citizen', 'https://ekiti-platform-staging.inekitikete.workers.dev/staging-build.json'],
+            ['admin-demo', 'https://ekiti-admin-demo-staging.inekitikete.workers.dev/staging-build.json'],
+          ];
+          for(const [target,url] of targets){
+            try {
+              const response=await fetch(url,{redirect:'error',signal:AbortSignal.timeout(15000),
+                headers:{'Cache-Control':'no-cache'}});
+              const raw=await response.text();
+              let manifest;
+              try { manifest=JSON.parse(raw); } catch {
+                console.log(target+': NO RELEASE MANIFEST (HTTP '+response.status+
+                  ', content-type '+response.headers.get('content-type')+')');
+                continue;
+              }
+              const valid=manifest.target===target&&
+                manifest.branch==='integration/staging-citizen-admin-sprints-03-12'&&
+                /^[a-f0-9]{40}$/.test(manifest.commit||'');
+              console.log(target+': HTTP '+response.status+
+                '; unified release manifest '+(valid?'PRESENT':'INVALID')+
+                '; deployed commit='+(valid?manifest.commit:'unknown')+
+                '; current GitHub commit='+process.env.EXPECTED_SHA);
+            } catch(error) {
+              console.log(target+': UNREACHABLE ('+
+                (error instanceof Error?error.message:'network error')+')');
+            }
+          }
+          EOF
+
+      - name: Checkout audited staging smoke-test scripts
+        uses: actions/checkout@v4
+        with:
+          ref: integration/staging-citizen-admin-sprints-03-12
+          persist-credentials: false
+      - name: Smoke-test both deployed staging previews without credentials
+        shell: bash
+        run: |
+          LIVE_SHA="$(node --input-type=module <<'EOF'
+          const urls=[
+            'https://ekiti-platform-staging.inekitikete.workers.dev/staging-build.json',
+            'https://ekiti-admin-demo-staging.inekitikete.workers.dev/staging-build.json',
+          ];
+          const manifests=await Promise.all(urls.map(async url=>{
+            const r=await fetch(url,{redirect:'error',signal:AbortSignal.timeout(15000)});
+            if(!r.ok)throw Error('Release manifest HTTP '+r.status);
+            return r.json();
+          }));
+          if(!/^[a-f0-9]{40}$/.test(manifests[0]?.commit||'')||
+            manifests[0].commit!==manifests[1]?.commit)
+            throw Error('Citizen and admin staging versions do not match');
+          console.log(manifests[0].commit);
+          EOF
+          )"
+          node scripts/smoke-staging.mjs https://ekiti-platform-staging.inekitikete.workers.dev "$LIVE_SHA"
+          node scripts/smoke-admin-demo.mjs https://ekiti-admin-demo-staging.inekitikete.workers.dev "$LIVE_SHA"
+
+      - name: Prepare disposable public-browser auditor
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install audited dependencies and Chromium
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Audit real browser usability against public staging
+        run: node scripts/audit-live-ui.mjs
+      - name: Save public-only visual audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ekiti-live-usability-${{ github.run_id }}
+          path: artifacts/live-staging-ui/
+          if-no-files-found: warn
+          retention-days: 7

@@ -138,7 +138,8 @@ test('Track is conversational and never accepts a fabricated real case', async (
 
 test('Yoruba toggle changes report prompts without silently translating citizens text', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'YOR' }).click();
+  await page.getByLabel('Open Ekiti Civic menu').click();
+  await page.locator('.civic-products-language').getByRole('button',{name:'Yorùbá'}).click();
   await page.goto('/report/text-draft');
   await expect(page.getByRole('heading', { name: 'Ṣàlàyé ohun tó ṣẹlẹ̀' })).toBeVisible();
   await expect(page.getByText(/Sọ ohun tó ṣẹlẹ̀ ní àdúgbò rẹ/)).toBeVisible();

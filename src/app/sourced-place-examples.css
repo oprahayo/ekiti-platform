@@ -1,0 +1,71 @@
+/* Compact search-result presentation; no cards, dependencies or remote imagery. */
+.sourced-place-examples {
+  min-width:0;
+  width:100%;
+  max-width:810px;
+  margin:24px 0 34px;
+}
+.sourced-place-examples > h2 {
+  font-size:16px;
+  font-weight:650;
+  line-height:1.4;
+  margin:0 0 6px;
+  color:var(--text-primary);
+}
+.sourced-place-examples-disclosure {
+  font-size:12px;
+  line-height:1.65;
+  max-width:74ch;
+  margin:0 0 10px;
+  color:var(--text-secondary);
+}
+.sourced-place-examples-list {
+  padding:0;
+  margin:0;
+  list-style:none;
+}
+.sourced-place-example {
+  padding:17px 0;
+  margin:0;
+  border-bottom:1px solid var(--border);
+  overflow-wrap:anywhere;
+}
+.sourced-place-example:first-child {
+  border-top:1px solid var(--border);
+}
+.sourced-place-example-domain {
+  font-size:11px;
+  margin:0 0 4px;
+  color:var(--text-tertiary);
+}
+.sourced-place-example h3 {
+  margin:0;
+  font-size:clamp(16px,2vw,18px);
+  font-weight:550;
+  line-height:1.4;
+}
+.sourced-place-example h3 a {
+  color:var(--accent);
+  text-decoration:none;
+}
+.sourced-place-example a:hover {
+  text-decoration:underline;
+}
+.sourced-place-example-meta,
+.sourced-place-example-source {
+  color:var(--text-tertiary);
+  font-size:12px;
+  line-height:1.55;
+  margin:5px 0 0;
+}
+.sourced-place-example-description {
+  font-size:14px;
+  line-height:1.55;
+  color:var(--text-secondary);
+  margin:7px 0 0;
+}
+.sourced-place-example-source a {color:var(--accent)}
+@media(max-width:480px) {
+  .sourced-place-examples {margin:18px 0 24px}
+  .sourced-place-example {padding:13px 0}
+}

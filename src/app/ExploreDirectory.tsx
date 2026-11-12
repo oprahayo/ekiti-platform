@@ -1,10 +1,14 @@
 import * as React from 'react';
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import { demoPlaces, lgas } from './fixtures.ts';
 import { DirectoryIcon, categoryForGroup, directoryCategories } from './DirectoryCategories.tsx';
 import { useApp } from './state.tsx';
+import NearbyDirectorySearch from './NearbyDirectorySearch.tsx';
+import {findSourcedExamples} from './sourced-examples.ts';
+import SourcedPlaceExamples from './SourcedPlaceExamples.tsx';
 
-const MapLocation = React.lazy(() => import('./MapLocation.tsx'));
+const EkitiDirectoryMap = React.lazy(() => import('./EkitiDirectoryMap.tsx'));
+
 
 interface ReviewedPlace {
   id: string;
@@ -28,10 +32,13 @@ type LoadState = 'idle' | 'loading' | 'ready' | 'unavailable' | 'unclassified';
 export default function ExploreDirectory() {
   const {
     exploreService, setExploreService, exploreCategory, setExploreCategory,
-    exploreQuery, setExploreQuery, exploreLga, setExploreLga, setAskDraft,
+    exploreQuery, setExploreQuery, exploreLga, setExploreLga,
     deviceLocation, requestDeviceLocation, selectManualArea,
   } = useApp();
-  const [mapOpen, setMapOpen] = React.useState(false);
+  const [searchParams] = useSearchParams();
+  const mapRequested=searchParams.get('map')==='1';
+  const [mapOpen, setMapOpen] = React.useState(mapRequested);
+  React.useEffect(()=>{if(mapRequested)setMapOpen(true);},[mapRequested]);
   const [places, setPlaces] = React.useState<ReviewedPlace[]>([]);
   const [loadState, setLoadState] = React.useState<LoadState>('idle');
 
@@ -101,6 +108,10 @@ export default function ExploreDirectory() {
     return haystack.includes(query);
   }), [activeCategory, exploreLga, query]);
 
+  const visibleSourcedExamples = activeCategory && !activeCategory.group
+    ? []
+    : findSourcedExamples(query, {category:activeCategory?.group||null,lgaId:exploreLga||null});
+
   const selectCategory = (id: typeof directoryCategories[number]['id']) => {
     const category = directoryCategories.find(item => item.id === id)!;
     setExploreService(id);
@@ -144,6 +155,7 @@ export default function ExploreDirectory() {
           <span>{deviceLocation.status === 'loading' ? 'Checking' : 'Near me'}</span>
         </button>
       </div>
+      <p className="directory-geo-clarification">“Near me” filters by verified LGA, not distance. Use the separate verified nearby search for straight-line ranking.</p>
       <p className={'directory-location-summary directory-location-' + deviceLocation.status} role="status">
         {deviceLocation.status === 'prompt'
           ? 'Enable location to browse your verified Ekiti area, or explore freely.'
@@ -160,6 +172,11 @@ export default function ExploreDirectory() {
           </select>
         </div>
       </details>
+      <NearbyDirectorySearch
+        category={activeCategory?.group??null}
+        lga={exploreLga||null}
+        query={query||null}
+        unsupported={Boolean(activeCategory&&!activeCategory.group)}/>
     </section>
     {activeCategory && <button type="button" className="directory-back" onClick={allCategories}>
       <span aria-hidden="true">←</span> Browse all categories
@@ -238,17 +255,19 @@ export default function ExploreDirectory() {
         </div>}
     </section>}
 
+    <SourcedPlaceExamples items={visibleSourcedExamples} context="explore"/>
+
     <div className="directory-secondary">
       <button type="button" className="quiet-action" onClick={() => setMapOpen(value => !value)}>
-        {mapOpen ? 'Hide Ekiti map' : 'View LGA boundaries on map'}
+        {mapOpen ? 'Hide Ekiti map' : 'View interactive Ekiti directory map'}
       </button>
       {mapOpen && <React.Suspense fallback={<p role="status" className="note">Loading map only now…</p>}>
-        <MapLocation onPoint={() => { /* No business points unless individually verified. */ }} />
-        <p className="note">The map shows verified LGA boundaries. Illustrative places are not geocoded or pinned.</p>
+        <EkitiDirectoryMap places={loadState==='ready'?places:[]}
+          selectedLga={exploreLga} onSelectLga={selectManualArea}/>
       </React.Suspense>}
       <h2>Can’t find what you need?</h2>
-      <Link to="/ask?focus=1" className="text-link" onClick={() => setAskDraft('Find a business in Ekiti')}>
-        Ask Ekiti Civic
+      <Link to="/search" className="text-link">
+        Search all of Ekiti
       </Link>
       <p className="directory-footer">Own a business? <a href="/listings/new">Prepare a listing</a> for future verification and moderation. Nothing is published automatically.</p>
       <p className="directory-independence">Independent civic project · Not a government service</p>

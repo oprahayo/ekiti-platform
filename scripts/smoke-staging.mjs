@@ -19,6 +19,16 @@ async function request(path, options) {
 }
 assert.match(await (await request('/')).text(), /id="root"/);
 assert.match(await (await request('/explore')).text(), /id="root"/);
+const expectedSha=process.argv[3];
+if(expectedSha){
+  assert.match(expectedSha,/^[a-f0-9]{40}$/,'Expected SHA must be a Git commit');
+  const manifest=await (await request('/staging-build.json')).json();
+  assert.deepEqual(manifest,{
+    release:'citizen-admin-sprints-03-12',
+    branch:'integration/staging-citizen-admin-sprints-03-12',
+    commit:expectedSha,target:'citizen',
+  },'Deployed citizen Worker does not contain the requested integration commit');
+}
 const areas = await (await request('/api/areas')).json();
 const lgas = areas.filter((a) => a.kind === 'lga');
 const wards = areas.filter((a) => a.kind === 'ward');
@@ -26,6 +36,24 @@ const parents = new Set(lgas.map((a) => a.id));
 assert.equal(parents.size, 16);
 assert.equal(new Set(wards.map((a) => a.id)).size, 177);
 assert.ok(wards.every((a) => parents.has(a.parentId)));
+// A successful geography resolver does NOT prove the reviewed civic search
+// migration is installed. All three reader endpoints must work even when
+// there are no approved directory/knowledge records yet.
+const unified = await (await request('/api/search?q=Hotels+near+Ikogosi')).json();
+assert.equal(unified.query, 'Hotels near Ikogosi');
+assert.equal(unified.reviewedOnly, true);
+assert.equal(unified.reviewedAvailable, true,
+  'Live reviewed search cannot be reported healthy while the database is unavailable');
+assert.ok(Array.isArray(unified.places));
+assert.ok(Array.isArray(unified.knowledge));
+for (const [path,kind] of [
+  ['/api/places?limit=3','places'],
+  ['/api/knowledge?q=Ekiti&limit=3','knowledge'],
+]) {
+  const data = await (await request(path)).json();
+  assert.equal(data.reviewedOnly, true, kind + ' response must be reviewed-only');
+  assert.ok(Array.isArray(data.items), kind + ' response must contain items');
+}
 const response = await request('/api/resolve', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
@@ -58,5 +86,5 @@ for (const [language, question] of [
   assert.equal(answer.confidence, 'source-backed');
 }
 console.log(
-  'Page, verified directory, Efon boundary lookup, unmapped ward and English/Yoruba Ask passed at ' + origin.origin,
+  'Page, reviewed search/places/knowledge readers, geographic directory, Efon boundary lookup, unmapped ward and English/Yoruba Ask passed at ' + origin.origin,
 );

@@ -1,0 +1,181 @@
+import * as React from 'react';
+import type {ExternalWebResultSet} from '../server/external-web-search.ts';
+import type {PublicWebAnswer} from '../server/public-web-answer.ts';
+import {useApp} from './state.tsx';
+import {CivicProductIcon} from './CivicProductIcon.tsx';
+
+function safeLink(value:string):string|null {
+  try {const u=new URL(value);return u.protocol==='https:'?u.href:null;}
+  catch{return null;}
+}
+
+/** Citation-first preview of provider excerpts, never a fabricated AI answer. */
+function SourceHighlights({items}:{items:ExternalWebResultSet['results']}) {
+  const excerpts=items.filter(item=>item.description.trim() && safeLink(item.url)).slice(0,3);
+  if(excerpts.length===0)return null;
+  return <section className="search-web-highlights" aria-labelledby="web-highlights-title">
+    <div className="search-web-highlights-heading">
+      <h3 id="web-highlights-title">Source highlights</h3>
+      <span>From public web results</span>
+    </div>
+    <ol className="search-web-highlights-list">{excerpts.map((item,index)=>
+      <li key={item.url}>
+        <p>{item.description}</p>
+        <a href={safeLink(item.url)!} target="_blank" rel="noopener noreferrer"
+          aria-label={`Source ${index+1}: ${item.title}`}>
+          <span aria-hidden="true">[{index+1}]</span> {item.title} <small>· {item.domain}</small>
+        </a>
+      </li>)}</ol>
+    <p className="search-web-highlights-note">
+      These are excerpts supplied by the search provider, not an AI-generated answer.
+      They have not been fact-checked by Ekiti Civic. Follow each citation to verify details.
+    </p>
+  </section>;
+}
+
+export default function ExternalWebResults({query,autoRead=false}:{query:string;autoRead?:boolean}) {
+  const [state,setState]=React.useState<'idle'|'loading'|'ready'|'unavailable'>('idle');
+  const [data,setData]=React.useState<ExternalWebResultSet|null>(null);
+  const {language}=useApp();
+  const [answer,setAnswer]=React.useState<PublicWebAnswer|null>(null);
+  const [answerState,setAnswerState]=React.useState<'idle'|'loading'|'ready'|'unavailable'>('idle');
+  const answerAbort=React.useRef<AbortController|null>(null);
+  const abort=React.useRef<AbortController|null>(null);
+  React.useEffect(()=>{
+    abort.current?.abort();
+    abort.current=null;
+    setData(null);setState('idle');
+    answerAbort.current?.abort();setAnswer(null);setAnswerState('idle');
+    return()=>{abort.current?.abort();answerAbort.current?.abort();};
+  },[query,language]);
+
+  const search=()=>{
+    abort.current?.abort();
+    const controller=new AbortController();
+    abort.current=controller;
+    setState('loading');setData(null);
+    void fetch('/api/web-search?'+new URLSearchParams({q:query}),{
+      headers:{Accept:'application/json'},signal:controller.signal,
+    }).then(async response=>{
+      if(!response.ok)throw new Error('Provider unavailable');
+      return response.json() as Promise<ExternalWebResultSet>;
+    }).then(value=>{
+      if(controller.signal.aborted)return;
+      if(value.query!==query||value.verifiedByEkitiCivic!==false||
+        !Array.isArray(value.results)||!['Brave Search','Wikipedia'].includes(value.provider))
+        throw new Error('Unexpected provider response');
+      setData(value);setState('ready');
+    }).catch(()=>{
+      if(!controller.signal.aborted){setData(null);setState('unavailable');}
+    });
+  };
+  const readSources=React.useCallback(()=>{
+    answerAbort.current?.abort();
+    const controller=new AbortController();
+    answerAbort.current=controller;
+    setAnswer(null);setAnswerState('loading');
+    void fetch('/api/web-answer?'+new URLSearchParams({q:query,lang:language}),{
+      headers:{Accept:'application/json'},signal:controller.signal,
+    }).then(async response=>{
+      if(!response.ok)throw new Error('Source reader unavailable');
+      return response.json() as Promise<PublicWebAnswer>;
+    }).then(value=>{
+      if(controller.signal.aborted)return;
+      if(value.query!==query||value.language!==language||
+        value.reviewedFirst!==true||!Array.isArray(value.claims)||
+        !Array.isArray(value.sources)||!['grounded-ai','source-excerpts','unavailable'].includes(value.mode))
+        throw new Error('Unexpected source answer');
+      setAnswer(value);setAnswerState('ready');
+    }).catch(()=>{
+      if(!controller.signal.aborted){setAnswer(null);setAnswerState('unavailable');}
+    });
+  },[query,language]);
+  React.useEffect(()=>{
+    if(!autoRead)return;
+    // React StrictMode performs an extra effect setup/cleanup in development.
+    // Deferring by one tick prevents duplicate upstream requests in that cycle.
+    const timer=window.setTimeout(readSources,0);
+    return ()=>window.clearTimeout(timer);
+  },[autoRead,readSources]);
+  const publicQuery=/\bekiti\b/i.test(query)?query:'Ekiti State Nigeria '+query;
+  const google='https://www.google.com/search?'+new URLSearchParams({q:publicQuery});
+  const brave='https://search.brave.com/search?'+new URLSearchParams({q:publicQuery});
+
+  return <section className="search-web-section" aria-labelledby="wider-web-title">
+    <div className="search-web-heading">
+      <span className="search-web-symbol"><CivicProductIcon name="web" size={20}/></span>
+      <div><h2 id="wider-web-title">Explore the wider web</h2>
+        <p>News, public websites and other platforms mentioning Ekiti.</p>
+      </div>
+    </div>
+    <p className="search-web-privacy">When you explicitly submit a public search or click a source action, the public query may be shared with an external search provider.
+      If optional AI summaries are configured, selected public excerpts may also be sent to an AI provider.
+      Private reports, personal details and confidential information must not be searched here.</p>
+    <div className="search-web-actions">
+      <button type="button" className="search-web-action search-web-read" onClick={readSources}
+        disabled={answerState==='loading'}>
+        {answerState==='loading'?'Reading public sources…':answerState==='ready'?'Refresh cited sources':'Read sources & explain'}
+      </button>
+      <span>Reviewed Ekiti Civic records are considered first.</span>
+    </div>
+    {answerState==='unavailable'&&<p role="status" className="search-results-muted">
+      A cited answer is unavailable right now. You can still search public web links below.
+    </p>}
+    {answerState==='ready'&&answer&&<section className="search-grounded-answer"
+      aria-labelledby="search-grounded-heading">
+      <div className="search-grounded-heading">
+        <h3 id="search-grounded-heading">Answer from public sources</h3>
+        <small>{answer.mode==='grounded-ai'?'AI-generated · linked evidence':
+          answer.mode==='source-excerpts'?'Attributed source excerpts':'No public sources available'}</small>
+      </div>
+      {answer.claims.length>0
+        ? <div className="search-grounded-claims">{answer.claims.map((claim,index)=>
+            <p key={index}>{claim.text}{claim.sourceIds.map(id=>{
+              const citation=answer.sources.find(source=>source.id===id);
+              const url=citation&&safeLink(citation.url);
+              return url?<a key={id} href={url} target="_blank" rel="noopener noreferrer"
+                aria-label={'Citation '+id+': '+citation.title}>[{id}]</a>:null;
+            })}</p>)}</div>
+        : <p className="search-results-muted">No reliable source text was returned for this topic.</p>}
+      {answer.sources.length>0&&<div className="search-grounded-citations">
+        <strong>Sources · Ekiti Civic records first</strong>
+        <ol>{answer.sources.map(source=><li key={source.id}>
+          <a href={safeLink(source.url)||'#'} target="_blank" rel="noopener noreferrer">
+            [{source.id}] {source.title}
+          </a>
+          <span>{source.origin==='ekiti-civic'?'Reviewed Ekiti Civic source':
+            source.evidence==='read-public-page'?'External · public page read':'External · search excerpt'}
+            {' · '}{source.publisher}</span>
+        </li>)}</ol>
+      </div>}
+      <p className="search-web-highlights-note">{answer.limitation}</p>
+    </section>}
+    {state==='idle' && <button type="button" className="search-web-action" onClick={search}>
+      Find public web sources
+    </button>}
+    {state==='loading' && <p role="status" className="search-results-muted">Looking for relevant web sources…</p>}
+    {state==='unavailable' && <p role="status" className="search-results-muted">
+      In-page external discovery is not currently configured or is temporarily unavailable.
+      You can still choose an external search engine below.
+    </p>}
+    {state==='ready' && data && <>
+      <p className="search-web-attribution">Web results via {data.provider}. External pages are not independently verified by Ekiti Civic.
+        {data.provider==='Wikipedia' && ' Wikipedia text is subject to its free-content license; follow the linked source for authors and revisions.'}</p>
+      {data.results.length===0
+        ? <p className="search-results-muted">No matching external pages were returned for this public search.</p>
+        : <><SourceHighlights items={data.results}/><div className="search-web-list">{data.results.map(item=>
+            <article key={item.url} className="search-web-result">
+              <p className="search-web-domain">{item.domain}</p>
+              <h3><a href={safeLink(item.url)||'#'} target="_blank" rel="noopener noreferrer">{item.title}</a></h3>
+              {item.description&&<p className="search-web-description">{item.description}</p>}
+              <small>External web page · Verify important claims at the source</small>
+            </article>)}</div></>}
+      <button className="search-web-action search-web-refresh" type="button" onClick={search}>Refresh web results</button>
+    </>}
+    <nav className="search-web-alternatives" aria-label="Other web search engines">
+      <span>Continue outside Ekiti Civic:</span>
+      <a href={google} target="_blank" rel="noopener noreferrer">Google Search</a>
+      <a href={brave} target="_blank" rel="noopener noreferrer">Brave Search</a>
+    </nav>
+  </section>;
+}

@@ -1,32 +1,23 @@
 import { test, expect } from '@playwright/test';
 
-test('first-visit home has five civic actions, close subtitle, no forum, and optional location', async ({page}) => {
-  const locationCalls:string[]=[];
-  page.on('request',request => {
-    if (request.url().includes('/api/resolve')) locationCalls.push(request.postData() || '');
-  });
+test('first visit presents a single search, product menu and consent-led location',async({page})=>{
+  const calls:string[]=[];
+  page.on('request',request=>{if(request.url().includes('/api/resolve'))calls.push(request.url());});
   await page.setViewportSize({width:390,height:844});
   await page.goto('/');
   await expect(page.getByRole('heading',{name:'Welcome to Ekiti Civic'})).toBeVisible();
-  await expect(page.getByText('AN INDEPENDENT CIVIC PLATFORM')).toHaveCount(0);
-  await expect(page.locator('.welcome-dice-list .welcome-action')).toHaveCount(5);
-  await expect(page.getByRole('link',{name:/Community post/})).toHaveCount(0);
-  await expect(page.getByRole('link',{name:/Ask about Ekiti/})).toBeVisible();
+  await expect(page.getByRole('searchbox',{name:'Search Ekiti State'})).toBeVisible();
+  await expect(page.locator('.welcome-action')).toHaveCount(0);
+  await expect(page.getByLabel('Open Ekiti Civic menu')).toBeVisible();
+  expect(calls).toHaveLength(0);
+  await page.locator('.gateway-location-option summary').click();
   await expect(page.getByRole('button',{name:'Use my location'})).toBeVisible();
-  const gap=await page.evaluate(()=>{
-    const title=document.querySelector('#welcome-title')!.getBoundingClientRect();
-    const subtitle=document.querySelector('.welcome-subtitle')!.getBoundingClientRect();
-    return subtitle.top-title.bottom;
-  });
-  expect(gap).toBeGreaterThanOrEqual(2);
-  expect(gap).toBeLessThan(15);
-  expect(locationCalls).toHaveLength(0);
   await page.getByRole('button',{name:'Not now'}).click();
   await expect(page.getByRole('button',{name:'Use my location'})).toHaveCount(0);
-  expect(locationCalls).toHaveLength(0);
+  expect(calls).toHaveLength(0);
+  await page.getByLabel('Open Ekiti Civic menu').click();
   await page.getByRole('link',{name:/Explore Ekiti/}).click();
   await expect(page).toHaveURL(/\/explore$/);
-  await expect(page.getByRole('heading',{name:'Browse Categories'})).toBeVisible();
 });
 
 test('consenting to nearby applies verified Ekiti LGA without saving coordinates', async ({page,context}) => {
@@ -38,9 +29,11 @@ test('consenting to nearby applies verified Ekiti LGA without saving coordinates
   });
   await page.goto('/');
   expect(calls).toHaveLength(0);
+  await page.locator('.gateway-location-option summary').click();
   await page.getByRole('button',{name:'Use my location'}).click();
   await expect(page.getByText(/Showing verified Ekiti LGA results for Efon/)).toBeVisible();
   expect(calls).toHaveLength(1);
+  await page.getByLabel('Open Ekiti Civic menu').click();
   await page.getByRole('link',{name:/Explore Ekiti/}).click();
   await expect(page.locator('#explore-lga')).toHaveValue('efon');
   await page.getByRole('button',{name:'Hotels'}).click();
@@ -54,8 +47,10 @@ test('outside Ekiti coverage is explicit without blocking browse', async ({page,
   await context.grantPermissions(['geolocation']);
   await context.setGeolocation({latitude:41.386,longitude:2.169});
   await page.goto('/');
+  await page.locator('.gateway-location-option summary').click();
   await page.getByRole('button',{name:'Use my location'}).click();
   await expect(page.getByText(/outside Ekiti State/)).toBeVisible();
+  await page.getByLabel('Open Ekiti Civic menu').click();
   await page.getByRole('link',{name:/Explore Ekiti/}).click();
   await expect(page.locator('#explore-lga')).toHaveValue('');
   await expect(page.locator('.directory-category-tile')).toHaveCount(24);
@@ -124,7 +119,7 @@ test('visual review: home, report and compact Explore at 280, 390 and 1280px', a
   for(const width of [280,390,1280]) {
     await page.setViewportSize({width,height:844});
     await page.goto('/');
-    await expect(page.locator('.welcome-dice-list .welcome-action')).toHaveCount(5);
+    await expect(page.getByRole('searchbox',{name:'Search Ekiti State'})).toBeVisible();
     await page.screenshot({path:'test-results/sprint-01-refinement/home-'+width+'.png',fullPage:true});
     await page.goto('/report');
     await expect(page.getByText(/Welcome\. I will guide you through a report/)).toBeVisible();

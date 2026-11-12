@@ -1,5 +1,8 @@
 # Interface principles — Ekiti Civic (independent)
 
+> **Product direction revised 11 November 2026:** [Search-first product contract](search-first-product-contract.md) now governs the eventual citizen and desktop experiences. Preserve the existing implemented modules and their security limits, but **do not** treat the present mobile-shaped desktop interface or card/category-first homepage as an accepted final design. Home must become a simple Google-style **search interaction (not copied branding)**, with desktop-specific composition and a lightweight mobile layout. The earlier five shortcuts are secondary, not the main homepage layout. Release acceptance requires both responsive search and actual backed-up functionality. The reporting flow must infer verified locality from consented evidence and avoid routine LGA/ward or minor-involvement questionnaires.
+
+
 This decision applies to the public-facing interface until explicitly revised.
 
 1. **Mobile is the default.** Author the narrow screen first. The initial view must answer what works today and let someone begin the primary task. Test 280, 320, 360, 375, 390 and 428px widths before desktop enhancements.

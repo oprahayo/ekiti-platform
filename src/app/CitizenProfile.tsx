@@ -4,6 +4,9 @@ import { useApp } from './state.tsx';
 import { readReviewDrafts, deleteReviewDraft, type ReviewDraft } from './citizen-local.ts';
 import InfoDialog, { AboutContent } from './InfoDialog.tsx';
 import CitizenSignIn from './CitizenSignIn.tsx';
+import CitizenReports from './CitizenReports.tsx';
+import DirectoryWorkspace from './DirectoryWorkspace.tsx';
+import {readListingDrafts} from './directory-drafts.ts';
 import { useCitizenAuth } from './CitizenAuth.tsx';
 
 type Popup = 'about' | 'signin' | 'listing' | 'notifications' | null;
@@ -39,6 +42,7 @@ export default function CitizenProfile() {
   const [accountClaims,setAccountClaims] = React.useState<{place_id:string;status:string;requested_at:string}[]>([]);
   const [accountStatus,setAccountStatus] = React.useState('');
   const count = Object.keys(drafts).length;
+  const listingDraftCount = readListingDrafts().length;
 
   React.useEffect(() => {
     if (view !== 'saved' || !savedPlaceIds.length) { setSaved([]); setMissing(0); setLoading(false); return; }
@@ -82,7 +86,7 @@ export default function CitizenProfile() {
     return () => { cancelled = true; };
   }, [auth.account?.id, view]);
 
-  const setView = (value: 'saved' | 'reviews' | 'claims' | '') => {
+  const setView = (value: 'saved' | 'reviews' | 'claims' | 'reports' | 'listings' | '') => {
     setParams(value ? { view: value } : {});
     if (value === 'reviews') setDrafts(readReviewDrafts());
   };
@@ -97,9 +101,9 @@ export default function CitizenProfile() {
           <circle cx="24" cy="15" r="8" /><path d="M9 41c0-9 6-14 15-14s15 5 15 14"/>
         </svg>
       </div>
-      <h1>Citizen Profile</h1>
-      <p>{auth.account ? 'Email-verified account · Not government identity verification' : 'Guest browsing · Your device only'}</p>
-      <button type="button" className="profile-signin" onClick={() => setPopup('signin')}>{auth.account ? 'Account: ' + auth.account.email : 'Sign in or create an account'}</button>
+      <p className="eyebrow">My Ekiti Civic Dashboard</p><h1>Citizen Profile</h1>
+      <p>{auth.account ? (auth.account.email?'Email':'Phone')+'-verified account · Not government identity verification' : 'Guest browsing · Your device only'}</p>
+      <button type="button" className="profile-signin" onClick={() => setPopup('signin')}>{auth.account ? 'Account: ' + (auth.account.email||auth.account.phone||'Verified') : 'Sign in or create an account'}</button>
     </div>
 
     <div className="profile-counts" aria-label="Local profile counts">
@@ -109,11 +113,19 @@ export default function CitizenProfile() {
       <button type="button" onClick={() => setView('reviews')} aria-label={'Unpublished review drafts: ' + count}>
         <strong>{count}</strong><span>Review drafts</span>
       </button>
-      <button type="button" onClick={() => setPopup('listing')}>
-        <strong>—</strong><span>My listings</span>
+      <button type="button" onClick={() => setView('listings')}>
+        <strong>{listingDraftCount}</strong><span>Listing drafts</span>
       </button>
     </div>
 
+    {view === 'listings' && <div className="citizen-directory-view">
+      <button type="button" className="text-link" onClick={() => setView('')}>Back to dashboard</button>
+      <DirectoryWorkspace />
+    </div>}
+    {view === 'reports' && <div className="citizen-reports-view">
+      <button type="button" className="text-link" onClick={() => setView('')}>Back to profile</button>
+      <CitizenReports/>
+    </div>}
     {view === 'saved' && <section className="profile-subview" aria-label="Saved listings">
       <div className="profile-subview-heading">
         <h2>Saved listings</h2>
@@ -169,11 +181,15 @@ export default function CitizenProfile() {
     </section>}
 
     {!view && <nav className="profile-menu" aria-label="Profile services">
-      <MenuRow title="My Listings" description={auth.account ? 'Check your ownership requests' : 'Learn about registering and claiming'} symbol="⌂"
-        onClick={() => auth.account ? setView('claims') : setPopup('listing')}/>
+      <MenuRow title="My Reports" description={auth.reportHistoryAvailable?'Receipt-protected private case history':'Private case history is not active'} symbol="▤"
+        onClick={() => setView('reports')}/>
+      <MenuRow title="My Listings" description="Add services, edit private drafts and track submitted listings" symbol="⌂"
+        onClick={() => setView('listings')}/>
+      <MenuRow title="Business Ownership Claims" description="See your requests to claim reviewed businesses" symbol="⌁"
+        onClick={() => setView('claims')}/>
       <MenuRow title="Saved Listings" description="Published businesses saved on this device" symbol="☆" onClick={() => setView('saved')}/>
       <MenuRow title="My Reviews" description="Unpublished drafts on this device" symbol="★" onClick={() => setView('reviews')}/>
-      <MenuRow title="Account Details" description="Sign in when identity verification launches" symbol="♙" onClick={() => setPopup('signin')}/>
+      <MenuRow title="Account Details" description="Optional verified code sign-in and recovery" symbol="♙" onClick={() => setPopup('signin')}/>
       <MenuRow title="Notifications" description="Account alerts are not active yet" symbol="♢" onClick={() => setPopup('notifications')}/>
       <MenuRow title="Public Response Scores" description="View clearly marked demo statistics" symbol="▥" href="/scores"/>
       <MenuRow title="About & Contact" description="A short pop-up about Ekiti Civic and support" symbol="ⓘ" onClick={() => setPopup('about')}/>

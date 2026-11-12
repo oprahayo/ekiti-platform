@@ -1,5 +1,9 @@
 import pg from 'pg';
+import {parseExternalQuery,fetchEkitiWebResults,fetchEkitiWikipediaResults} from './external-web-search.ts';
+import {parsePublicAnswerQuery,buildPublicWebAnswer} from './public-web-answer.ts';
+import { parseUnifiedSearch, searchReviewedEkiti, unavailableReviewedEkiti, type UnifiedSearchFilters } from './unified-search.ts';
 import { handlePrivateReporting, type PrivateReportingEnv } from './private-report-routes.ts';
+import {handlePrivateEvidence,type EvidenceEnvironment} from './private-evidence-routes.ts';
 import { resolveIncidentLocation } from './location.ts';
 import { answerQuestion } from './ask.ts';
 import {
@@ -7,10 +11,19 @@ import {
   searchKnowledge, searchPlaces, getPlace, type DirectoryFilters, type KnowledgeFilters,
 } from './public-data.ts';
 import { parsePublicReviews, publicReviews, type ReviewFilters } from './reviews.ts';
+import {parseNearbySearch,searchVerifiedNearby,NearbyQueryError, type NearbySearch} from './nearby-places.ts';
 
-interface Env extends PrivateReportingEnv {
+interface Env extends PrivateReportingEnv, EvidenceEnvironment {
   HYPERDRIVE: { connectionString: string };
   LOCATION_LIMIT: { limit(options: { key: string }): Promise<{ success: boolean }> };
+  NEARBY_DIRECTORY_ENABLED?:string;
+  NEARBY_DIRECTORY_REVIEWED?:string;
+  EXTERNAL_WEB_SEARCH_ENABLED?:string;
+  BRAVE_SEARCH_API_KEY?:string;
+  PUBLIC_SOURCE_ANSWER_ENABLED?:string;
+  GROUNDED_AI_ENABLED?:string;
+  OPENAI_API_KEY?:string;
+  SEARCH_ANSWER_MODEL?:string;
 }
 
 function json(value: unknown, status = 200, extra: Record<string, string> = {}) {
@@ -54,6 +67,27 @@ async function readPoint(request: Request) {
 }
 
 
+async function readNearbyBody(request:Request):Promise<string|null>{
+  if(request.headers.get('Content-Type')?.split(';')[0]?.trim()!=='application/json')
+    return null;
+  const length=request.headers.get('Content-Length');
+  if(length!==null&&(!/^\\d+$/.test(length)||Number(length)>650))return null;
+  if(!request.body)return null;
+  const reader=request.body.getReader();
+  const decoder=new TextDecoder('utf-8',{fatal:true});
+  let raw='',bytes=0;
+  try {
+    while(true){
+      const {done,value}=await reader.read();
+      if(done)break;
+      bytes+=value.byteLength;
+      if(bytes>650){await reader.cancel();return null;}
+      raw+=decoder.decode(value,{stream:true});
+    }
+    return raw+decoder.decode();
+  }catch{return null;}
+}
+
 async function readAsk(request: Request): Promise<{ question: string; language: 'en' | 'yo' } | null> {
   const length = Number(request.headers.get('Content-Length') || 0);
   if (length > 1500) return null;
@@ -86,33 +120,63 @@ export default {
     if (url.pathname === '/api/reports' || url.pathname === '/api/tracking') {
       return handlePrivateReporting(request, env);
     }
+    if (url.pathname === '/api/evidence/sessions' || url.pathname.startsWith('/api/evidence/sessions/')) {
+      return handlePrivateEvidence(request,env);
+    }
     const directory = url.pathname === '/api/areas';
     const ask = url.pathname === '/api/ask';
     const knowledge = url.pathname === '/api/knowledge';
+    const unifiedSearch = url.pathname === '/api/search';
+    const externalWeb = url.pathname === '/api/web-search';
+    const publicAnswer = url.pathname === '/api/web-answer';
     const places = url.pathname === '/api/places';
+    const nearby = url.pathname === '/api/places/nearby';
+    if(nearby&&(env.NEARBY_DIRECTORY_ENABLED!=='true'||env.NEARBY_DIRECTORY_REVIEWED!=='true'))
+      return json({error:'Unknown route'},404);
     const reviews = url.pathname.startsWith('/api/places/') && url.pathname.endsWith('/reviews');
-    const place = url.pathname.startsWith('/api/places/') && !reviews;
-    const isPublicData = knowledge || places || place || reviews;
+    const place = url.pathname.startsWith('/api/places/') && !reviews && !nearby;
+    const isPublicData = knowledge || places || place || reviews || nearby || unifiedSearch || externalWeb || publicAnswer;
     if ((!directory && !ask && !isPublicData && url.pathname !== '/api/resolve') ||
-      (!isPublicData && url.search))
+      ((!isPublicData || nearby) && url.search))
       return json({ error: 'Unknown route' }, 404);
-    const method = (directory || isPublicData) ? 'GET' : 'POST';
+    const method = (directory || (isPublicData&&!nearby)) ? 'GET' : 'POST';
     if (request.method !== method)
       return json({ error: 'Unsupported method' }, 405, { Allow: method });
     const origin = request.headers.get('Origin');
-    if ((origin && origin !== url.origin) || request.headers.get('Sec-Fetch-Site') === 'cross-site')
+    if ((origin && origin !== url.origin) || request.headers.get('Sec-Fetch-Site') === 'cross-site' ||
+      (nearby && (origin !== url.origin ||
+        (request.headers.get('Sec-Fetch-Site')!==null &&
+         request.headers.get('Sec-Fetch-Site')!=='same-origin'))))
       return json({ error: 'Cross-site request denied' }, 403);
+    // Survives the public-reader catch so a validated query can retain
+    // only its safe, static locality hint when PostgreSQL is unavailable.
+    let unifiedFilters: UnifiedSearchFilters | null = null;
     try {
       const key = request.headers.get('CF-Connecting-IP') || 'local';
       if (!(await env.LOCATION_LIMIT.limit({ key })).success)
         return json({ error: 'Please try again in a minute' }, 429, { 'Retry-After': '60' });
       let point = null;
       let filters: KnowledgeFilters | DirectoryFilters | null = null;
+      let externalQuery: string | null = null;
+      let answerQuery: {query:string;language:'en'|'yo'} | null = null;
       let placeId: string | null = null;
       let reviewFilters: ReviewFilters | null = null;
-      if (isPublicData) {
+      let nearbyFilters:NearbySearch|null=null;
+      if(nearby){
+        const raw=await readNearbyBody(request);
+        if(raw===null)return json({error:'Invalid nearby request'},400);
+        try{nearbyFilters=parseNearbySearch(raw);}
+        catch(error){
+          if(error instanceof NearbyQueryError)return json({error:'Invalid nearby request'},400);
+          return json({error:'Invalid nearby request'},400);
+        }
+      }
+      if (isPublicData && !nearby) {
         try {
-          if (knowledge) filters = parseKnowledgeFilters(url.searchParams);
+          if (publicAnswer) answerQuery=parsePublicAnswerQuery(url.searchParams);
+          else if (externalWeb) externalQuery=parseExternalQuery(url.searchParams);
+          else if (unifiedSearch) unifiedFilters = parseUnifiedSearch(url.searchParams);
+          else if (knowledge) filters = parseKnowledgeFilters(url.searchParams);
           else if (places) filters = parseDirectoryFilters(url.searchParams);
           else if (reviews) reviewFilters = parsePublicReviews(url.pathname,url.searchParams);
           else {
@@ -134,6 +198,53 @@ export default {
         point = await readPoint(request).catch(() => null);
         if (!point) return json({ error: 'Expected a confirmed, valid coordinate pair' }, 400);
       }
+      if(nearby&&!nearbyFilters)return json({error:'Invalid nearby request'},400);
+      if(publicAnswer){
+        if(!answerQuery)return json({error:'Invalid public query'},400);
+        if(env.EXTERNAL_WEB_SEARCH_ENABLED!=='true'||
+           env.PUBLIC_SOURCE_ANSWER_ENABLED!=='true')
+          return json({available:false,reason:'Public source reading is disabled'},503,
+            {'Referrer-Policy':'no-referrer'});
+        // Only reviewed *public* SQL readers, never a private case, account,
+        // pending listing or moderation queue. Both providers fail independently.
+        const reviewedTask=(async()=>{
+          const reader=new pg.Client({
+            connectionString:env.HYPERDRIVE.connectionString,
+            connectionTimeoutMillis:3500,query_timeout:3500,
+          });
+          try {
+            await reader.connect();
+            return await searchReviewedEkiti(reader,{query:answerQuery.query,limit:5});
+          }finally{await reader.end().catch(()=>{});}
+        })().catch(()=>undefined);
+        const externalTask=(async()=>{
+          return env.BRAVE_SEARCH_API_KEY
+            ? await fetchEkitiWebResults(answerQuery.query,env.BRAVE_SEARCH_API_KEY)
+            : await fetchEkitiWikipediaResults(answerQuery.query);
+        })().catch(()=>undefined);
+        const [reviewed,external]=await Promise.all([reviewedTask,externalTask]);
+        const answerResult=await buildPublicWebAnswer({
+          query:answerQuery.query,language:answerQuery.language,
+          reviewed,external,
+          aiEnabled:env.GROUNDED_AI_ENABLED==='true',
+          aiKey:env.OPENAI_API_KEY,aiModel:env.SEARCH_ANSWER_MODEL,
+        });
+        return json(answerResult,200,{'Referrer-Policy':'no-referrer'});
+      }
+      if(externalWeb){
+        if(!externalQuery)return json({error:'Invalid public web query'},400);
+        if(env.EXTERNAL_WEB_SEARCH_ENABLED!=='true')
+          return json({available:false,reason:'External discovery is not configured'},503,
+            {'Referrer-Policy':'no-referrer'});
+        try{
+          const results=env.BRAVE_SEARCH_API_KEY
+            ? await fetchEkitiWebResults(externalQuery,env.BRAVE_SEARCH_API_KEY)
+            : await fetchEkitiWikipediaResults(externalQuery);
+          return json(results,200,
+            {'Referrer-Policy':'no-referrer'});
+        }catch{return json({available:false,reason:'Web discovery temporarily unavailable'},503,
+          {'Referrer-Policy':'no-referrer'});}
+      }
       const client = new pg.Client({
         connectionString: env.HYPERDRIVE.connectionString,
         connectionTimeoutMillis: 5000,
@@ -143,6 +254,20 @@ export default {
         await client.connect();
         if (point)
           return json(await resolveIncidentLocation(client, point.latitude, point.longitude));
+        if(nearby&&nearbyFilters){
+          const location=await resolveIncidentLocation(client,nearbyFilters.latitude,nearbyFilters.longitude);
+          const status=location.stateBoundaryStatus==='outside'?'outside_ekiti':
+            location.stateBoundaryStatus!=='inside'||location.consistency==='conflict'||
+            location.lga.status!=='matched'?'uncertain_coverage':null;
+          if(status)return json({items:[],reviewedOnly:true,order:'distance',
+            status,radiusKm:nearbyFilters.radiusKm},200,{'Referrer-Policy':'no-referrer'});
+          const items=await searchVerifiedNearby(client,nearbyFilters);
+          return json({items,reviewedOnly:true,order:'distance',
+            status:'ready',radiusKm:nearbyFilters.radiusKm},200,
+            {'Referrer-Policy':'no-referrer'});
+        }
+        if (unifiedSearch && unifiedFilters)
+          return json(await searchReviewedEkiti(client, unifiedFilters));
         if (knowledge)
           return json({ items: await searchKnowledge(client, filters as KnowledgeFilters),
             reviewedOnly: true });
@@ -163,6 +288,11 @@ export default {
         await client.end();
       }
     } catch {
+      // Source-backed locality recognition is available independently from
+      // Postgres. This is a deliberately degraded search response, never
+      // silently presented as an empty/verified SQL result.
+      if(unifiedSearch && unifiedFilters)
+        return json(unavailableReviewedEkiti(unifiedFilters),200);
       return json({ error: 'Service temporarily unavailable' }, 503);
     }
   },
